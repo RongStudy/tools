@@ -1,0 +1,107 @@
+.url-codec {
+  min-height: 0;
+}
+
+.url-codec-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.url-codec-mode {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.url-codec-mode button {
+  min-width: 5rem;
+  padding: 0.5rem 0.8rem;
+  border: 0;
+  border-right: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.url-codec-mode button:last-child {
+  border-right: 0;
+}
+
+.url-codec-mode button.active {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.url-codec-error {
+  padding: 0.85rem 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.url-codec-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  flex: 1;
+  min-height: 420px;
+}
+
+.url-codec-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-panel);
+}
+
+.url-codec-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.url-codec-panel-header span {
+  color: var(--color-text);
+  font-weight: 650;
+}
+
+.url-codec-panel textarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  border: 0;
+  padding: 1rem;
+  background: #101827;
+  color: #e5e7eb;
+  font: 0.92rem/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  outline: none;
+}
+
+.url-codec-panel textarea::placeholder {
+  color: #8b98aa;
+}
+
+@media (max-width: 1024px) {
+  .url-codec-grid {
+    grid-template-columns: 1fr;
+    min-height: 760px;
+  }
+}

@@ -1,0 +1,116 @@
+/* ========================================
+ * JSON 格式化工具 - 页面专属样式
+ * 公共样式（按钮、面板等）已提取到 styles/common.css
+ * ======================================== */
+
+.json-formatter {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.formatter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.formatter-header h2 {
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.indent-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.indent-control label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.indent-control select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.error-message {
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+}
+
+.editor-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  flex: 1;
+  min-height: 420px;
+}
+
+.editor-container .editor-panel {
+  min-width: 0;
+}
+
+/* 全屏模式 - 页面专属覆盖样式 */
+.fullscreen-container {
+  grid-template-columns: 1fr !important;
+  height: 100vh;
+  gap: 0 !important;
+  padding: 0;
+}
+
+.dual-fullscreen-container {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  height: 100vh;
+  gap: 0 !important;
+  padding: 0;
+  background: #1e1e1e;
+}
+
+.dual-fullscreen-container .editor-panel {
+  min-width: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dual-fullscreen-container .editor-panel + .editor-panel {
+  border-left: 1px solid #3e3e42;
+}
+
+@media (max-width: 1024px) {
+  .editor-container {
+    grid-template-columns: 1fr;
+    min-height: 900px;
+  }
+  
+  .formatter-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

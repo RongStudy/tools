@@ -1,0 +1,256 @@
+/* ========================================
+ * 代码对比工具 - 页面专属样式
+ * 公共样式（按钮、面板等）已提取到 styles/common.css
+ * ======================================== */
+
+.code-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.diff-header h2 {
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.diff-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.view-mode-toggle {
+  display: flex;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.btn-toggle {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  border-right: 1px solid #ddd;
+}
+
+.btn-toggle:last-child {
+  border-right: none;
+}
+
+.btn-toggle:hover {
+  background: #f8f9fa;
+}
+
+.btn-toggle.active {
+  background: #667eea;
+  color: white;
+}
+
+.whitespace-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-switch input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: #ccc;
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider {
+  background: #667eea;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider::after {
+  transform: translateX(16px);
+}
+
+.toggle-label {
+  font-size: 0.9rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.language-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.language-select label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.language-select select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.file-input-label {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: #28a745;
+  color: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.file-input-label:hover {
+  background: #218838;
+}
+
+.btn-nav {
+  background: #17a2b8 !important;
+}
+
+.btn-nav:hover:not(:disabled) {
+  background: #138496 !important;
+}
+
+.diff-count {
+  font-size: 0.85rem;
+  color: #6c757d;
+  padding: 0 0.5rem;
+  font-weight: 500;
+}
+
+.panel-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.panel-title span:first-child {
+  font-weight: 600;
+  color: #495057;
+}
+
+.file-name {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: normal;
+}
+
+.split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  flex: 1;
+  min-height: 420px;
+}
+
+.unified-view {
+  display: flex;
+  flex: 1;
+  min-height: 420px;
+}
+
+.diff-panel {
+  width: 100%;
+  flex: 1;
+}
+
+.split-view .diff-panel {
+  grid-column: 1 / -1;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 420px;
+  color: #6c757d;
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.empty-state .hint {
+  font-size: 0.9rem;
+  color: #adb5bd;
+}
+
+/* 全屏模式 - 页面专属覆盖样式 */
+.fullscreen-panel .panel-title span {
+  color: white;
+}
+
+.fullscreen-panel .file-name {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.fullscreen-panel .diff-count {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 1024px) {
+  .split-view {
+    grid-template-columns: 1fr;
+    min-height: 640px;
+  }
+  
+  .diff-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .diff-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
