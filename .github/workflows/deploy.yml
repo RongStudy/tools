@@ -9,6 +9,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     environment:
@@ -17,24 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 1. 拉取代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 2. 安装 Node.js 环境
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-size: 20
+          node-version: 24
           cache: 'npm'
 
       - name: 3. 安装依赖并打包
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: 4. 上传打包产物
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: './dist' # Vite 默认打包到 dist 目录
 
       - name: 5. 正式发布到 Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
