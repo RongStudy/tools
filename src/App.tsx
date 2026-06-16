@@ -70,7 +70,7 @@ function App() {
 
   return (
     <ToastProvider>
-      <BrowserRouter basename="/tool">
+      <BrowserRouter basename="/tools">
         <AppShell tools={tools}>
           <ToolRoutes />
         </AppShell>
