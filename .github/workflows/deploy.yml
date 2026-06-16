@@ -1,0 +1,40 @@
+name: 自动构建与部署
+
+on:
+  push:
+    branches: ["main"] # 当你推送到 main 分支时触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 2. 安装 Node.js 环境
+        uses: actions/setup-node@v4
+        with:
+          node-size: 20
+          cache: 'npm'
+
+      - name: 3. 安装依赖并打包
+        run: |
+          npm install
+          npm run build
+
+      - name: 4. 上传打包产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' # Vite 默认打包到 dist 目录
+
+      - name: 5. 正式发布到 Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
