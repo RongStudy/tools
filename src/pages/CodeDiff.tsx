@@ -42,6 +42,10 @@ const CodeDiff = () => {
   ))
   const [originalCode, setOriginalCode] = useState(initialDraft.originalCode)
   const [modifiedCode, setModifiedCode] = useState(initialDraft.modifiedCode)
+  const [editorContent, setEditorContent] = useState(() => ({
+    originalCode: initialDraft.originalCode,
+    modifiedCode: initialDraft.modifiedCode,
+  }))
   const [viewMode, setViewMode] = useState<'split' | 'unified'>(initialDraft.viewMode)
   const [language, setLanguage] = useState<string>(initialDraft.language)
   const [originalFileName, setOriginalFileName] = useState(initialDraft.originalFileName)
@@ -181,12 +185,14 @@ const CodeDiff = () => {
 
       if (type === 'original') {
         setOriginalCode(text)
+        setEditorContent(prev => ({ ...prev, originalCode: text }))
         setOriginalFileName(fileName)
         if (!language || language === 'plaintext') {
           setLanguage(detectedLang)
         }
       } else {
         setModifiedCode(text)
+        setEditorContent(prev => ({ ...prev, modifiedCode: text }))
         setModifiedFileName(fileName)
         if (!language || language === 'plaintext') {
           setLanguage(detectedLang)
@@ -242,6 +248,10 @@ const CodeDiff = () => {
   const clearCode = () => {
     setOriginalCode('')
     setModifiedCode('')
+    setEditorContent({
+      originalCode: '',
+      modifiedCode: '',
+    })
     setOriginalFileName('')
     setModifiedFileName('')
     setLanguage('plaintext')
@@ -253,9 +263,22 @@ const CodeDiff = () => {
     const tempFileName = originalFileName
     setOriginalCode(modifiedCode)
     setModifiedCode(tempCode)
+    setEditorContent({
+      originalCode: modifiedCode,
+      modifiedCode: tempCode,
+    })
     setOriginalFileName(modifiedFileName)
     setModifiedFileName(tempFileName)
   }
+
+  // DiffEditor 的 original/modified prop 更新会改写 Monaco 模型。
+  // 用户编辑时只同步业务状态，避免剪切/输入后由 prop 回写重置光标。
+  const syncEditorContentFromState = useCallback(() => {
+    setEditorContent({
+      originalCode,
+      modifiedCode,
+    })
+  }, [originalCode, modifiedCode])
 
   // 编辑器内容变化回调
   const handleOriginalChange = useCallback((value: string) => {
@@ -388,13 +411,19 @@ const CodeDiff = () => {
       <div className="view-mode-toggle">
         <button
           className={viewMode === 'split' ? 'btn-toggle active' : 'btn-toggle'}
-          onClick={() => setViewMode('split')}
+          onClick={() => {
+            syncEditorContentFromState()
+            setViewMode('split')
+          }}
         >
           分栏视图
         </button>
         <button
           className={viewMode === 'unified' ? 'btn-toggle active' : 'btn-toggle'}
-          onClick={() => setViewMode('unified')}
+          onClick={() => {
+            syncEditorContentFromState()
+            setViewMode('unified')
+          }}
         >
           统一视图
         </button>
@@ -494,8 +523,8 @@ const CodeDiff = () => {
             <DiffEditor
               height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
               language={language}
-              original={originalCode}
-              modified={modifiedCode}
+              original={editorContent.originalCode}
+              modified={editorContent.modifiedCode}
               loading={editorLoading}
               originalModelPath="inmemory://model/code-diff/original"
               modifiedModelPath="inmemory://model/code-diff/modified"
@@ -528,8 +557,8 @@ const CodeDiff = () => {
               <DiffEditor
                 height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
                 language={language}
-                original={originalCode}
-                modified={modifiedCode}
+                original={editorContent.originalCode}
+                modified={editorContent.modifiedCode}
                 loading={editorLoading}
                 originalModelPath="inmemory://model/code-diff/original"
                 modifiedModelPath="inmemory://model/code-diff/modified"
