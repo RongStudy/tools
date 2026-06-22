@@ -1,5 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
-import type { MonacoDiffEditor, DiffLineChange } from '../types/monaco'
+import type { MonacoDiffEditor, MonacoEditor, DiffLineChange } from '../types/monaco'
+
+type DiffSide = 'original' | 'modified'
 
 /**
  * DiffEditor 管理 Hook
@@ -14,6 +16,10 @@ export function useDiffEditor() {
     onOriginalChange?: (value: string) => void
     onModifiedChange?: (value: string) => void
   }>({})
+  const cursorRestoreTokenRef = useRef<Record<DiffSide, number>>({
+    original: 0,
+    modified: 0,
+  })
   const [diffCount, setDiffCount] = useState(0)
 
   /** 强制设置编辑器为可编辑 */
@@ -86,6 +92,45 @@ export function useDiffEditor() {
     callbacksRef.current = callbacks
   }, [])
 
+  /** React 状态回写 DiffEditor 后，恢复用户编辑产生的光标和滚动位置 */
+  const restoreCursorAfterChange = useCallback((codeEditor: MonacoEditor, side: DiffSide) => {
+    if (!codeEditor || isUnmountingRef.current) return
+
+    try {
+      if (!codeEditor.getModel()) return
+      if (typeof codeEditor.hasTextFocus === 'function' && !codeEditor.hasTextFocus()) return
+
+      const selection = codeEditor.getSelection()
+      if (!selection) return
+
+      const scrollTop = codeEditor.getScrollTop()
+      const scrollLeft = codeEditor.getScrollLeft()
+      const restoreToken = cursorRestoreTokenRef.current[side] + 1
+      cursorRestoreTokenRef.current[side] = restoreToken
+
+      const restore = () => {
+        if (isUnmountingRef.current || cursorRestoreTokenRef.current[side] !== restoreToken) return
+
+        try {
+          if (!codeEditor.getModel()) return
+          codeEditor.setSelection(selection)
+          codeEditor.setScrollTop(scrollTop)
+          codeEditor.setScrollLeft(scrollLeft)
+        } catch {
+          // 编辑器可能已被销毁，忽略错误
+        }
+      }
+
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(restore)
+      } else {
+        window.setTimeout(restore, 0)
+      }
+    } catch {
+      // 某些 Monaco 初始化阶段 API 可能暂不可用，忽略即可。
+    }
+  }, [])
+
   /** 设置编辑器内容变化监听器 */
   const setupEditorListeners = useCallback((editor: MonacoDiffEditor) => {
     if (!editor || isUnmountingRef.current) return
@@ -118,6 +163,7 @@ export function useDiffEditor() {
         try {
           if (!modifiedEditor.getModel()) return
           const newCode = modifiedEditor.getValue()
+          restoreCursorAfterChange(modifiedEditor, 'modified')
           callbacksRef.current.onModifiedChange?.(newCode)
           forceEditable(editor)
         } catch { /* 忽略 */ }
@@ -130,6 +176,7 @@ export function useDiffEditor() {
         try {
           if (!originalEditor.getModel()) return
           const newCode = originalEditor.getValue()
+          restoreCursorAfterChange(originalEditor, 'original')
           callbacksRef.current.onOriginalChange?.(newCode)
           forceEditable(editor)
         } catch { /* 忽略 */ }
@@ -169,7 +216,7 @@ export function useDiffEditor() {
     } catch (error) {
       console.error('设置编辑器监听器失败:', error)
     }
-  }, [equalizeContentWidths, forceEditable, updateDiffCount])
+  }, [equalizeContentWidths, forceEditable, restoreCursorAfterChange, updateDiffCount])
 
   /** 处理编辑器挂载 */
   const handleEditorMount = useCallback((editor: MonacoDiffEditor, callbacks: {
