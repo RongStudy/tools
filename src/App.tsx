@@ -4,6 +4,7 @@ import { BrowserRouter, useLocation } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
 import AppShell from './components/AppShell'
 import { tools } from './tools/registry'
+import { suppressMonacoCancellationErrorLogs } from './utils/monacoErrorFilter'
 import './App.css'
 import './components/ToolLayout.css'
 import './styles/common.css'
@@ -65,7 +66,10 @@ const ToolRoutes = () => {
 
 function App() {
   useEffect(() => {
+    const restoreConsoleError = suppressMonacoCancellationErrorLogs()
     void loader.init()
+
+    return restoreConsoleError
   }, [])
 
   return (

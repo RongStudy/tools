@@ -1,0 +1,1 @@
+UI changes should follow ./DESIGN.md.

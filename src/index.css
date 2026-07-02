@@ -5,34 +5,42 @@
 }
 
 :root {
-  --color-bg: #f4f6f8;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f7f9fb;
-  --color-text: #17202a;
-  --color-muted: #64748b;
-  --color-border: #dbe3ea;
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-soft: #eff6ff;
-  --color-primary-border: #bfdbfe;
-  --color-primary-muted: #315aa7;
-  --color-danger: #dc2626;
-  --color-danger-hover: #b91c1c;
-  --color-success: #15803d;
-  --color-success-hover: #166534;
-  --color-info: #0e7490;
-  --color-info-hover: #155e75;
-  --color-focus: rgba(37, 99, 235, 0.2);
-  --shadow-panel: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --color-bg: #010102;
+  --color-surface: #0f1011;
+  --color-surface-muted: #141516;
+  --color-surface-raised: #18191a;
+  --color-surface-deep: #191a1b;
+  --color-text: #f7f8f8;
+  --color-muted: #8a8f98;
+  --color-subtle: #62666d;
+  --color-border: #23252a;
+  --color-border-strong: #34343a;
+  --color-border-tertiary: #3e3e44;
+  --color-primary: #5e6ad2;
+  --color-primary-hover: #828fff;
+  --color-primary-soft: rgba(94, 106, 210, 0.14);
+  --color-primary-border: rgba(94, 106, 210, 0.46);
+  --color-primary-muted: #d0d6e0;
+  --color-danger: #f87171;
+  --color-danger-hover: #fca5a5;
+  --color-danger-soft: rgba(248, 113, 113, 0.12);
+  --color-success: #27a644;
+  --color-success-hover: #31c655;
+  --color-info: #7a7fad;
+  --color-info-hover: #8e94c4;
+  --color-focus: rgba(94, 105, 209, 0.5);
+  --shadow-panel: none;
+  --font-display: 'SF Pro Display', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-text: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 #root {

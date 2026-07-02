@@ -19,7 +19,7 @@
 }
 
 .formatter-header h2 {
-  color: #333;
+  color: var(--color-text);
   font-size: 1.5rem;
 }
 
@@ -37,25 +37,33 @@
 }
 
 .indent-control label {
-  color: #666;
+  color: var(--color-muted);
   font-size: 0.9rem;
 }
 
 .indent-control select {
+  min-height: 2.5rem;
   padding: 0.4rem 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
   font-size: 0.9rem;
 }
 
+.indent-control select:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-border-strong);
+}
+
 .error-message {
-  padding: 1rem;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 6px;
-  color: #856404;
+  padding: 0.85rem 1rem;
+  background: var(--color-danger-soft);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 8px;
+  color: var(--color-danger);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -90,7 +98,7 @@
   height: 100vh;
   gap: 0 !important;
   padding: 0;
-  background: #1e1e1e;
+  background: var(--color-bg);
 }
 
 .dual-fullscreen-container .editor-panel {
@@ -100,7 +108,7 @@
 }
 
 .dual-fullscreen-container .editor-panel + .editor-panel {
-  border-left: 1px solid #3e3e42;
+  border-left: 1px solid var(--color-border-tertiary);
 }
 
 @media (max-width: 1024px) {

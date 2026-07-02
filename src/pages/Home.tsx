@@ -7,25 +7,25 @@ const toolLinks = [
     path: '/json',
     title: 'JSON格式化',
     meta: 'Format / Compress / Escape',
-    accent: '#2563eb',
+    accent: '#5e6ad2',
   },
   {
     path: '/code-diff',
     title: '代码对比',
     meta: 'Side by side diff',
-    accent: '#0e7490',
+    accent: '#828fff',
   },
   {
     path: '/url-codec',
     title: 'URL 编解码',
     meta: 'Encode / Decode',
-    accent: '#7c3aed',
+    accent: '#7a7fad',
   },
   {
     path: '/timestamp',
     title: '时间戳转换',
     meta: 'Timestamp / Date time',
-    accent: '#15803d',
+    accent: '#d0d6e0',
   },
 ]
 
@@ -74,11 +74,11 @@ const Home = () => {
 
     const draw = (time: number) => {
       context.clearRect(0, 0, width, height)
-      context.fillStyle = '#f8fafc'
+      context.fillStyle = '#010102'
       context.fillRect(0, 0, width, height)
 
       const gridSize = 34
-      context.strokeStyle = '#e2e8f0'
+      context.strokeStyle = '#18191a'
       context.lineWidth = 1
       for (let x = (time / 80) % gridSize; x < width; x += gridSize) {
         context.beginPath()
@@ -96,16 +96,16 @@ const Home = () => {
       const centerX = width * 0.52
       const centerY = height * 0.48
       const nodes = [
-        { x: centerX - 210, y: centerY - 80, color: '#2563eb', label: '{}' },
-        { x: centerX + 160, y: centerY - 120, color: '#0e7490', label: '<>' },
-        { x: centerX - 20, y: centerY + 105, color: '#15803d', label: 'ms' },
+        { x: centerX - 210, y: centerY - 80, color: '#5e6ad2', label: '{}' },
+        { x: centerX + 160, y: centerY - 120, color: '#828fff', label: '<>' },
+        { x: centerX - 20, y: centerY + 105, color: '#7a7fad', label: 'ms' },
       ]
 
       context.lineWidth = 2
       nodes.forEach((node, index) => {
         const next = nodes[(index + 1) % nodes.length]
         const progress = (Math.sin(time / 700 + index) + 1) / 2
-        context.strokeStyle = '#cbd5e1'
+        context.strokeStyle = '#34343a'
         context.beginPath()
         context.moveTo(node.x, node.y)
         context.lineTo(next.x, next.y)
@@ -120,9 +120,9 @@ const Home = () => {
 
       nodes.forEach((node) => {
         drawRoundedRect(node.x - 46, node.y - 32, 92, 64, 8)
-        context.fillStyle = '#ffffff'
+        context.fillStyle = '#0f1011'
         context.fill()
-        context.strokeStyle = '#cbd5e1'
+        context.strokeStyle = '#23252a'
         context.stroke()
 
         context.fillStyle = node.color
@@ -133,14 +133,16 @@ const Home = () => {
       })
 
       drawRoundedRect(centerX - 72, centerY - 44, 144, 88, 8)
-      context.fillStyle = '#17202a'
+      context.fillStyle = '#141516'
       context.fill()
-      context.fillStyle = '#ffffff'
+      context.strokeStyle = '#34343a'
+      context.stroke()
+      context.fillStyle = '#f7f8f8'
       context.font = '700 17px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif'
       context.textAlign = 'center'
       context.textBaseline = 'middle'
       context.fillText('Tool Console', centerX, centerY - 7)
-      context.fillStyle = '#93c5fd'
+      context.fillStyle = '#8a8f98'
       context.font = '500 12px ui-monospace, SFMono-Regular, Menlo, monospace'
       context.fillText('ready', centerX, centerY + 20)
 
