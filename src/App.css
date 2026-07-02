@@ -374,7 +374,7 @@
   }
 
   .tool-search input {
-    height: 2.2rem;
+    height: 2.75rem;
   }
 
   .tool-nav {
@@ -400,6 +400,7 @@
   .tool-nav-link {
     flex: 0 0 auto;
     min-width: 0;
+    min-height: 2.75rem;
     padding: 0.5rem 0.75rem;
     border-color: var(--color-border);
     border-radius: 999px;
@@ -437,7 +438,7 @@
   }
 
   .tool-search input {
-    height: 2.1rem;
+    height: 2.75rem;
   }
 
   .app-main {

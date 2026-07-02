@@ -273,3 +273,9 @@
     flex-wrap: wrap;
   }
 }
+
+@media (max-width: 640px) {
+  .btn-toggle {
+    min-height: 2.75rem;
+  }
+}

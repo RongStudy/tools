@@ -108,12 +108,20 @@ const UrlCodec = () => {
           完整 URL
         </button>
       </div>
-      <button type="button" className="btn btn-primary" onClick={encode}>URL Encode</button>
-      <button type="button" className="btn btn-secondary" onClick={decode}>URL Decode</button>
-      <button type="button" className="btn btn-primary" onClick={base64Encode}>Base64 Encode</button>
-      <button type="button" className="btn btn-secondary" onClick={base64Decode}>Base64 Decode</button>
-      <button type="button" className="btn btn-secondary" onClick={swapOutputToInput} disabled={!output}>结果转输入</button>
-      <button type="button" className="btn btn-danger" onClick={clearAll}>清空</button>
+      <div className="url-codec-action-group" aria-label="URL 操作">
+        <span>URL</span>
+        <button type="button" className="btn btn-primary" aria-label="URL Encode" onClick={encode}>编码</button>
+        <button type="button" className="btn btn-secondary" aria-label="URL Decode" onClick={decode}>解码</button>
+      </div>
+      <div className="url-codec-action-group" aria-label="Base64 操作">
+        <span>Base64</span>
+        <button type="button" className="btn btn-primary" aria-label="Base64 Encode" onClick={base64Encode}>编码</button>
+        <button type="button" className="btn btn-secondary" aria-label="Base64 Decode" onClick={base64Decode}>解码</button>
+      </div>
+      <div className="url-codec-utility-group">
+        <button type="button" className="btn btn-secondary" onClick={swapOutputToInput} disabled={!output}>结果转输入</button>
+        <button type="button" className="btn btn-danger" onClick={clearAll}>清空</button>
+      </div>
     </div>
   )
 

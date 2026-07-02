@@ -8,7 +8,7 @@
 
 .tool-layout-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(16rem, 1fr) minmax(0, 2fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -32,6 +32,8 @@
 .tool-layout-actions {
   display: flex;
   justify-content: flex-end;
+  justify-self: end;
+  width: 100%;
   min-width: 0;
 }
 

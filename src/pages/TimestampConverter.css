@@ -277,6 +277,10 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  .timestamp-tabs button {
+    height: 2.75rem;
+  }
+
   .timestamp-form-section {
     padding-top: 1.25rem;
   }
