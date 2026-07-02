@@ -7,6 +7,25 @@ import '../styles/common.css'
 
 type CodecMode = 'component' | 'url'
 
+const textToBase64 = (value: string) => {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+  const chunkSize = 0x8000
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(index, index + chunkSize))
+  }
+
+  return btoa(binary)
+}
+
+const base64ToText = (value: string) => {
+  const binary = atob(value.replace(/\s/g, ''))
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+
+  return new TextDecoder().decode(bytes)
+}
+
 const UrlCodec = () => {
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
@@ -28,6 +47,26 @@ const UrlCodec = () => {
     try {
       setError('')
       setOutput(mode === 'component' ? decodeURIComponent(input) : decodeURI(input))
+    } catch (err) {
+      setOutput('')
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const base64Encode = () => {
+    try {
+      setError('')
+      setOutput(textToBase64(input))
+    } catch (err) {
+      setOutput('')
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const base64Decode = () => {
+    try {
+      setError('')
+      setOutput(base64ToText(input))
     } catch (err) {
       setOutput('')
       setError(err instanceof Error ? err.message : String(err))
@@ -71,6 +110,8 @@ const UrlCodec = () => {
       </div>
       <button type="button" className="btn btn-primary" onClick={encode}>URL Encode</button>
       <button type="button" className="btn btn-secondary" onClick={decode}>URL Decode</button>
+      <button type="button" className="btn btn-primary" onClick={base64Encode}>Base64 Encode</button>
+      <button type="button" className="btn btn-secondary" onClick={base64Decode}>Base64 Decode</button>
       <button type="button" className="btn btn-secondary" onClick={swapOutputToInput} disabled={!output}>结果转输入</button>
       <button type="button" className="btn btn-danger" onClick={clearAll}>清空</button>
     </div>
@@ -79,8 +120,8 @@ const UrlCodec = () => {
   return (
     <ToolLayout
       className="url-codec"
-      title="URL 编码/解码"
-      description="对 URL 参数值或完整 URL 进行 encode/decode 处理"
+      title="URL / Base64 编码解码"
+      description="对 URL 参数值、完整 URL 或文本进行 Base64 encode/decode 处理"
       actions={toolbar}
       status={error ? <div className="url-codec-error">{error}</div> : null}
     >
