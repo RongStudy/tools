@@ -34,6 +34,7 @@ const JsonFormatter = () => {
   const [indentSize, setIndentSize] = useState(initialDraft.indentSize)
   const [fullscreenMode, setFullscreenMode] = useState<'none' | 'output' | 'both'>('none')
   const editorRef = useRef<MonacoEditor | null>(null)
+  const outputEditorRef = useRef<MonacoEditor | null>(null)
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const outputPanelRef = useRef<HTMLDivElement>(null)
 
@@ -110,6 +111,15 @@ const JsonFormatter = () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }
   }, [])
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      editorRef.current?.layout()
+      outputEditorRef.current?.layout()
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [error, fullscreenMode])
 
   // 多层嵌套转义JSON的解转义
   const unescapeJson = useMemo(() => (str: string): string => {
@@ -336,24 +346,26 @@ const JsonFormatter = () => {
                 </button>
               </div>
             </div>
-            <Editor
-              height={isDualFullscreen ? 'calc(100vh - 60px)' : '100%'}
-              defaultLanguage="json"
-              value={input}
-              loading={editorLoading}
-              onChange={(value) => handleInputChange(value)}
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: isDualFullscreen ? 16 : 14,
-                wordWrap: 'on',
-                automaticLayout: true,
-                scrollBeyondLastLine: false,
-              }}
-              onMount={(editor) => {
-                editorRef.current = editor
-              }}
-            />
+            <div className="json-editor-body">
+              <Editor
+                height="100%"
+                defaultLanguage="json"
+                value={input}
+                loading={editorLoading}
+                onChange={(value) => handleInputChange(value)}
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: isDualFullscreen ? 16 : 14,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  scrollBeyondLastLine: false,
+                }}
+                onMount={(editor) => {
+                  editorRef.current = editor
+                }}
+              />
+            </div>
           </div>
         )}
 
@@ -380,21 +392,26 @@ const JsonFormatter = () => {
               </button>
             </div>
           </div>
-          <Editor
-            height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
-            defaultLanguage="json"
-            value={output}
-            loading={editorLoading}
-            theme="vs-dark"
-            options={{
-              minimap: { enabled: !isFullscreen },
-              fontSize: isFullscreen ? 16 : 14,
-              wordWrap: 'on',
-              automaticLayout: true,
-              scrollBeyondLastLine: false,
-              readOnly: true,
-            }}
-          />
+          <div className="json-editor-body">
+            <Editor
+              height="100%"
+              defaultLanguage="json"
+              value={output}
+              loading={editorLoading}
+              theme="vs-dark"
+              options={{
+                minimap: { enabled: !isFullscreen },
+                fontSize: isFullscreen ? 16 : 14,
+                wordWrap: 'on',
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
+                readOnly: true,
+              }}
+              onMount={(editor) => {
+                outputEditorRef.current = editor
+              }}
+            />
+          </div>
         </div>
       </div>
     </ToolLayout>
