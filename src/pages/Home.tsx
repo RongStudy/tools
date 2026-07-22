@@ -17,8 +17,8 @@ const toolLinks = [
   },
   {
     path: '/url-codec',
-    title: 'URL 编解码',
-    meta: 'Encode / Decode',
+    title: '编解码',
+    meta: 'Encode / Decode / Hash',
     accent: '#7a7fad',
   },
   {

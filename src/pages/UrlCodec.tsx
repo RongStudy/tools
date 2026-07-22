@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
+import { md5, sha256 } from '../utils/hash'
 import './UrlCodec.css'
 import '../styles/common.css'
 
@@ -73,6 +74,11 @@ const UrlCodec = () => {
     }
   }
 
+  const createDigest = (algorithm: 'md5' | 'sha256') => {
+    setError('')
+    setOutput(algorithm === 'md5' ? md5(input) : sha256(input))
+  }
+
   const copyOutput = async () => {
     const success = await writeTextToClipboard(output)
     showToast(success ? '已复制到剪贴板' : '复制失败', success ? 'success' : 'error')
@@ -118,6 +124,11 @@ const UrlCodec = () => {
         <button type="button" className="btn btn-primary" aria-label="Base64 Encode" onClick={base64Encode}>编码</button>
         <button type="button" className="btn btn-secondary" aria-label="Base64 Decode" onClick={base64Decode}>解码</button>
       </div>
+      <div className="url-codec-action-group" aria-label="摘要操作">
+        <span>摘要</span>
+        <button type="button" className="btn btn-secondary" onClick={() => createDigest('md5')}>MD5</button>
+        <button type="button" className="btn btn-secondary" onClick={() => createDigest('sha256')}>SHA-256</button>
+      </div>
       <div className="url-codec-utility-group">
         <button type="button" className="btn btn-secondary" onClick={swapOutputToInput} disabled={!output}>结果转输入</button>
         <button type="button" className="btn btn-danger" onClick={clearAll}>清空</button>
@@ -128,8 +139,8 @@ const UrlCodec = () => {
   return (
     <ToolLayout
       className="url-codec"
-      title="URL / Base64 编码解码"
-      description="对 URL 参数值、完整 URL 或文本进行 Base64 encode/decode 处理"
+      title="编解码"
+      description="处理 URL、Base64 编解码，以及文本的 MD5、SHA-256 摘要"
       actions={toolbar}
       status={error ? <div className="url-codec-error">{error}</div> : null}
     >
@@ -142,10 +153,10 @@ const UrlCodec = () => {
             </button>
           </div>
           <textarea
-            aria-label="URL输入"
+            aria-label="编解码输入"
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="输入需要编码或解码的 URL、参数值、查询字符串..."
+            placeholder="输入需要编码、解码或生成摘要的文本..."
             spellCheck={false}
           />
         </section>
@@ -158,7 +169,7 @@ const UrlCodec = () => {
             </button>
           </div>
           <textarea
-            aria-label="URL输出"
+            aria-label="编解码输出"
             value={output}
             readOnly
             placeholder="处理结果会显示在这里"
