@@ -19,6 +19,7 @@ const getToolInitial = (tool: ToolDefinition) => {
   if (tool.path === '/json') return 'J'
   if (tool.path === '/code-diff') return 'D'
   if (tool.path === '/url-codec') return 'U'
+  if (tool.path === '/mermaid') return 'M'
   if (tool.path === '/timestamp') return 'T'
   return tool.navTitle.slice(0, 1)
 }

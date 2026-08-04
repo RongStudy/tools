@@ -4,6 +4,7 @@ import JsonFormatter from '../pages/JsonFormatter'
 import CodeDiff from '../pages/CodeDiff'
 import TimestampConverter from '../pages/TimestampConverter'
 import UrlCodec from '../pages/UrlCodec'
+import MermaidRenderer from '../pages/MermaidRenderer'
 
 export type ToolDefinition = {
   path: string
@@ -48,6 +49,14 @@ export const tools: ToolDefinition[] = [
     description: 'URL、Base64 编解码与 MD5、SHA-256 摘要',
     category: '编码处理',
     component: UrlCodec,
+  },
+  {
+    path: '/mermaid',
+    title: 'Mermaid 渲染',
+    navTitle: 'Mermaid 渲染',
+    description: '将 Mermaid 代码实时渲染并导出为图表',
+    category: '编码处理',
+    component: MermaidRenderer,
   },
   {
     path: '/timestamp',

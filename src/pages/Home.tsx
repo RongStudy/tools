@@ -27,6 +27,12 @@ const toolLinks = [
     meta: 'Timestamp / Date time',
     accent: '#d0d6e0',
   },
+  {
+    path: '/mermaid',
+    title: 'Mermaid 渲染',
+    meta: 'Diagram / SVG / PNG',
+    accent: '#8a8f98',
+  },
 ]
 
 const Home = () => {

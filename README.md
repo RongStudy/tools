@@ -1,6 +1,6 @@
 # 开发工具集
 
-一个基于 React + Vite + Monaco Editor 的前端开发工具集合，提供 JSON 格式化和代码对比功能。
+一个基于 React + Vite + Monaco Editor 的前端开发工具集合，提供格式化、代码对比、编解码、时间转换和图表渲染等功能。
 
 ## 功能特性
 
@@ -28,12 +28,20 @@
 - ✅ 支持日期时间转时间戳
 - ✅ 支持常用时区选择，默认 Asia/Shanghai
 
+### 4. Mermaid 渲染工具
+- ✅ Mermaid 代码实时渲染
+- ✅ 语法错误提示
+- ✅ SVG、PNG 图表导出
+- ✅ 预览全屏
+- ✅ 草稿自动保留
+
 ## 技术栈
 
 - **React 18** - UI 框架
 - **TypeScript** - 类型安全
 - **Vite** - 构建工具
 - **Monaco Editor** - 代码编辑器（VS Code 编辑器核心）
+- **Mermaid.js** - 图表解析与 SVG 渲染
 - **React Router** - 路由管理
 
 ## 快速开始
@@ -75,7 +83,9 @@ tool/
 │   │   ├── CodeDiff.tsx         # 代码对比工具页面
 │   │   ├── CodeDiff.css
 │   │   ├── TimestampConverter.tsx # 时间戳转换工具页面
-│   │   └── TimestampConverter.css
+│   │   ├── TimestampConverter.css
+│   │   ├── MermaidRenderer.tsx # Mermaid 渲染工具页面
+│   │   └── MermaidRenderer.css
 │   ├── components/
 │   │   ├── AppShell.tsx          # 应用壳层与工具导航
 │   │   ├── ToolLayout.tsx        # 工具页通用布局
