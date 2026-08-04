@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import Editor from '@monaco-editor/react'
 import ToolLayout from '../components/ToolLayout'
 import { useFullscreen } from '../hooks/useFullscreen'
@@ -7,6 +7,9 @@ import './MermaidRenderer.css'
 
 const MERMAID_DRAFT_KEY = 'dev-tools:mermaid-renderer:draft'
 const RENDER_DELAY_MS = 300
+const MIN_ZOOM = 50
+const MAX_ZOOM = 200
+const ZOOM_STEP = 25
 
 export const DEFAULT_MERMAID_CODE = `flowchart LR
   A[输入 Mermaid 代码] --> B{语法正确?}
@@ -70,6 +73,7 @@ const MermaidRenderer = () => {
   const [svg, setSvg] = useState('')
   const [error, setError] = useState('')
   const [isRendering, setIsRendering] = useState(false)
+  const [zoom, setZoom] = useState(100)
   const previewPanelRef = useRef<HTMLDivElement>(null)
   const renderSequenceRef = useRef(0)
   const [isFullscreen, toggleFullscreen] = useFullscreen(previewPanelRef)
@@ -124,7 +128,11 @@ const MermaidRenderer = () => {
     setSvg('')
     setError('')
     setIsRendering(false)
+    setZoom(100)
   }
+
+  const zoomOut = () => setZoom((value) => Math.max(MIN_ZOOM, value - ZOOM_STEP))
+  const zoomIn = () => setZoom((value) => Math.min(MAX_ZOOM, value + ZOOM_STEP))
 
   const downloadSvg = () => {
     if (!svg) return
@@ -236,6 +244,38 @@ const MermaidRenderer = () => {
           <div className="panel-header">
             <span>预览</span>
             <div className="panel-actions">
+              <div className="mermaid-zoom-controls" role="group" aria-label="图表缩放">
+                <button
+                  type="button"
+                  className="btn-small mermaid-zoom-button"
+                  onClick={zoomOut}
+                  disabled={!svg || zoom <= MIN_ZOOM}
+                  aria-label="缩小图表"
+                  title="缩小"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className="btn-small mermaid-zoom-value"
+                  onClick={() => setZoom(100)}
+                  disabled={!svg || zoom === 100}
+                  aria-label={`重置图表缩放，当前 ${zoom}%`}
+                  title="重置为 100%"
+                >
+                  {zoom}%
+                </button>
+                <button
+                  type="button"
+                  className="btn-small mermaid-zoom-button"
+                  onClick={zoomIn}
+                  disabled={!svg || zoom >= MAX_ZOOM}
+                  aria-label="放大图表"
+                  title="放大"
+                >
+                  +
+                </button>
+              </div>
               <button type="button" className="btn-small" onClick={downloadSvg} disabled={!svg}>SVG</button>
               <button type="button" className="btn-small" onClick={downloadPng} disabled={!svg}>PNG</button>
               <button
@@ -249,23 +289,33 @@ const MermaidRenderer = () => {
             </div>
           </div>
           <div className="mermaid-preview-body">
-            {error ? (
-              <div className="mermaid-error" role="alert">
-                <strong>无法渲染图表</strong>
-                <pre>{error}</pre>
-              </div>
-            ) : svg ? (
-              <div
-                className="mermaid-diagram"
-                role="img"
-                aria-label="Mermaid 图表预览"
-                dangerouslySetInnerHTML={{ __html: svg }}
-              />
-            ) : (
-              <div className="mermaid-empty">
-                {isRendering ? '正在生成图表...' : '输入 Mermaid 代码后将在这里显示图表'}
-              </div>
-            )}
+            <div
+              className="mermaid-canvas"
+              data-testid="mermaid-canvas"
+              style={svg ? { width: `${Math.max(100, zoom)}%` } : undefined}
+            >
+              {error ? (
+                <div className="mermaid-error" role="alert">
+                  <strong>无法渲染图表</strong>
+                  <pre>{error}</pre>
+                </div>
+              ) : svg ? (
+                <div
+                  className="mermaid-diagram"
+                  role="img"
+                  aria-label="Mermaid 图表预览"
+                  style={{
+                    width: `${Math.min(100, zoom)}%`,
+                    maxWidth: `${48 * zoom / 100}rem`,
+                  } as CSSProperties}
+                  dangerouslySetInnerHTML={{ __html: svg }}
+                />
+              ) : (
+                <div className="mermaid-empty">
+                  {isRendering ? '正在生成图表...' : '输入 Mermaid 代码后将在这里显示图表'}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

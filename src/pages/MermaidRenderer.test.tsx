@@ -95,4 +95,25 @@ describe('MermaidRenderer', () => {
     expect(screen.queryByRole('img', { name: 'Mermaid 图表预览' })).not.toBeInTheDocument()
     expect(screen.getByText('输入 Mermaid 代码后将在这里显示图表')).toBeInTheDocument()
   })
+
+  it('支持放大、缩小和重置图表', async () => {
+    render(<MermaidRenderer />)
+    const diagram = await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    const canvas = screen.getByTestId('mermaid-canvas')
+
+    fireEvent.click(screen.getByRole('button', { name: '放大图表' }))
+    expect(screen.getByRole('button', { name: '重置图表缩放，当前 125%' })).toBeEnabled()
+    expect(canvas).toHaveStyle({ width: '125%' })
+    expect(diagram).toHaveStyle({ width: '100%', maxWidth: '60rem' })
+
+    fireEvent.click(screen.getByRole('button', { name: '重置图表缩放，当前 125%' }))
+    expect(screen.getByRole('button', { name: '重置图表缩放，当前 100%' })).toBeDisabled()
+    expect(canvas).toHaveStyle({ width: '100%' })
+    expect(diagram).toHaveStyle({ width: '100%', maxWidth: '48rem' })
+
+    fireEvent.click(screen.getByRole('button', { name: '缩小图表' }))
+    expect(screen.getByRole('button', { name: '重置图表缩放，当前 75%' })).toBeEnabled()
+    expect(canvas).toHaveStyle({ width: '100%' })
+    expect(diagram).toHaveStyle({ width: '75%', maxWidth: '36rem' })
+  })
 })

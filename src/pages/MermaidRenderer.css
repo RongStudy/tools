@@ -41,28 +41,50 @@
 }
 
 .mermaid-preview-body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 1.25rem;
   overflow: auto;
   background-color: var(--color-surface);
 }
 
-.mermaid-diagram {
+.mermaid-canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(100%, 48rem);
-  min-width: min-content;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.mermaid-diagram {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   min-height: min-content;
 }
 
 .mermaid-diagram svg {
   display: block;
   width: 100%;
-  max-width: 100%;
+  max-width: 100% !important;
   height: auto;
+}
+
+.mermaid-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mermaid-zoom-button {
+  width: 2rem;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.mermaid-zoom-value {
+  min-width: 3.5rem;
+  padding-inline: 0.45rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .mermaid-empty {
