@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import Editor from '@monaco-editor/react'
 import ToolLayout from '../components/ToolLayout'
 import { useFullscreen } from '../hooks/useFullscreen'
@@ -10,6 +17,14 @@ const RENDER_DELAY_MS = 300
 const MIN_ZOOM = 50
 const MAX_ZOOM = 200
 const ZOOM_STEP = 25
+
+type PreviewDrag = {
+  pointerId: number
+  startX: number
+  startY: number
+  scrollLeft: number
+  scrollTop: number
+}
 
 export const DEFAULT_MERMAID_CODE = `flowchart LR
   A[输入 Mermaid 代码] --> B{语法正确?}
@@ -74,7 +89,9 @@ const MermaidRenderer = () => {
   const [error, setError] = useState('')
   const [isRendering, setIsRendering] = useState(false)
   const [zoom, setZoom] = useState(100)
+  const [isDragging, setIsDragging] = useState(false)
   const previewPanelRef = useRef<HTMLDivElement>(null)
+  const previewDragRef = useRef<PreviewDrag | null>(null)
   const renderSequenceRef = useRef(0)
   const [isFullscreen, toggleFullscreen] = useFullscreen(previewPanelRef)
 
@@ -133,6 +150,41 @@ const MermaidRenderer = () => {
 
   const zoomOut = () => setZoom((value) => Math.max(MIN_ZOOM, value - ZOOM_STEP))
   const zoomIn = () => setZoom((value) => Math.min(MAX_ZOOM, value + ZOOM_STEP))
+
+  const startPreviewDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!svg || event.button !== 0 || (event.pointerType === 'touch')) return
+
+    previewDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: event.currentTarget.scrollLeft,
+      scrollTop: event.currentTarget.scrollTop,
+    }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    setIsDragging(true)
+    event.preventDefault()
+  }
+
+  const movePreview = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = previewDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    event.currentTarget.scrollLeft = drag.scrollLeft + drag.startX - event.clientX
+    event.currentTarget.scrollTop = drag.scrollTop + drag.startY - event.clientY
+    event.preventDefault()
+  }
+
+  const stopPreviewDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = previewDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    previewDragRef.current = null
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    setIsDragging(false)
+  }
 
   const downloadSvg = () => {
     if (!svg) return
@@ -288,7 +340,16 @@ const MermaidRenderer = () => {
               </button>
             </div>
           </div>
-          <div className="mermaid-preview-body">
+          <div
+            className={`mermaid-preview-body ${svg ? 'has-diagram' : ''} ${isDragging ? 'is-dragging' : ''}`}
+            data-testid="mermaid-preview-body"
+            onPointerDown={startPreviewDrag}
+            onPointerMove={movePreview}
+            onPointerUp={stopPreviewDrag}
+            onPointerCancel={stopPreviewDrag}
+            onLostPointerCapture={stopPreviewDrag}
+            onDragStart={(event) => event.preventDefault()}
+          >
             <div
               className="mermaid-canvas"
               data-testid="mermaid-canvas"

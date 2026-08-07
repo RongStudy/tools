@@ -21,7 +21,7 @@
 
 .mermaid-workspace {
   display: grid;
-  grid-template-columns: minmax(20rem, 0.9fr) minmax(24rem, 1.1fr);
+  grid-template-columns: minmax(16rem, 3fr) minmax(24rem, 7fr);
   grid-auto-rows: minmax(0, 1fr);
   gap: 1rem;
   flex: 1;
@@ -44,6 +44,15 @@
   padding: 1.25rem;
   overflow: auto;
   background-color: var(--color-surface);
+}
+
+.mermaid-preview-body.has-diagram {
+  cursor: grab;
+}
+
+.mermaid-preview-body.is-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .mermaid-canvas {

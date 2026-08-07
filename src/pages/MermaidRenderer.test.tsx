@@ -116,4 +116,46 @@ describe('MermaidRenderer', () => {
     expect(canvas).toHaveStyle({ width: '100%' })
     expect(diagram).toHaveStyle({ width: '75%', maxWidth: '36rem' })
   })
+
+  it('支持按住鼠标拖动超出预览区的图表', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    const preview = screen.getByTestId('mermaid-preview-body')
+
+    preview.scrollLeft = 100
+    preview.scrollTop = 80
+    preview.setPointerCapture = vi.fn()
+    preview.hasPointerCapture = vi.fn(() => true)
+    preview.releasePointerCapture = vi.fn()
+
+    fireEvent.pointerDown(preview, {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'mouse',
+      clientX: 200,
+      clientY: 150,
+    })
+    fireEvent.pointerMove(preview, {
+      pointerId: 1,
+      pointerType: 'mouse',
+      clientX: 150,
+      clientY: 100,
+    })
+
+    expect(preview).toHaveClass('is-dragging')
+    expect(preview.scrollLeft).toBe(150)
+    expect(preview.scrollTop).toBe(130)
+
+    fireEvent.pointerUp(preview, { pointerId: 1, pointerType: 'mouse' })
+    fireEvent.pointerMove(preview, {
+      pointerId: 1,
+      pointerType: 'mouse',
+      clientX: 100,
+      clientY: 50,
+    })
+
+    expect(preview).not.toHaveClass('is-dragging')
+    expect(preview.scrollLeft).toBe(150)
+    expect(preview.scrollTop).toBe(130)
+  })
 })
