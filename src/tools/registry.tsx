@@ -5,6 +5,7 @@ import CodeDiff from '../pages/CodeDiff'
 import TimestampConverter from '../pages/TimestampConverter'
 import UrlCodec from '../pages/UrlCodec'
 import MermaidRenderer from '../pages/MermaidRenderer'
+import RegexTester from '../pages/RegexTester'
 
 export type ToolDefinition = {
   path: string
@@ -41,6 +42,14 @@ export const tools: ToolDefinition[] = [
     description: '对比两段代码或文件内容，支持分栏和统一视图',
     category: '编码处理',
     component: CodeDiff,
+  },
+  {
+    path: '/regex',
+    title: '正则表达式',
+    navTitle: '正则表达式',
+    description: '测试匹配、捕获组、替换和文本分割',
+    category: '编码处理',
+    component: RegexTester,
   },
   {
     path: '/url-codec',

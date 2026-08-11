@@ -16,6 +16,12 @@ const toolLinks = [
     accent: '#828fff',
   },
   {
+    path: '/regex',
+    title: '正则表达式',
+    meta: 'Match / Replace / Split',
+    accent: '#d0d6e0',
+  },
+  {
     path: '/url-codec',
     title: '编解码',
     meta: 'Encode / Decode / Hash',
