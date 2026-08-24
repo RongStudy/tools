@@ -24,7 +24,7 @@ const toolLinks = [
   {
     path: '/url-codec',
     title: '编解码',
-    meta: 'Encode / Decode / Hash',
+    meta: 'URL / Base64 / Unicode',
     accent: '#7a7fad',
   },
   {

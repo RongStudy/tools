@@ -27,7 +27,8 @@ const getToolInitial = (tool: ToolDefinition) => {
 
 const AppShell = ({ tools, children }: AppShellProps) => {
   const [query, setQuery] = useState('')
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarPinnedOpen, setIsSidebarPinnedOpen] = useState(false)
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false)
   const normalizedQuery = query.trim().toLowerCase()
 
   const filteredTools = useMemo(() => {
@@ -42,8 +43,12 @@ const AppShell = ({ tools, children }: AppShellProps) => {
   const groupedTools = useMemo(() => groupToolsByCategory(filteredTools), [filteredTools])
 
   return (
-    <div className={isSidebarCollapsed ? 'app-shell sidebar-collapsed' : 'app-shell'}>
-      <aside className="app-sidebar">
+    <div className={`app-shell ${isSidebarPinnedOpen ? '' : 'sidebar-collapsed'} ${isSidebarHovered && !isSidebarPinnedOpen ? 'sidebar-hover-expanded' : ''}`.trim()}>
+      <aside
+        className="app-sidebar"
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
+      >
         <div className="app-sidebar-top">
           <div className="app-brand">
             <span className="app-brand-mark">T</span>
@@ -55,11 +60,11 @@ const AppShell = ({ tools, children }: AppShellProps) => {
           <button
             type="button"
             className="sidebar-toggle"
-            onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
-            aria-label={isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
-            title={isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
+            onClick={() => setIsSidebarPinnedOpen((pinnedOpen) => !pinnedOpen)}
+            aria-label={isSidebarPinnedOpen ? '收起侧边栏' : '展开侧边栏'}
+            title={isSidebarPinnedOpen ? '收起侧边栏' : '展开侧边栏'}
           >
-            {isSidebarCollapsed ? '›' : '‹'}
+            {isSidebarPinnedOpen ? '‹' : '›'}
           </button>
         </div>
 

@@ -15,6 +15,13 @@ import '../styles/common.css'
 const CODE_DIFF_DRAFT_KEY = 'dev-tools:code-diff:draft'
 
 type CodeDiffDraft = {
+  activeDocumentId: string
+  documents: CodeDiffDocument[]
+}
+
+type CodeDiffDocument = {
+  id: string
+  name: string
   originalCode: string
   modifiedCode: string
   viewMode: 'split' | 'unified'
@@ -24,7 +31,11 @@ type CodeDiffDraft = {
   ignoreWhitespace: boolean
 }
 
-const DEFAULT_CODE_DIFF_DRAFT: CodeDiffDraft = {
+type LegacyCodeDiffDraft = Omit<CodeDiffDocument, 'id' | 'name'>
+
+const DEFAULT_CODE_DIFF_DOCUMENT: CodeDiffDocument = {
+  id: 'diff-1',
+  name: '对比 1',
   originalCode: '',
   modifiedCode: '',
   viewMode: 'split',
@@ -34,23 +45,97 @@ const DEFAULT_CODE_DIFF_DRAFT: CodeDiffDraft = {
   ignoreWhitespace: false,
 }
 
+const DEFAULT_CODE_DIFF_DRAFT: CodeDiffDraft = {
+  activeDocumentId: DEFAULT_CODE_DIFF_DOCUMENT.id,
+  documents: [DEFAULT_CODE_DIFF_DOCUMENT],
+}
+
+const createCodeDiffDocument = (documents: CodeDiffDocument[]): CodeDiffDocument => {
+  const highestDocumentNumber = documents.reduce((highest, document) => {
+    const match = /^对比 (\d+)$/.exec(document.name)
+    return match ? Math.max(highest, Number(match[1])) : highest
+  }, 0)
+
+  return {
+    ...DEFAULT_CODE_DIFF_DOCUMENT,
+    id: `diff-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: `对比 ${highestDocumentNumber + 1}`,
+  }
+}
+
+const isCodeDiffDocument = (value: unknown): value is CodeDiffDocument => {
+  if (!value || typeof value !== 'object') return false
+
+  const document = value as Partial<CodeDiffDocument>
+  return typeof document.id === 'string'
+    && typeof document.name === 'string'
+    && typeof document.originalCode === 'string'
+    && typeof document.modifiedCode === 'string'
+    && (document.viewMode === 'split' || document.viewMode === 'unified')
+    && typeof document.language === 'string'
+    && typeof document.originalFileName === 'string'
+    && typeof document.modifiedFileName === 'string'
+    && typeof document.ignoreWhitespace === 'boolean'
+}
+
+const readCodeDiffDraft = (): CodeDiffDraft => {
+  const savedDraft = readExpiringStorage<unknown>(CODE_DIFF_DRAFT_KEY)
+  if (!savedDraft || typeof savedDraft !== 'object') return DEFAULT_CODE_DIFF_DRAFT
+
+  const draft = savedDraft as Partial<CodeDiffDraft & LegacyCodeDiffDraft>
+  if (Array.isArray(draft.documents)) {
+    const documents = draft.documents.filter(isCodeDiffDocument)
+    const activeDocumentId = documents.some((document) => document.id === draft.activeDocumentId)
+      ? draft.activeDocumentId as string
+      : documents[0]?.id
+    if (documents.length && activeDocumentId) return { activeDocumentId, documents }
+  }
+
+  if (typeof draft.originalCode === 'string'
+    && typeof draft.modifiedCode === 'string'
+    && (draft.viewMode === 'split' || draft.viewMode === 'unified')
+    && typeof draft.language === 'string'
+    && typeof draft.originalFileName === 'string'
+    && typeof draft.modifiedFileName === 'string'
+    && typeof draft.ignoreWhitespace === 'boolean') {
+    return {
+      activeDocumentId: DEFAULT_CODE_DIFF_DOCUMENT.id,
+      documents: [{
+        ...DEFAULT_CODE_DIFF_DOCUMENT,
+        originalCode: draft.originalCode,
+        modifiedCode: draft.modifiedCode,
+        viewMode: draft.viewMode,
+        language: draft.language,
+        originalFileName: draft.originalFileName,
+        modifiedFileName: draft.modifiedFileName,
+        ignoreWhitespace: draft.ignoreWhitespace,
+      }],
+    }
+  }
+
+  return DEFAULT_CODE_DIFF_DRAFT
+}
+
 const editorLoading = <div className="monaco-loading">编辑器加载中</div>
 
 const CodeDiff = () => {
-  const [initialDraft] = useState(() => (
-    readExpiringStorage<CodeDiffDraft>(CODE_DIFF_DRAFT_KEY) ?? DEFAULT_CODE_DIFF_DRAFT
-  ))
-  const [originalCode, setOriginalCode] = useState(initialDraft.originalCode)
-  const [modifiedCode, setModifiedCode] = useState(initialDraft.modifiedCode)
+  const [initialDraft] = useState(readCodeDiffDraft)
+  const [documents, setDocuments] = useState(initialDraft.documents)
+  const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
+  const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
+  const {
+    originalCode,
+    modifiedCode,
+    viewMode,
+    language,
+    originalFileName,
+    modifiedFileName,
+    ignoreWhitespace,
+  } = activeDocument
   const [editorContent, setEditorContent] = useState(() => ({
-    originalCode: initialDraft.originalCode,
-    modifiedCode: initialDraft.modifiedCode,
+    originalCode: activeDocument.originalCode,
+    modifiedCode: activeDocument.modifiedCode,
   }))
-  const [viewMode, setViewMode] = useState<'split' | 'unified'>(initialDraft.viewMode)
-  const [language, setLanguage] = useState<string>(initialDraft.language)
-  const [originalFileName, setOriginalFileName] = useState(initialDraft.originalFileName)
-  const [modifiedFileName, setModifiedFileName] = useState(initialDraft.modifiedFileName)
-  const [ignoreWhitespace, setIgnoreWhitespace] = useState(initialDraft.ignoreWhitespace)
   const diffPanelRef = useRef<HTMLDivElement>(null)
 
   // 使用自定义 Hook
@@ -68,26 +153,16 @@ const CodeDiff = () => {
   useEffect(() => {
     writeExpiringStorage(
       CODE_DIFF_DRAFT_KEY,
-      {
-        originalCode,
-        modifiedCode,
-        viewMode,
-        language,
-        originalFileName,
-        modifiedFileName,
-        ignoreWhitespace,
-      },
+      { activeDocumentId, documents },
       TWO_DAYS_IN_MS
     )
-  }, [
-    originalCode,
-    modifiedCode,
-    viewMode,
-    language,
-    originalFileName,
-    modifiedFileName,
-    ignoreWhitespace,
-  ])
+  }, [activeDocumentId, documents])
+
+  const updateActiveDocument = useCallback((updates: Partial<Omit<CodeDiffDocument, 'id' | 'name'>>) => {
+    setDocuments((currentDocuments) => currentDocuments.map((document) => (
+      document.id === activeDocumentId ? { ...document, ...updates } : document
+    )))
+  }, [activeDocumentId])
 
   // 比较两个文件并输出差异到控制台
   const logDifferences = useCallback((original: string, modified: string) => {
@@ -184,18 +259,16 @@ const CodeDiff = () => {
         : detectedLangFromFile
 
       if (type === 'original') {
-        setOriginalCode(text)
-        setEditorContent(prev => ({ ...prev, originalCode: text }))
-        setOriginalFileName(fileName)
+        updateActiveDocument({ originalCode: text, originalFileName: fileName })
+        setEditorContent((currentContent) => ({ ...currentContent, originalCode: text }))
         if (!language || language === 'plaintext') {
-          setLanguage(detectedLang)
+          updateActiveDocument({ language: detectedLang })
         }
       } else {
-        setModifiedCode(text)
-        setEditorContent(prev => ({ ...prev, modifiedCode: text }))
-        setModifiedFileName(fileName)
+        updateActiveDocument({ modifiedCode: text, modifiedFileName: fileName })
+        setEditorContent((currentContent) => ({ ...currentContent, modifiedCode: text }))
         if (!language || language === 'plaintext') {
-          setLanguage(detectedLang)
+          updateActiveDocument({ language: detectedLang })
         }
       }
 
@@ -246,29 +319,33 @@ const CodeDiff = () => {
 
   // 清空代码
   const clearCode = () => {
-    setOriginalCode('')
-    setModifiedCode('')
+    updateActiveDocument({
+      originalCode: '',
+      modifiedCode: '',
+      originalFileName: '',
+      modifiedFileName: '',
+      language: 'plaintext',
+    })
     setEditorContent({
       originalCode: '',
       modifiedCode: '',
     })
-    setOriginalFileName('')
-    setModifiedFileName('')
-    setLanguage('plaintext')
   }
 
   // 交换代码
   const swapCode = () => {
     const tempCode = originalCode
     const tempFileName = originalFileName
-    setOriginalCode(modifiedCode)
-    setModifiedCode(tempCode)
+    updateActiveDocument({
+      originalCode: modifiedCode,
+      modifiedCode: tempCode,
+      originalFileName: modifiedFileName,
+      modifiedFileName: tempFileName,
+    })
     setEditorContent({
       originalCode: modifiedCode,
       modifiedCode: tempCode,
     })
-    setOriginalFileName(modifiedFileName)
-    setModifiedFileName(tempFileName)
   }
 
   // DiffEditor 的 original/modified prop 更新会改写 Monaco 模型。
@@ -280,27 +357,48 @@ const CodeDiff = () => {
     })
   }, [originalCode, modifiedCode])
 
+  const selectDocument = (document: CodeDiffDocument) => {
+    setEditorContent({
+      originalCode: document.originalCode,
+      modifiedCode: document.modifiedCode,
+    })
+    setActiveDocumentId(document.id)
+  }
+
+  const addDocument = () => {
+    const document = createCodeDiffDocument(documents)
+    setDocuments((currentDocuments) => [...currentDocuments, document])
+    selectDocument(document)
+  }
+
+  const closeDocument = (documentId: string) => {
+    const currentIndex = documents.findIndex((document) => document.id === documentId)
+    const nextDocument = documents[currentIndex + 1] ?? documents[currentIndex - 1]
+    setDocuments((currentDocuments) => currentDocuments.filter((document) => document.id !== documentId))
+    if (documentId === activeDocumentId) selectDocument(nextDocument)
+  }
+
   // 编辑器内容变化回调
   const handleOriginalChange = useCallback((value: string) => {
-    setOriginalCode(value)
+    updateActiveDocument({ originalCode: value })
     // 如果语言是自动检测且代码不为空，尝试从内容检测语言
     if (language === 'plaintext' && value.trim()) {
       const detectedLang = detectLanguageFromContent(value, 'plaintext')
       if (detectedLang !== 'plaintext') {
-        setLanguage(detectedLang)
+        updateActiveDocument({ language: detectedLang })
       }
     }
-  }, [language])
+  }, [language, updateActiveDocument])
 
   const handleModifiedChange = useCallback((value: string) => {
-    setModifiedCode(value)
+    updateActiveDocument({ modifiedCode: value })
     if (language === 'plaintext' && value.trim()) {
       const detectedLang = detectLanguageFromContent(value, 'plaintext')
       if (detectedLang !== 'plaintext') {
-        setLanguage(detectedLang)
+        updateActiveDocument({ language: detectedLang })
       }
     }
-  }, [language])
+  }, [language, updateActiveDocument])
 
   useEffect(() => {
     setEditorCallbacks({
@@ -320,7 +418,7 @@ const CodeDiff = () => {
   useEffect(() => {
     const cleanup = ensureEditable()
     return () => cleanup?.()
-  }, [originalCode, modifiedCode, ensureEditable])
+  }, [activeDocumentId, originalCode, modifiedCode, ensureEditable])
 
   // 编辑器挂载回调工厂
   const createEditorMountHandler = useCallback(() => {
@@ -413,7 +511,7 @@ const CodeDiff = () => {
           className={viewMode === 'split' ? 'btn-toggle active' : 'btn-toggle'}
           onClick={() => {
             syncEditorContentFromState()
-            setViewMode('split')
+            updateActiveDocument({ viewMode: 'split' })
           }}
         >
           分栏视图
@@ -422,7 +520,7 @@ const CodeDiff = () => {
           className={viewMode === 'unified' ? 'btn-toggle active' : 'btn-toggle'}
           onClick={() => {
             syncEditorContentFromState()
-            setViewMode('unified')
+            updateActiveDocument({ viewMode: 'unified' })
           }}
         >
           统一视图
@@ -435,7 +533,7 @@ const CodeDiff = () => {
             name="codeDiffIgnoreWhitespace"
             type="checkbox"
             checked={ignoreWhitespace}
-            onChange={(e) => setIgnoreWhitespace(e.target.checked)}
+            onChange={(e) => updateActiveDocument({ ignoreWhitespace: e.target.checked })}
           />
           <span className="toggle-slider"></span>
           <span className="toggle-label">忽略空格</span>
@@ -447,7 +545,7 @@ const CodeDiff = () => {
           id="code-diff-language"
           name="codeDiffLanguage"
           value={language}
-          onChange={(e) => setLanguage(e.target.value)}
+          onChange={(e) => updateActiveDocument({ language: e.target.value })}
         >
           <option value="plaintext">自动检测</option>
           <option value="javascript">JavaScript</option>
@@ -507,7 +605,43 @@ const CodeDiff = () => {
       actions={toolbar}
       hideHeader={isFullscreen}
     >
-
+      {!isFullscreen && (
+        <div className="code-diff-tabs" role="tablist" aria-label="代码对比文档">
+          <div className="code-diff-tab-list">
+            {documents.map((document) => (
+              <div className="code-diff-tab" key={document.id}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={document.id === activeDocumentId}
+                  className={`code-diff-tab-button ${document.id === activeDocumentId ? 'is-active' : ''}`}
+                  onClick={() => selectDocument(document)}
+                >
+                  {document.name}
+                </button>
+                {documents.length > 1 && (
+                  <button
+                    type="button"
+                    className="code-diff-tab-close"
+                    aria-label={`关闭 ${document.name}`}
+                    title={`关闭 ${document.name}`}
+                    onClick={() => closeDocument(document.id)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="btn-small code-diff-tab-add"
+            onClick={addDocument}
+          >
+            新建对比
+          </button>
+        </div>
+      )}
       {viewMode === 'split' ? (
         <div className="split-view">
           <div

@@ -182,6 +182,75 @@
   font-weight: 500;
 }
 
+.code-diff-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.code-diff-tab-list {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.15rem;
+}
+
+.code-diff-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.code-diff-tab:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.code-diff-tab-button,
+.code-diff-tab-close {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: 500 0.82rem/1.2 var(--font-text);
+}
+
+.code-diff-tab-button {
+  padding: 0.45rem 0.3rem 0.45rem 0.65rem;
+}
+
+.code-diff-tab-button.is-active {
+  color: var(--color-text);
+}
+
+.code-diff-tab:has(.code-diff-tab-button.is-active) {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-soft);
+}
+
+.code-diff-tab-close {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  color: var(--color-subtle);
+  font-size: 1.1rem;
+}
+
+.code-diff-tab-close:hover {
+  color: var(--color-text);
+}
+
+.code-diff-tab-add {
+  flex: 0 0 auto;
+}
+
 .panel-title {
   display: flex;
   flex-direction: column;
@@ -277,5 +346,18 @@
 @media (max-width: 640px) {
   .btn-toggle {
     min-height: 2.75rem;
+  }
+
+  .code-diff-tabs {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .code-diff-tab-list {
+    width: 100%;
+  }
+
+  .code-diff-tab-add {
+    align-self: flex-start;
   }
 }

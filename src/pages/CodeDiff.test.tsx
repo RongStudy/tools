@@ -149,6 +149,65 @@ describe('CodeDiff', () => {
     expect(screen.getByLabelText('modified-code')).toHaveValue(modifiedText)
   })
 
+  it('可以新增多个对比标签并保留各自的左右代码', async () => {
+    renderCodeDiff()
+
+    fireEvent.change(screen.getByLabelText('加载原始文件'), {
+      target: { files: [new File(['const first = 1'], 'first.ts')] },
+    })
+    await waitFor(() => {
+      expect(screen.getByLabelText('original-code')).toHaveValue('const first = 1')
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '新建对比' }))
+    expect(screen.getByRole('tab', { name: '对比 2' })).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.change(screen.getByLabelText('加载修改文件'), {
+      target: { files: [new File(['const second = 2'], 'second.ts')] },
+    })
+    await waitFor(() => {
+      expect(screen.getByLabelText('modified-code')).toHaveValue('const second = 2')
+    })
+
+    fireEvent.click(screen.getByRole('tab', { name: '对比 1' }))
+    expect(screen.getByLabelText('original-code')).toHaveValue('const first = 1')
+    expect(screen.getByLabelText('modified-code')).toHaveValue('')
+
+    fireEvent.click(screen.getByRole('tab', { name: '对比 2' }))
+    expect(screen.getByLabelText('original-code')).toHaveValue('')
+    expect(screen.getByLabelText('modified-code')).toHaveValue('const second = 2')
+  })
+
+  it('关闭当前对比标签后应切换到相邻的保留标签', () => {
+    renderCodeDiff()
+
+    fireEvent.click(screen.getByRole('button', { name: '新建对比' }))
+    fireEvent.click(screen.getByRole('button', { name: '关闭 对比 2' }))
+
+    expect(screen.queryByRole('tab', { name: '对比 2' })).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '对比 1' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('应兼容恢复旧版单组对比草稿', () => {
+    localStorage.setItem('dev-tools:code-diff:draft', JSON.stringify({
+      value: {
+        originalCode: 'old left',
+        modifiedCode: 'old right',
+        viewMode: 'split',
+        language: 'plaintext',
+        originalFileName: '',
+        modifiedFileName: '',
+        ignoreWhitespace: false,
+      },
+      expiresAt: Date.now() + 1_000,
+    }))
+
+    renderCodeDiff()
+
+    expect(screen.getByLabelText('original-code')).toHaveValue('old left')
+    expect(screen.getByLabelText('modified-code')).toHaveValue('old right')
+  })
+
   it('超过两天的保存内容应过期失效', () => {
     localStorage.setItem('dev-tools:code-diff:draft', JSON.stringify({
       value: {

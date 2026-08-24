@@ -10,27 +10,100 @@ import '../styles/common.css'
 
 const JSON_FORMATTER_DRAFT_KEY = 'dev-tools:json-formatter:draft'
 
+type JsonDocument = {
+  id: string
+  name: string
+  input: string
+  output: string
+  error: string
+}
+
 type JsonFormatterDraft = {
+  activeDocumentId: string
+  documents: JsonDocument[]
+  indentSize: number
+}
+
+type LegacyJsonFormatterDraft = {
   input: string
   output: string
   indentSize: number
 }
 
-const DEFAULT_JSON_FORMATTER_DRAFT: JsonFormatterDraft = {
+const DEFAULT_JSON_DOCUMENT: JsonDocument = {
+  id: 'json-1',
+  name: 'JSON 1',
   input: '',
   output: '',
+  error: '',
+}
+
+const DEFAULT_JSON_FORMATTER_DRAFT: JsonFormatterDraft = {
+  activeDocumentId: DEFAULT_JSON_DOCUMENT.id,
+  documents: [DEFAULT_JSON_DOCUMENT],
   indentSize: 2,
 }
 
 const editorLoading = <div className="monaco-loading">编辑器加载中</div>
 
+const createJsonDocument = (documents: JsonDocument[]): JsonDocument => {
+  const highestDocumentNumber = documents.reduce((highest, document) => {
+    const match = /^JSON (\d+)$/.exec(document.name)
+    return match ? Math.max(highest, Number(match[1])) : highest
+  }, 0)
+  const nextDocumentNumber = highestDocumentNumber + 1
+
+  return {
+    id: `json-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: `JSON ${nextDocumentNumber}`,
+    input: '',
+    output: '',
+    error: '',
+  }
+}
+
+const isJsonDocument = (value: unknown): value is JsonDocument => {
+  if (!value || typeof value !== 'object') return false
+
+  const document = value as Partial<JsonDocument>
+  return typeof document.id === 'string'
+    && typeof document.name === 'string'
+    && typeof document.input === 'string'
+    && typeof document.output === 'string'
+    && typeof document.error === 'string'
+}
+
+const readJsonFormatterDraft = (): JsonFormatterDraft => {
+  const savedDraft = readExpiringStorage<unknown>(JSON_FORMATTER_DRAFT_KEY)
+  if (!savedDraft || typeof savedDraft !== 'object') return DEFAULT_JSON_FORMATTER_DRAFT
+
+  const draft = savedDraft as Partial<JsonFormatterDraft & LegacyJsonFormatterDraft>
+  if (Array.isArray(draft.documents)) {
+    const documents = draft.documents.filter(isJsonDocument)
+    const activeDocumentId = documents.some((document) => document.id === draft.activeDocumentId)
+      ? draft.activeDocumentId as string
+      : documents[0]?.id
+
+    if (documents.length && activeDocumentId && typeof draft.indentSize === 'number') {
+      return { activeDocumentId, documents, indentSize: draft.indentSize }
+    }
+  }
+
+  if (typeof draft.input === 'string' && typeof draft.output === 'string' && typeof draft.indentSize === 'number') {
+    return {
+      activeDocumentId: DEFAULT_JSON_DOCUMENT.id,
+      documents: [{ ...DEFAULT_JSON_DOCUMENT, input: draft.input, output: draft.output }],
+      indentSize: draft.indentSize,
+    }
+  }
+
+  return DEFAULT_JSON_FORMATTER_DRAFT
+}
+
 const JsonFormatter = () => {
-  const [initialDraft] = useState(() => (
-    readExpiringStorage<JsonFormatterDraft>(JSON_FORMATTER_DRAFT_KEY) ?? DEFAULT_JSON_FORMATTER_DRAFT
-  ))
-  const [input, setInput] = useState(initialDraft.input)
-  const [output, setOutput] = useState(initialDraft.output)
-  const [error, setError] = useState('')
+  const [initialDraft] = useState(readJsonFormatterDraft)
+  const [documents, setDocuments] = useState(initialDraft.documents)
+  const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
   const [indentSize, setIndentSize] = useState(initialDraft.indentSize)
   const [fullscreenMode, setFullscreenMode] = useState<'none' | 'output' | 'both'>('none')
   const editorRef = useRef<MonacoEditor | null>(null)
@@ -42,14 +115,16 @@ const JsonFormatter = () => {
   const isOutputFullscreen = fullscreenMode === 'output'
   const isDualFullscreen = fullscreenMode === 'both'
   const isFullscreen = fullscreenMode !== 'none'
+  const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
+  const { input, output, error } = activeDocument
 
   useEffect(() => {
     writeExpiringStorage(
       JSON_FORMATTER_DRAFT_KEY,
-      { input, output, indentSize },
+      { activeDocumentId, documents, indentSize },
       TWO_DAYS_IN_MS
     )
-  }, [input, output, indentSize])
+  }, [activeDocumentId, documents, indentSize])
 
   const enterFullscreen = useCallback(async (element: HTMLElement | null, mode: 'output' | 'both') => {
     if (!element) return
@@ -119,7 +194,7 @@ const JsonFormatter = () => {
     })
 
     return () => window.cancelAnimationFrame(frameId)
-  }, [error, fullscreenMode])
+  }, [activeDocumentId, error, fullscreenMode])
 
   // 多层嵌套转义JSON的解转义
   const unescapeJson = useMemo(() => (str: string): string => {
@@ -156,104 +231,102 @@ const JsonFormatter = () => {
     return JSON.stringify(jsonObj, null, size)
   }
 
+  const updateActiveDocument = (updates: Partial<Pick<JsonDocument, 'input' | 'output' | 'error'>>) => {
+    setDocuments((currentDocuments) => currentDocuments.map((document) => (
+      document.id === activeDocumentId ? { ...document, ...updates } : document
+    )))
+  }
+
   // 格式化JSON
   const formatJson = () => {
     try {
-      setError('')
       const jsonStr = input.trim()
 
       if (!jsonStr) {
-        setOutput('')
+        updateActiveDocument({ output: '', error: '' })
         return
       }
 
-      setOutput(formatJsonString(jsonStr, indentSize))
+      updateActiveDocument({ output: formatJsonString(jsonStr, indentSize), error: '' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      setError(`格式错误: ${message}`)
-      setOutput('')
+      updateActiveDocument({ error: `格式错误: ${message}`, output: '' })
     }
   }
 
   // 压缩JSON
   const compressJson = () => {
     try {
-      setError('')
       let jsonStr = input.trim()
 
       if (!jsonStr) {
-        setOutput('')
+        updateActiveDocument({ output: '', error: '' })
         return
       }
 
       jsonStr = unescapeJson(jsonStr)
       const jsonObj = JSON.parse(jsonStr)
       const compressed = JSON.stringify(jsonObj)
-      setOutput(compressed)
+      updateActiveDocument({ output: compressed, error: '' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      setError(`格式错误: ${message}`)
-      setOutput('')
+      updateActiveDocument({ error: `格式错误: ${message}`, output: '' })
     }
   }
 
   // 转义JSON
   const escapeJson = () => {
     try {
-      setError('')
       const jsonStr = input.trim()
 
       if (!jsonStr) {
-        setOutput('')
+        updateActiveDocument({ output: '', error: '' })
         return
       }
 
       const escaped = JSON.stringify(jsonStr)
-      setOutput(escaped)
+      updateActiveDocument({ output: escaped, error: '' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      setError(`处理错误: ${message}`)
-      setOutput('')
+      updateActiveDocument({ error: `处理错误: ${message}`, output: '' })
     }
   }
 
   // 解转义JSON
   const unescapeJsonAction = () => {
     try {
-      setError('')
       const jsonStr = input.trim()
 
       if (!jsonStr) {
-        setOutput('')
+        updateActiveDocument({ output: '', error: '' })
         return
       }
 
       const unescaped = unescapeJson(jsonStr)
-      setOutput(unescaped)
+      updateActiveDocument({ output: unescaped, error: '' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      setError(`处理错误: ${message}`)
-      setOutput('')
+      updateActiveDocument({ error: `处理错误: ${message}`, output: '' })
     }
   }
 
   // 实时预览
   const handleInputChange = (value: string | undefined, nextIndentSize = indentSize) => {
     const newValue = value || ''
-    setInput(newValue)
 
     if (newValue.trim()) {
       try {
-        setOutput(formatJsonString(newValue, nextIndentSize))
-        setError('')
+        updateActiveDocument({
+          input: newValue,
+          output: formatJsonString(newValue, nextIndentSize),
+          error: '',
+        })
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err)
-        setError(`格式错误: ${message}`)
-        setOutput('')
+        updateActiveDocument({ input: newValue, error: `格式错误: ${message}`, output: '' })
       }
     } else {
-      setOutput('')
-      setError('')
+      updateActiveDocument({ input: '', output: '', error: '' })
     }
   }
 
@@ -269,9 +342,27 @@ const JsonFormatter = () => {
 
   // 清空内容
   const clearAll = () => {
-    setInput('')
-    setOutput('')
-    setError('')
+    updateActiveDocument({ input: '', output: '', error: '' })
+  }
+
+  const addDocument = () => {
+    const document = createJsonDocument(documents)
+    setDocuments((currentDocuments) => [...currentDocuments, document])
+    setActiveDocumentId(document.id)
+  }
+
+  const closeDocument = (documentId: string) => {
+    if (documents.length === 1) {
+      clearAll()
+      return
+    }
+
+    const currentIndex = documents.findIndex((document) => document.id === documentId)
+    const nextActiveDocument = documents[currentIndex + 1] ?? documents[currentIndex - 1]
+    setDocuments((currentDocuments) => currentDocuments.filter((document) => document.id !== documentId))
+    if (documentId === activeDocumentId) {
+      setActiveDocumentId(nextActiveDocument.id)
+    }
   }
 
   const toolbar = (
@@ -319,7 +410,39 @@ const JsonFormatter = () => {
       status={status}
       hideHeader={isFullscreen}
     >
-
+      {!isFullscreen && (
+        <div className="json-document-tabs" role="tablist" aria-label="JSON 文档">
+          <div className="json-document-tab-list">
+            {documents.map((document) => (
+              <div className="json-document-tab" key={document.id}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={document.id === activeDocumentId}
+                  className={`json-document-tab-button ${document.id === activeDocumentId ? 'is-active' : ''}`}
+                  onClick={() => setActiveDocumentId(document.id)}
+                >
+                  {document.name}
+                </button>
+                {documents.length > 1 && (
+                  <button
+                    type="button"
+                    className="json-document-tab-close"
+                    aria-label={`关闭 ${document.name}`}
+                    title={`关闭 ${document.name}`}
+                    onClick={() => closeDocument(document.id)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button type="button" className="btn-small json-document-add" onClick={addDocument}>
+            新建 JSON
+          </button>
+        </div>
+      )}
       <div
         ref={editorContainerRef}
         data-testid="json-editor-container"

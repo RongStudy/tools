@@ -55,7 +55,7 @@ export const tools: ToolDefinition[] = [
     path: '/url-codec',
     title: '编解码',
     navTitle: '编解码',
-    description: 'URL、Base64 编解码与 MD5、SHA-256 摘要',
+    description: 'URL、Base64、Unicode 编解码与 MD5、SHA-256 摘要',
     category: '编码处理',
     component: UrlCodec,
   },

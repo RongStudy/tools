@@ -73,9 +73,83 @@
   font-size: 1.2rem;
 }
 
+.json-document-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.json-document-tab-list {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.15rem;
+}
+
+.json-document-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  max-width: 11rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.json-document-tab:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.json-document-tab-button,
+.json-document-tab-close {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: 500 0.82rem/1.2 var(--font-text);
+}
+
+.json-document-tab-button {
+  min-width: 0;
+  padding: 0.45rem 0.3rem 0.45rem 0.65rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.json-document-tab-button.is-active {
+  color: var(--color-text);
+}
+
+.json-document-tab:has(.json-document-tab-button.is-active) {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-soft);
+}
+
+.json-document-tab-close {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  color: var(--color-subtle);
+  font-size: 1.1rem;
+}
+
+.json-document-tab-close:hover {
+  color: var(--color-text);
+}
+
+.json-document-add {
+  flex: 0 0 auto;
+}
+
 .editor-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(16rem, 3fr) minmax(24rem, 7fr);
   grid-auto-rows: minmax(0, 1fr);
   gap: 1rem;
   flex: 1;
@@ -130,5 +204,20 @@
   .formatter-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .json-document-tabs {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .json-document-tab-list {
+    width: 100%;
+  }
+
+  .json-document-add {
+    align-self: flex-start;
   }
 }

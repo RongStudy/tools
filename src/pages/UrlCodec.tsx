@@ -27,6 +27,29 @@ const base64ToText = (value: string) => {
   return new TextDecoder().decode(bytes)
 }
 
+const unicodeEncode = (value: string) => Array.from(value)
+  .map((character) => {
+    const codePoint = character.codePointAt(0)
+    if (codePoint === undefined) return character
+    if (codePoint <= 0xffff) return `\\u${codePoint.toString(16).padStart(4, '0')}`
+
+    const adjustedCodePoint = codePoint - 0x10000
+    const highSurrogate = 0xd800 + (adjustedCodePoint >> 10)
+    const lowSurrogate = 0xdc00 + (adjustedCodePoint & 0x3ff)
+    return `\\u${highSurrogate.toString(16)}\\u${lowSurrogate.toString(16)}`
+  })
+  .join('')
+
+const unicodeDecode = (value: string) => value.replace(
+  /\\u\{([\da-fA-F]{1,6})\}|\\u([\da-fA-F]{4})/g,
+  (match, codePointValue?: string, codeUnitValue?: string) => {
+    const hexValue = codePointValue ?? codeUnitValue
+    if (!hexValue) return match
+    const codePoint = Number.parseInt(hexValue, 16)
+    return Number.isNaN(codePoint) || codePoint > 0x10ffff ? match : String.fromCodePoint(codePoint)
+  }
+)
+
 const UrlCodec = () => {
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
@@ -68,6 +91,21 @@ const UrlCodec = () => {
     try {
       setError('')
       setOutput(base64ToText(input))
+    } catch (err) {
+      setOutput('')
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const encodeUnicode = () => {
+    setError('')
+    setOutput(unicodeEncode(input))
+  }
+
+  const decodeUnicode = () => {
+    try {
+      setError('')
+      setOutput(unicodeDecode(input))
     } catch (err) {
       setOutput('')
       setError(err instanceof Error ? err.message : String(err))
@@ -124,6 +162,11 @@ const UrlCodec = () => {
         <button type="button" className="btn btn-primary" aria-label="Base64 Encode" onClick={base64Encode}>编码</button>
         <button type="button" className="btn btn-secondary" aria-label="Base64 Decode" onClick={base64Decode}>解码</button>
       </div>
+      <div className="url-codec-action-group" aria-label="Unicode 操作">
+        <span>Unicode</span>
+        <button type="button" className="btn btn-primary" aria-label="Unicode Encode" onClick={encodeUnicode}>编码</button>
+        <button type="button" className="btn btn-secondary" aria-label="Unicode Decode" onClick={decodeUnicode}>解码</button>
+      </div>
       <div className="url-codec-action-group" aria-label="摘要操作">
         <span>摘要</span>
         <button type="button" className="btn btn-secondary" onClick={() => createDigest('md5')}>MD5</button>
@@ -140,7 +183,7 @@ const UrlCodec = () => {
     <ToolLayout
       className="url-codec"
       title="编解码"
-      description="处理 URL、Base64 编解码，以及文本的 MD5、SHA-256 摘要"
+      description="处理 URL、Base64、Unicode 编解码，以及文本的 MD5、SHA-256 摘要"
       actions={toolbar}
       status={error ? <div className="url-codec-error">{error}</div> : null}
     >

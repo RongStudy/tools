@@ -94,7 +94,7 @@
 
 .url-codec-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(16rem, 3fr) minmax(24rem, 7fr);
   gap: 1rem;
   flex: 1;
   min-height: 420px;

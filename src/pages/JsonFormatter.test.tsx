@@ -59,6 +59,39 @@ describe('JsonFormatter', () => {
     expect(output.value).toBe('{\n    "outer": {\n        "inner": 1\n    }\n}')
   })
 
+  it('可以新增并切换多个 JSON，且每个 JSON 的内容独立保留', () => {
+    renderJsonFormatter()
+
+    const input = screen.getByLabelText('input-editor')
+    fireEvent.change(input, { target: { value: '{"first":1}' } })
+
+    fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    expect(screen.getByRole('tab', { name: 'JSON 2' })).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"second":2}' } })
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
+
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"first":1}')
+    expect(screen.getByLabelText('output-editor')).toHaveValue('{\n  "first": 1\n}')
+
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 2' }))
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"second":2}')
+    expect(screen.getByLabelText('output-editor')).toHaveValue('{\n  "second": 2\n}')
+  })
+
+  it('关闭当前 JSON 后应切换到保留的 JSON', () => {
+    renderJsonFormatter()
+
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"first":1}' } })
+    fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"second":2}' } })
+    fireEvent.click(screen.getByRole('button', { name: '关闭 JSON 2' }))
+
+    expect(screen.queryByRole('tab', { name: 'JSON 2' })).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'JSON 1' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"first":1}')
+  })
+
   it('Clipboard API 不可用时应显示复制失败而不是抛出异常', async () => {
     Object.defineProperty(navigator, 'clipboard', {
       value: undefined,
@@ -115,17 +148,38 @@ describe('JsonFormatter', () => {
     expect(requestFullscreen).toHaveBeenCalledTimes(1)
   })
 
-  it('重新挂载后应恢复两天内保存的输入和输出内容', () => {
+  it('重新挂载后应恢复两天内保存的多个 JSON', () => {
     const { unmount } = renderJsonFormatter()
 
     const input = screen.getByLabelText('input-editor')
     fireEvent.change(input, { target: { value: '{"name":"tool"}' } })
+    fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"name":"second"}' } })
     unmount()
 
     renderJsonFormatter()
 
+    expect(screen.getByRole('tab', { name: 'JSON 2' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"name":"second"}')
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
     expect(screen.getByLabelText('input-editor')).toHaveValue('{"name":"tool"}')
     expect(screen.getByLabelText('output-editor')).toHaveValue('{\n  "name": "tool"\n}')
+  })
+
+  it('应兼容恢复旧版单组 JSON 草稿', () => {
+    localStorage.setItem('dev-tools:json-formatter:draft', JSON.stringify({
+      value: {
+        input: '{"legacy":true}',
+        output: '{\n  "legacy": true\n}',
+        indentSize: 2,
+      },
+      expiresAt: Date.now() + 1_000,
+    }))
+
+    renderJsonFormatter()
+
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"legacy":true}')
+    expect(screen.getByLabelText('output-editor')).toHaveValue('{\n  "legacy": true\n}')
   })
 
   it('超过两天的保存内容应过期失效', () => {

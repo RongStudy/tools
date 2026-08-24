@@ -56,6 +56,22 @@ describe('UrlCodec', () => {
     expect(screen.getByLabelText('编解码输出')).toHaveValue('中文 & value=1')
   })
 
+  it('支持 Unicode Encode 和 Decode，包括扩展字符', () => {
+    renderUrlCodec()
+
+    fireEvent.change(screen.getByLabelText('编解码输入'), {
+      target: { value: '中文 😀' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Unicode Encode' }))
+
+    expect(screen.getByLabelText('编解码输出')).toHaveValue('\\u4e2d\\u6587\\u0020\\ud83d\\ude00')
+
+    fireEvent.click(screen.getByRole('button', { name: '结果转输入' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Unicode Decode' }))
+
+    expect(screen.getByLabelText('编解码输出')).toHaveValue('中文 😀')
+  })
+
   it('Base64 Decode 输入非法内容时显示错误并清空输出', () => {
     renderUrlCodec()
 
