@@ -1,4 +1,6 @@
 .app-shell {
+  --sidebar-collapsed-width: 76px;
+  --sidebar-motion: 260ms cubic-bezier(0.22, 0.72, 0.24, 1);
   position: relative;
   height: 100vh;
   display: grid;
@@ -6,11 +8,11 @@
   background: var(--color-bg);
   color: var(--color-text);
   overflow: hidden;
-  transition: grid-template-columns 0.2s ease;
+  transition: grid-template-columns var(--sidebar-motion);
 }
 
 .app-shell.sidebar-collapsed {
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
 }
 
 .app-sidebar {
@@ -245,53 +247,154 @@
   color: #ffffff;
 }
 
-.app-shell.sidebar-hover-expanded .app-sidebar {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .app-sidebar {
   position: absolute;
   z-index: 10;
   width: 300px;
   align-items: stretch;
   gap: 1.5rem;
   padding: 1.25rem;
+  transform-origin: left center;
+  will-change: clip-path, opacity, transform;
+  animation: sidebar-preview-enter 220ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
 }
 
-.app-shell.sidebar-hover-expanded .app-sidebar-top {
+.app-shell.sidebar-hover-expanded.sidebar-preview-closing .app-sidebar {
+  animation: sidebar-preview-exit 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.app-shell.sidebar-manual-collapsing .app-sidebar {
+  animation: sidebar-preview-exit 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.app-shell.sidebar-manual-opening .app-sidebar {
+  animation: sidebar-preview-enter 260ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+}
+
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .app-sidebar-top {
   flex-direction: row;
   gap: 0.75rem;
 }
 
-.app-shell.sidebar-hover-expanded .app-brand-copy,
-.app-shell.sidebar-hover-expanded .tool-nav-category {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .app-brand-copy,
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-nav-category {
   display: block;
 }
 
-.app-shell.sidebar-hover-expanded .tool-search,
-.app-shell.sidebar-hover-expanded .tool-nav-copy {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-search,
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-nav-copy {
   display: flex;
 }
 
-.app-shell.sidebar-hover-expanded .tool-nav-empty {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-nav-empty {
   display: block;
 }
 
-.app-shell.sidebar-hover-expanded .tool-nav {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-nav {
   width: auto;
   align-items: stretch;
 }
 
-.app-shell.sidebar-hover-expanded .tool-nav-group {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-nav-group {
   width: auto;
   align-items: stretch;
 }
 
-.app-shell.sidebar-hover-expanded .tool-nav-link {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-nav-link {
   display: grid;
   width: auto;
   justify-content: start;
   padding: 0.7rem 0.75rem;
 }
 
-.app-shell.sidebar-hover-expanded .tool-nav-initial {
+.app-shell:is(.sidebar-hover-expanded, .sidebar-manual-collapsing, .sidebar-manual-opening) .tool-nav-initial {
   display: none;
+}
+
+.app-shell.sidebar-hover-expanded:not(.sidebar-preview-closing) .app-brand-copy,
+.app-shell.sidebar-hover-expanded:not(.sidebar-preview-closing) .tool-search,
+.app-shell.sidebar-hover-expanded:not(.sidebar-preview-closing) .tool-nav-category,
+.app-shell.sidebar-hover-expanded:not(.sidebar-preview-closing) .tool-nav-copy,
+.app-shell.sidebar-hover-expanded:not(.sidebar-preview-closing) .tool-nav-empty {
+  animation: sidebar-preview-content-enter 180ms 24ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+}
+
+.app-shell.sidebar-hover-expanded.sidebar-preview-closing .app-brand-copy,
+.app-shell.sidebar-hover-expanded.sidebar-preview-closing .tool-search,
+.app-shell.sidebar-hover-expanded.sidebar-preview-closing .tool-nav-category,
+.app-shell.sidebar-hover-expanded.sidebar-preview-closing .tool-nav-copy,
+.app-shell.sidebar-hover-expanded.sidebar-preview-closing .tool-nav-empty,
+.app-shell.sidebar-manual-collapsing .app-brand-copy,
+.app-shell.sidebar-manual-collapsing .tool-search,
+.app-shell.sidebar-manual-collapsing .tool-nav-category,
+.app-shell.sidebar-manual-collapsing .tool-nav-copy,
+.app-shell.sidebar-manual-collapsing .tool-nav-empty,
+.app-shell.sidebar-manual-opening .app-brand-copy,
+.app-shell.sidebar-manual-opening .tool-search,
+.app-shell.sidebar-manual-opening .tool-nav-category,
+.app-shell.sidebar-manual-opening .tool-nav-copy,
+.app-shell.sidebar-manual-opening .tool-nav-empty {
+  animation: sidebar-preview-content-exit 140ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.app-shell.sidebar-manual-opening .app-brand-copy,
+.app-shell.sidebar-manual-opening .tool-search,
+.app-shell.sidebar-manual-opening .tool-nav-category,
+.app-shell.sidebar-manual-opening .tool-nav-copy,
+.app-shell.sidebar-manual-opening .tool-nav-empty {
+  animation: sidebar-preview-content-enter 180ms 24ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+}
+
+@keyframes sidebar-preview-enter {
+  from {
+    clip-path: inset(0 calc(100% - var(--sidebar-collapsed-width)) 0 0);
+    opacity: 0.94;
+    transform: translateX(-4px);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebar-preview-exit {
+  from {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    clip-path: inset(0 calc(100% - var(--sidebar-collapsed-width)) 0 0);
+    opacity: 0.94;
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes sidebar-preview-content-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebar-preview-content-exit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-2px);
+  }
 }
 
 .tool-nav-empty {
@@ -356,6 +459,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-shell,
+  .app-sidebar,
+  .app-brand-copy,
+  .tool-search,
+  .tool-nav-category,
+  .tool-nav-copy,
+  .tool-nav-empty {
+    animation: none !important;
+    transition: none !important;
+  }
+
   .tool-route {
     animation: none;
   }

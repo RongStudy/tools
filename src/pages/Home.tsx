@@ -153,7 +153,7 @@ const Home = () => {
       context.font = '700 17px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif'
       context.textAlign = 'center'
       context.textBaseline = 'middle'
-      context.fillText('Tool Console', centerX, centerY - 7)
+      context.fillText('Forge', centerX, centerY - 7)
       context.fillStyle = '#8a8f98'
       context.font = '500 12px ui-monospace, SFMono-Regular, Menlo, monospace'
       context.fillText('ready', centerX, centerY + 20)
@@ -176,8 +176,8 @@ const Home = () => {
       <canvas ref={canvasRef} className="home-canvas" aria-hidden="true" />
       <div className="home-content">
         <div className="home-copy">
-          <p className="home-kicker">Developer Tools</p>
-          <h2>开发工具台</h2>
+          <p className="home-kicker">Forge</p>
+          <h2>Forge 工程控制台</h2>
           <p>把常用的格式化、对比和时间转换放在一个清爽工作区。</p>
         </div>
 
