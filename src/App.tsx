@@ -9,7 +9,7 @@ import './App.css'
 import './components/ToolLayout.css'
 import './styles/common.css'
 
-const CACHED_TOOL_PATHS = ['/json', '/code-diff']
+const CACHED_TOOL_PATHS = ['/json', '/code-diff', '/scratch-pad']
 
 const isCachedToolPath = (path: string) => CACHED_TOOL_PATHS.includes(path)
 

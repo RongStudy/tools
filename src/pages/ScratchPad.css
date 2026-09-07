@@ -1,0 +1,170 @@
+/* ========================================
+ * 临时文本输入 - 页面专属样式
+ * 公共样式（按钮、面板等）已提取到 styles/common.css
+ * ======================================== */
+
+.scratch-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.scratch-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.scratch-zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.scratch-font-size {
+  min-width: 2.75rem;
+  text-align: center;
+  font: 500 0.82rem/1.2 var(--font-mono);
+  color: var(--color-muted);
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.scratch-language-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scratch-language-select label {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.scratch-language-select select {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.scratch-language-select select:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-border-strong);
+}
+
+.scratch-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.scratch-tab-list {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.15rem;
+}
+
+.scratch-tab {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  max-width: 11rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.scratch-tab:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.scratch-tab-button,
+.scratch-tab-close {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: 500 0.82rem/1.2 var(--font-text);
+}
+
+.scratch-tab-button {
+  min-width: 0;
+  padding: 0.45rem 0.3rem 0.45rem 0.65rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scratch-tab-button.is-active {
+  color: var(--color-text);
+}
+
+.scratch-tab:has(.scratch-tab-button.is-active) {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-soft);
+}
+
+.scratch-tab-close {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  color: var(--color-subtle);
+  font-size: 1.1rem;
+}
+
+.scratch-tab-close:hover {
+  color: var(--color-text);
+}
+
+.scratch-tab-add {
+  flex: 0 0 auto;
+}
+
+.scratch-editor-panel {
+  flex: 1;
+  min-height: 420px;
+}
+
+.scratch-editor-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scratch-char-count {
+  font-size: 0.78rem;
+  color: var(--color-muted);
+  font-weight: 500;
+  padding: 0 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .scratch-tabs {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scratch-tab-list {
+    width: 100%;
+  }
+
+  .scratch-tab-add {
+    align-self: flex-start;
+  }
+}

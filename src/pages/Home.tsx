@@ -39,6 +39,12 @@ const toolLinks = [
     meta: 'Diagram / SVG / PNG',
     accent: '#8a8f98',
   },
+  {
+    path: '/scratch-pad',
+    title: '临时文本',
+    meta: 'Scratch / Notes / Zoom',
+    accent: '#8e94c4',
+  },
 ]
 
 const Home = () => {

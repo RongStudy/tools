@@ -6,6 +6,7 @@ import TimestampConverter from '../pages/TimestampConverter'
 import UrlCodec from '../pages/UrlCodec'
 import MermaidRenderer from '../pages/MermaidRenderer'
 import RegexTester from '../pages/RegexTester'
+import ScratchPad from '../pages/ScratchPad'
 
 export type ToolDefinition = {
   path: string
@@ -74,5 +75,13 @@ export const tools: ToolDefinition[] = [
     description: '查看当前时间戳，互转时间戳和日期时间',
     category: '时间工具',
     component: TimestampConverter,
+  },
+  {
+    path: '/scratch-pad',
+    title: '临时文本输入',
+    navTitle: '临时文本',
+    description: '随手记录或粘贴文本，支持多标签、字号缩放和全屏编辑',
+    category: '编码处理',
+    component: ScratchPad,
   },
 ]
