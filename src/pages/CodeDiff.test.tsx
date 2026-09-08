@@ -227,4 +227,33 @@ describe('CodeDiff', () => {
     expect(screen.getByLabelText('original-code')).toHaveValue('')
     expect(screen.getByLabelText('modified-code')).toHaveValue('')
   })
+
+  it('点击全屏按钮应切换全屏状态', () => {
+    renderCodeDiff()
+
+    const fullscreenButton = screen.getByRole('button', { name: /全屏/ })
+    expect(fullscreenButton).toHaveTextContent('⛶ 全屏')
+
+    fireEvent.click(fullscreenButton)
+
+    const diffPanel = screen.getByTestId('diff-editor').parentElement
+    expect(diffPanel).toHaveClass('fullscreen-panel')
+    expect(fullscreenButton).toHaveTextContent('⤓ 退出全屏')
+
+    fireEvent.click(fullscreenButton)
+    expect(diffPanel).not.toHaveClass('fullscreen-panel')
+  })
+
+  it('全屏状态下按 ESC 键应退出全屏', () => {
+    renderCodeDiff()
+
+    const fullscreenButton = screen.getByRole('button', { name: /全屏/ })
+    fireEvent.click(fullscreenButton)
+
+    const diffPanel = screen.getByTestId('diff-editor').parentElement
+    expect(diffPanel).toHaveClass('fullscreen-panel')
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(diffPanel).not.toHaveClass('fullscreen-panel')
+  })
 })

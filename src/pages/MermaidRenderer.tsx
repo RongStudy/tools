@@ -298,6 +298,7 @@ const MermaidRenderer = () => {
 
         <div
           className={`editor-panel mermaid-preview-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
+          data-testid="mermaid-preview"
         >
           <div className="panel-header">
             <span>预览</span>

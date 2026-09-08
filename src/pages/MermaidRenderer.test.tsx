@@ -158,4 +158,35 @@ describe('MermaidRenderer', () => {
     expect(preview.scrollLeft).toBe(150)
     expect(preview.scrollTop).toBe(130)
   })
+
+  it('点击全屏按钮应切换全屏状态', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    const fullscreenButton = screen.getByRole('button', { name: /全屏/ })
+    expect(fullscreenButton).toHaveTextContent('⛶ 全屏')
+
+    fireEvent.click(fullscreenButton)
+
+    const previewContainer = screen.getByTestId('mermaid-preview')
+    expect(previewContainer).toHaveClass('fullscreen-panel')
+    expect(fullscreenButton).toHaveTextContent('⤓ 退出全屏')
+
+    fireEvent.click(fullscreenButton)
+    expect(previewContainer).not.toHaveClass('fullscreen-panel')
+  })
+
+  it('全屏状态下按 ESC 键应退出全屏', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    const fullscreenButton = screen.getByRole('button', { name: /全屏/ })
+    fireEvent.click(fullscreenButton)
+
+    const previewContainer = screen.getByTestId('mermaid-preview')
+    expect(previewContainer).toHaveClass('fullscreen-panel')
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(previewContainer).not.toHaveClass('fullscreen-panel')
+  })
 })
