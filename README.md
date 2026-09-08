@@ -20,20 +20,52 @@
 - ✅ 代码复制功能
 - ✅ 自动语言检测（基于文件扩展名）
 - ✅ 支持多种编程语言（JavaScript、TypeScript、Python、Java、C++、Go、Rust 等）
+- ✅ 多标签页支持，可同时打开多个对比任务
+- ✅ Tab 内全屏模式，支持 ESC 键退出
 
-### 3. 时间戳转换工具
+### 3. 临时文本编辑器
+- ✅ 多栏编辑，最多支持 3 个编辑栏同时显示
+- ✅ 支持多种编程语言语法高亮
+- ✅ 多标签页管理，可创建多个临时文本
+- ✅ 字符计数显示
+- ✅ 一键复制、清空功能
+- ✅ 草稿自动保存（2 天有效期）
+
+### 4. 时间戳转换工具
 - ✅ 动态显示当前时间戳
 - ✅ 支持秒级和毫秒级时间戳切换
 - ✅ 支持时间戳转日期时间
 - ✅ 支持日期时间转时间戳
 - ✅ 支持常用时区选择，默认 Asia/Shanghai
 
-### 4. Mermaid 渲染工具
+### 5. URL 编解码工具
+- ✅ URL 编码（encodeURIComponent）
+- ✅ URL 解码（decodeURIComponent）
+- ✅ Unicode 编解码支持
+- ✅ 实时编解码预览
+- ✅ 一键复制功能
+
+### 6. 正则表达式测试工具
+- ✅ 实时正则匹配测试
+- ✅ 支持全局匹配、忽略大小写、多行模式等标志
+- ✅ 高亮显示匹配结果
+- ✅ 显示匹配组信息
+- ✅ 常用正则表达式模板
+
+### 7. Mermaid 渲染工具
 - ✅ Mermaid 代码实时渲染
 - ✅ 语法错误提示
 - ✅ SVG、PNG 图表导出
-- ✅ 50%–200% 缩放与全屏预览
+- ✅ 50%–200% 缩放控制
+- ✅ Tab 内全屏预览，支持 ESC 键退出
+- ✅ 拖拽移动图表
 - ✅ 草稿自动保留
+
+### 8. 哈希计算工具
+- ✅ MD5 哈希计算
+- ✅ SHA-256 哈希计算
+- ✅ 实时计算
+- ✅ 一键复制结果
 
 ## 技术栈
 
@@ -78,24 +110,38 @@ npm run preview
 tool/
 ├── src/
 │   ├── pages/
-│   │   ├── JsonFormatter.tsx    # JSON 格式化工具页面
+│   │   ├── Home.tsx              # 首页
+│   │   ├── JsonFormatter.tsx     # JSON 格式化工具
 │   │   ├── JsonFormatter.css
-│   │   ├── CodeDiff.tsx         # 代码对比工具页面
+│   │   ├── CodeDiff.tsx          # 代码对比工具
 │   │   ├── CodeDiff.css
-│   │   ├── TimestampConverter.tsx # 时间戳转换工具页面
+│   │   ├── ScratchPad.tsx        # 临时文本编辑器
+│   │   ├── ScratchPad.css
+│   │   ├── TimestampConverter.tsx # 时间戳转换工具
 │   │   ├── TimestampConverter.css
-│   │   ├── MermaidRenderer.tsx # Mermaid 渲染工具页面
+│   │   ├── UrlCodec.tsx          # URL 编解码工具
+│   │   ├── UrlCodec.css
+│   │   ├── RegexTester.tsx       # 正则表达式测试工具
+│   │   ├── RegexTester.css
+│   │   ├── MermaidRenderer.tsx   # Mermaid 渲染工具
 │   │   └── MermaidRenderer.css
 │   ├── components/
 │   │   ├── AppShell.tsx          # 应用壳层与工具导航
 │   │   ├── ToolLayout.tsx        # 工具页通用布局
 │   │   └── Toast.tsx             # Toast 通知组件
+│   ├── hooks/
+│   │   └── useDiffEditor.ts      # Diff 编辑器 Hook
 │   ├── tools/
 │   │   └── registry.tsx          # 工具页注册表
+│   ├── utils/
+│   │   ├── clipboard.ts          # 剪贴板工具
+│   │   ├── expiringStorage.ts    # 带过期时间的本地存储
+│   │   └── languageDetection.ts  # 语言检测工具
 │   ├── App.tsx                   # 主应用组件
 │   ├── App.css
 │   ├── main.tsx                  # 应用入口
 │   └── index.css                 # 全局样式
+├── public/
 ├── index.html
 ├── package.json
 ├── tsconfig.json
@@ -131,11 +177,36 @@ tool/
 3. 可以点击"加载文件"按钮从文件系统加载代码
 4. 选择对应的编程语言（或使用自动检测）
 5. 使用"交换"按钮可以交换左右两侧的代码
+6. 点击"全屏"按钮进入 Tab 内全屏模式，按 ESC 键退出
 
 #### 统一视图模式
 1. 切换到"统一视图"模式
 2. 使用 Monaco Editor 的内置 DiffEditor 查看代码差异
 3. 差异会以高亮方式显示，方便识别修改内容
+
+#### 多标签页管理
+1. 点击"新建对比"创建新的对比标签页
+2. 每个标签页独立保存对比内容
+3. 点击标签右侧的关闭按钮删除对应标签页
+
+### 临时文本编辑器
+
+1. 支持多栏编辑模式，点击"新增栏"可添加编辑栏（最多 3 栏）
+2. 每栏可独立选择编程语言，享受语法高亮
+3. 支持多标签页，可创建多个临时文本文档
+4. 实时显示字符计数
+5. 点击"复制"快速复制当前栏内容
+6. 草稿自动保存，2 天内重新打开仍可恢复
+
+### Mermaid 渲染工具
+
+1. 在编辑器中输入 Mermaid 图表代码
+2. 预览区会实时渲染 SVG 图表
+3. 使用缩放按钮调整图表大小（50%–200%）
+4. 点击"全屏"按钮进入 Tab 内全屏模式查看大图，按 ESC 键退出
+5. 支持拖拽移动图表位置
+6. 点击"导出 SVG"或"导出 PNG"下载图表
+7. 语法错误会在预览区显示详细错误信息
 
 ## 浏览器支持
 
