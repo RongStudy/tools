@@ -132,14 +132,7 @@
 
 .mermaid-workspace.preview-is-fullscreen {
   display: block;
-}
-
-.mermaid-preview-panel:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  border: 0;
-  border-radius: 0;
-  background: var(--color-surface);
+  min-height: 0;
 }
 
 @media (max-width: 1100px) {

@@ -34,34 +34,6 @@
   background: var(--color-surface);
 }
 
-.scratch-language-select {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.scratch-language-select label {
-  color: var(--color-muted);
-  font-size: 0.9rem;
-}
-
-.scratch-language-select select {
-  min-height: 2.5rem;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.scratch-language-select select:focus {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
-  border-color: var(--color-border-strong);
-}
-
 .scratch-tabs {
   display: flex;
   align-items: center;
@@ -142,6 +114,75 @@
 }
 
 .scratch-editor-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  overflow: hidden;
+}
+
+.scratch-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.scratch-pane + .scratch-pane {
+  border-left: 1px solid var(--color-border);
+}
+
+.scratch-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.scratch-pane-label {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  letter-spacing: -0.01em;
+}
+
+.scratch-pane-header select {
+  min-height: 2rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.scratch-pane-header select:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-border-strong);
+}
+
+.scratch-pane-close {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-subtle);
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.scratch-pane-close:hover {
+  color: var(--color-text);
+}
+
+.scratch-pane-editor {
   flex: 1;
   min-height: 0;
   overflow: hidden;

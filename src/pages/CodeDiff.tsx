@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import { diffLines, diffTrimmedLines } from 'diff'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
 import { detectLanguageFromFileName, detectLanguageFromContent } from '../utils/languageDetection'
-import { useFullscreen } from '../hooks/useFullscreen'
 import { useDiffEditor } from '../hooks/useDiffEditor'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
@@ -136,10 +135,7 @@ const CodeDiff = () => {
     originalCode: activeDocument.originalCode,
     modifiedCode: activeDocument.modifiedCode,
   }))
-  const diffPanelRef = useRef<HTMLDivElement>(null)
-
-  // 使用自定义 Hook
-  const [isFullscreen, toggleFullscreen] = useFullscreen(diffPanelRef)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const {
     handleEditorMount,
     navigateToNextDiff,
@@ -149,6 +145,15 @@ const CodeDiff = () => {
     setEditorCallbacks,
   } = useDiffEditor()
   const { showToast } = useToast()
+
+  useEffect(() => {
+    if (!isFullscreen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsFullscreen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen])
 
   useEffect(() => {
     writeExpiringStorage(
@@ -486,7 +491,7 @@ const CodeDiff = () => {
           )}
         </>
       ) : null}
-      <button onClick={toggleFullscreen} className="btn-small btn-fullscreen" title={isFullscreen ? '退出全屏' : '全屏查看'}>
+      <button onClick={() => setIsFullscreen((value) => !value)} className="btn-small btn-fullscreen" title={isFullscreen ? '退出全屏' : '全屏查看'}>
         {isFullscreen ? '⤓ 退出全屏' : '⛶ 全屏'}
       </button>
     </>
@@ -645,7 +650,6 @@ const CodeDiff = () => {
       {viewMode === 'split' ? (
         <div className="split-view">
           <div
-            ref={diffPanelRef}
             className={`editor-panel diff-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
           >
             <div className="panel-header">
@@ -678,7 +682,6 @@ const CodeDiff = () => {
       ) : (
         <div className="unified-view">
           <div
-            ref={diffPanelRef}
             className={`editor-panel diff-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
           >
             <div className="panel-header">

@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
-import { useFullscreen } from '../hooks/useFullscreen'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
 import './ScratchPad.css'
@@ -13,12 +12,18 @@ const SCRATCH_PAD_DRAFT_KEY = 'dev-tools:scratch-pad:draft'
 const MIN_FONT_SIZE = 10
 const MAX_FONT_SIZE = 32
 const DEFAULT_FONT_SIZE = 14
+const MAX_PANES = 3
+
+type ScratchPane = {
+  id: string
+  content: string
+  language: string
+}
 
 type ScratchDocument = {
   id: string
   name: string
-  content: string
-  language: string
+  panes: ScratchPane[]
 }
 
 type ScratchPadDraft = {
@@ -27,16 +32,28 @@ type ScratchPadDraft = {
   fontSize: number
 }
 
+type LegacyScratchDocument = {
+  id: string
+  name: string
+  content: string
+  language: string
+}
+
 type LegacyScratchPadDraft = {
   content: string
   fontSize: number
 }
 
+const createPane = (content = '', language = 'plaintext'): ScratchPane => ({
+  id: `pane-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  content,
+  language,
+})
+
 const DEFAULT_SCRATCH_DOCUMENT: ScratchDocument = {
   id: 'scratch-1',
   name: '文本 1',
-  content: '',
-  language: 'plaintext',
+  panes: [{ id: 'pane-1', content: '', language: 'plaintext' }],
 }
 
 const DEFAULT_SCRATCH_PAD_DRAFT: ScratchPadDraft = {
@@ -94,20 +111,41 @@ const createScratchDocument = (documents: ScratchDocument[]): ScratchDocument =>
   }, 0)
 
   return {
-    ...DEFAULT_SCRATCH_DOCUMENT,
     id: `scratch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     name: `文本 ${highestDocumentNumber + 1}`,
+    panes: [createPane()],
   }
 }
 
-const isScratchDocument = (value: unknown): value is ScratchDocument => {
+const isScratchPane = (value: unknown): value is ScratchPane => {
   if (!value || typeof value !== 'object') return false
 
-  const document = value as Partial<ScratchDocument>
-  return typeof document.id === 'string'
-    && typeof document.name === 'string'
-    && typeof document.content === 'string'
-    && typeof document.language === 'string'
+  const pane = value as Partial<ScratchPane>
+  return typeof pane.id === 'string'
+    && typeof pane.content === 'string'
+    && typeof pane.language === 'string'
+}
+
+const normalizeDocument = (value: unknown): ScratchDocument | null => {
+  if (!value || typeof value !== 'object') return null
+
+  const document = value as Partial<ScratchDocument> & Partial<LegacyScratchDocument>
+  if (typeof document.id !== 'string' || typeof document.name !== 'string') return null
+
+  if (Array.isArray(document.panes)) {
+    const panes = document.panes.filter(isScratchPane).slice(0, MAX_PANES)
+    return panes.length ? { id: document.id, name: document.name, panes } : null
+  }
+
+  if (typeof document.content === 'string' && typeof document.language === 'string') {
+    return {
+      id: document.id,
+      name: document.name,
+      panes: [createPane(document.content, document.language)],
+    }
+  }
+
+  return null
 }
 
 const normalizeFontSize = (fontSize: unknown): number => {
@@ -119,13 +157,15 @@ const readScratchPadDraft = (): ScratchPadDraft => {
   const savedDraft = readExpiringStorage<unknown>(SCRATCH_PAD_DRAFT_KEY)
   if (!savedDraft || typeof savedDraft !== 'object') return DEFAULT_SCRATCH_PAD_DRAFT
 
-  const draft = savedDraft as Partial<ScratchPadDraft & LegacyScratchPadDraft>
+  const draft = savedDraft as Partial<ScratchPadDraft> & Partial<LegacyScratchPadDraft>
   if (Array.isArray(draft.documents)) {
-    const documents = draft.documents.filter(isScratchDocument)
-    const activeDocumentId = documents.some((document) => document.id === draft.activeDocumentId)
-      ? draft.activeDocumentId as string
-      : documents[0]?.id
-    if (documents.length && activeDocumentId) {
+    const documents = draft.documents
+      .map(normalizeDocument)
+      .filter((document): document is ScratchDocument => document !== null)
+    if (documents.length) {
+      const activeDocumentId = documents.some((document) => document.id === draft.activeDocumentId)
+        ? draft.activeDocumentId as string
+        : documents[0].id
       return { activeDocumentId, documents, fontSize: normalizeFontSize(draft.fontSize) }
     }
   }
@@ -133,7 +173,11 @@ const readScratchPadDraft = (): ScratchPadDraft => {
   if (typeof draft.content === 'string') {
     return {
       activeDocumentId: DEFAULT_SCRATCH_DOCUMENT.id,
-      documents: [{ ...DEFAULT_SCRATCH_DOCUMENT, content: draft.content }],
+      documents: [{
+        id: DEFAULT_SCRATCH_DOCUMENT.id,
+        name: DEFAULT_SCRATCH_DOCUMENT.name,
+        panes: [createPane(draft.content, 'plaintext')],
+      }],
       fontSize: normalizeFontSize(draft.fontSize),
     }
   }
@@ -148,11 +192,9 @@ const ScratchPad = () => {
   const [documents, setDocuments] = useState(initialDraft.documents)
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
   const [fontSize, setFontSize] = useState(initialDraft.fontSize)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
-  const { content, language } = activeDocument
-
-  const editorPanelRef = useRef<HTMLDivElement>(null)
-  const [isFullscreen, toggleFullscreen] = useFullscreen(editorPanelRef)
+  const { panes } = activeDocument
   const { showToast } = useToast()
 
   useEffect(() => {
@@ -163,11 +205,50 @@ const ScratchPad = () => {
     )
   }, [activeDocumentId, documents, fontSize])
 
-  const updateActiveDocument = useCallback((updates: Partial<Omit<ScratchDocument, 'id' | 'name'>>) => {
+  useEffect(() => {
+    if (!isFullscreen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsFullscreen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen])
+
+  const updateActiveDocument = useCallback((updater: (document: ScratchDocument) => ScratchDocument) => {
     setDocuments((currentDocuments) => currentDocuments.map((document) => (
-      document.id === activeDocumentId ? { ...document, ...updates } : document
+      document.id === activeDocumentId ? updater(document) : document
     )))
   }, [activeDocumentId])
+
+  const updatePane = useCallback((paneId: string, updates: Partial<Omit<ScratchPane, 'id'>>) => {
+    updateActiveDocument((document) => ({
+      ...document,
+      panes: document.panes.map((pane) => (
+        pane.id === paneId ? { ...pane, ...updates } : pane
+      )),
+    }))
+  }, [updateActiveDocument])
+
+  const addPane = () => {
+    updateActiveDocument((document) => {
+      if (document.panes.length >= MAX_PANES) return document
+      return { ...document, panes: [...document.panes, createPane()] }
+    })
+  }
+
+  const removePane = (paneId: string) => {
+    updateActiveDocument((document) => {
+      if (document.panes.length <= 1) return document
+      return { ...document, panes: document.panes.filter((pane) => pane.id !== paneId) }
+    })
+  }
+
+  const clearAllPanes = () => {
+    updateActiveDocument((document) => ({
+      ...document,
+      panes: document.panes.map((pane) => ({ ...pane, content: '' })),
+    }))
+  }
 
   const addDocument = () => {
     const document = createScratchDocument(documents)
@@ -177,7 +258,7 @@ const ScratchPad = () => {
 
   const closeDocument = (documentId: string) => {
     if (documents.length === 1) {
-      updateActiveDocument({ content: '' })
+      clearAllPanes()
       return
     }
 
@@ -193,8 +274,8 @@ const ScratchPad = () => {
   const zoomOut = () => setFontSize((size) => Math.max(MIN_FONT_SIZE, size - 1))
   const resetZoom = () => setFontSize(DEFAULT_FONT_SIZE)
 
-  const copyContent = async () => {
-    const success = await writeTextToClipboard(content)
+  const copyPane = async (pane: ScratchPane) => {
+    const success = await writeTextToClipboard(pane.content)
     if (success) {
       showToast('已复制到剪贴板')
     } else {
@@ -202,9 +283,7 @@ const ScratchPad = () => {
     }
   }
 
-  const clearContent = () => {
-    updateActiveDocument({ content: '' })
-  }
+  const totalChars = panes.reduce((sum, pane) => sum + pane.content.length, 0)
 
   const toolbar = (
     <div className="scratch-toolbar">
@@ -235,20 +314,7 @@ const ScratchPad = () => {
           重置
         </button>
       </div>
-      <div className="scratch-language-select">
-        <label htmlFor="scratch-language">语言:</label>
-        <select
-          id="scratch-language"
-          name="scratchLanguage"
-          value={language}
-          onChange={(e) => updateActiveDocument({ language: e.target.value })}
-        >
-          {LANGUAGES.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-      </div>
-      <button onClick={clearContent} className="btn btn-danger">清空</button>
+      <button onClick={clearAllPanes} className="btn btn-danger">清空</button>
     </div>
   )
 
@@ -256,7 +322,7 @@ const ScratchPad = () => {
     <ToolLayout
       className={`scratch-pad ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="临时文本输入"
-      description="随手记录或粘贴文本，支持多标签、字号缩放和全屏编辑"
+      description="随手记录或粘贴文本，支持多标签、分栏、字号缩放和全屏编辑"
       actions={toolbar}
       hideHeader={isFullscreen}
     >
@@ -293,37 +359,83 @@ const ScratchPad = () => {
           </button>
         </div>
       )}
-      <div
-        ref={editorPanelRef}
-        className={`editor-panel scratch-editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
-      >
+      <div className={`editor-panel scratch-editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}>
         <div className="panel-header">
           <span>输入</span>
           <div className="panel-actions">
-            <small className="scratch-char-count">{content.length.toLocaleString()} 字符</small>
-            <button onClick={copyContent} className="btn-small" disabled={!content}>复制</button>
-            <button onClick={toggleFullscreen} className="btn-small btn-fullscreen" title={isFullscreen ? '退出全屏' : '全屏查看'}>
+            <button
+              onClick={addPane}
+              className="btn-small"
+              disabled={panes.length >= MAX_PANES}
+              title="新增分栏"
+            >
+              ＋ 分栏
+            </button>
+            <small className="scratch-char-count">{totalChars.toLocaleString()} 字符</small>
+            <button
+              onClick={() => setIsFullscreen((value) => !value)}
+              className="btn-small btn-fullscreen"
+              title={isFullscreen ? '退出全屏' : '浏览器内全屏'}
+            >
               {isFullscreen ? '⤓ 退出全屏' : '⛶ 全屏'}
             </button>
           </div>
         </div>
-        <div className="scratch-editor-body">
-          <Editor
-            height="100%"
-            defaultLanguage="plaintext"
-            language={language}
-            value={content}
-            loading={editorLoading}
-            onChange={(value) => updateActiveDocument({ content: value ?? '' })}
-            theme="vs-dark"
-            options={{
-              minimap: { enabled: true },
-              fontSize,
-              wordWrap: 'on',
-              automaticLayout: true,
-              scrollBeyondLastLine: false,
-            }}
-          />
+        <div
+          className="scratch-editor-body"
+          style={{ gridTemplateColumns: `repeat(${panes.length}, minmax(0, 1fr))` }}
+        >
+          {panes.map((pane, index) => (
+            <div className="scratch-pane" key={pane.id}>
+              <div className="scratch-pane-header">
+                <span className="scratch-pane-label">栏 {index + 1}</span>
+                <select
+                  value={pane.language}
+                  onChange={(e) => updatePane(pane.id, { language: e.target.value })}
+                  aria-label={`栏 ${index + 1} 语言`}
+                >
+                  {LANGUAGES.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => copyPane(pane)}
+                  className="btn-small"
+                  disabled={!pane.content}
+                  title={`复制栏 ${index + 1}`}
+                >
+                  复制
+                </button>
+                {panes.length > 1 && (
+                  <button
+                    onClick={() => removePane(pane.id)}
+                    className="scratch-pane-close"
+                    aria-label={`关闭栏 ${index + 1}`}
+                    title={`关闭栏 ${index + 1}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <div className="scratch-pane-editor">
+                <Editor
+                  height="100%"
+                  language={pane.language}
+                  value={pane.content}
+                  loading={editorLoading}
+                  onChange={(value) => updatePane(pane.id, { content: value ?? '' })}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize,
+                    wordWrap: 'on',
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </ToolLayout>

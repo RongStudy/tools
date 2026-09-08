@@ -8,7 +8,6 @@ import {
 } from 'react'
 import Editor from '@monaco-editor/react'
 import ToolLayout from '../components/ToolLayout'
-import { useFullscreen } from '../hooks/useFullscreen'
 import { readExpiringStorage, TWO_DAYS_IN_MS, writeExpiringStorage } from '../utils/expiringStorage'
 import './MermaidRenderer.css'
 
@@ -90,10 +89,9 @@ const MermaidRenderer = () => {
   const [isRendering, setIsRendering] = useState(false)
   const [zoom, setZoom] = useState(100)
   const [isDragging, setIsDragging] = useState(false)
-  const previewPanelRef = useRef<HTMLDivElement>(null)
   const previewDragRef = useRef<PreviewDrag | null>(null)
   const renderSequenceRef = useRef(0)
-  const [isFullscreen, toggleFullscreen] = useFullscreen(previewPanelRef)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const renderDiagram = useCallback(async (source: string) => {
     const sequence = ++renderSequenceRef.current
@@ -134,6 +132,15 @@ const MermaidRenderer = () => {
 
     return () => window.clearTimeout(timer)
   }, [code, renderDiagram])
+
+  useEffect(() => {
+    if (!isFullscreen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsFullscreen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen])
 
   const resetExample = () => {
     setCode(DEFAULT_MERMAID_CODE)
@@ -245,7 +252,7 @@ const MermaidRenderer = () => {
 
   return (
     <ToolLayout
-      className="mermaid-renderer"
+      className={`mermaid-renderer ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="Mermaid 渲染"
       description="输入 Mermaid 代码，实时生成并导出图表"
       actions={toolbar}
@@ -290,7 +297,6 @@ const MermaidRenderer = () => {
         )}
 
         <div
-          ref={previewPanelRef}
           className={`editor-panel mermaid-preview-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
         >
           <div className="panel-header">
@@ -333,7 +339,7 @@ const MermaidRenderer = () => {
               <button
                 type="button"
                 className="btn-small btn-fullscreen"
-                onClick={() => void toggleFullscreen()}
+                onClick={() => setIsFullscreen((value) => !value)}
                 title={isFullscreen ? '退出全屏' : '全屏查看'}
               >
                 {isFullscreen ? '退出全屏' : '全屏'}
