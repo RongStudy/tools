@@ -183,7 +183,7 @@ const Home = () => {
       <div className="home-content">
         <div className="home-copy">
           <p className="home-kicker">Forge</p>
-          <h2>Forge 工程控制台</h2>
+          <h2>Forge</h2>
           <p>把常用的格式化、对比和时间转换放在一个清爽工作区。</p>
         </div>
 
