@@ -35,8 +35,8 @@ const toolLinks = [
   },
   {
     path: '/mermaid',
-    title: 'Mermaid 渲染',
-    meta: 'Diagram / SVG / PNG',
+    title: 'Mermaid / Markdown 渲染',
+    meta: 'Diagram / Markdown / LaTeX',
     accent: '#8a8f98',
   },
   {

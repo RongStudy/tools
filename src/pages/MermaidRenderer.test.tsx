@@ -22,7 +22,7 @@ vi.mock('@monaco-editor/react', () => ({
     onChange?: (value: string | undefined) => void
   }) => (
     <textarea
-      aria-label="Mermaid 代码编辑器"
+      aria-label="内容编辑器"
       value={value}
       onChange={(event) => onChange?.(event.target.value)}
     />
@@ -57,7 +57,7 @@ describe('MermaidRenderer', () => {
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     mermaidRenderMock.mockClear()
 
-    fireEvent.change(screen.getByLabelText('Mermaid 代码编辑器'), {
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
       target: { value: 'sequenceDiagram\n  A->>B: Hello' },
     })
 
@@ -74,13 +74,203 @@ describe('MermaidRenderer', () => {
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     mermaidRenderMock.mockRejectedValueOnce(new Error('Parse error on line 2'))
 
-    fireEvent.change(screen.getByLabelText('Mermaid 代码编辑器'), {
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
       target: { value: 'flowchart ???' },
     })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Parse error on line 2')
     expect(screen.queryByRole('img', { name: 'Mermaid 图表预览' })).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('语法错误')
+  })
+
+  it('自动识别 Markdown 内容并渲染', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '# 标题\n\n- 项目一\n- 项目二' },
+    })
+
+    const preview = await screen.findByTestId('markdown-preview')
+    expect(preview.querySelector('h1')).toHaveTextContent('标题')
+    expect(preview.querySelectorAll('li')).toHaveLength(2)
+    expect(screen.getByRole('status')).toHaveTextContent('已渲染')
+  })
+
+  it('支持 LaTeX 数学公式（行内与块级）', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '公式：$E = mc^2$\n\n$$\n\\int_0^1 x\\,dx\n$$' },
+    })
+
+    const preview = await screen.findByTestId('markdown-preview')
+    expect(preview.querySelector('.katex')).not.toBeNull()
+  })
+
+  it('支持 GFM 表格与任务列表', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '| a | b |\n| --- | --- |\n| 1 | 2 |\n\n- [x] 完成' },
+    })
+
+    const preview = await screen.findByTestId('markdown-preview')
+    expect(preview.querySelector('table')).not.toBeNull()
+    expect(preview.querySelector('input[type="checkbox"]')).not.toBeNull()
+  })
+
+  it('可以手动切换渲染格式', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    // 强制 Markdown 模式
+    fireEvent.click(screen.getByRole('button', { name: 'Markdown' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Markdown' })).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: 'Hello **world**' },
+    })
+    const preview = await screen.findByTestId('markdown-preview')
+    expect(preview.querySelector('strong')).toHaveTextContent('world')
+
+    // 切回自动模式 → 内容首行非 Mermaid 关键字，仍按 Markdown 渲染
+    fireEvent.click(screen.getByRole('button', { name: '自动' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '自动' })).toHaveAttribute('aria-pressed', 'true')
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('markdown-preview')).not.toBeNull()
+    })
+  })
+
+  it('Markdown 预览默认铺满显示，可切换为居中', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '# 布局测试' },
+    })
+
+    const preview = await screen.findByTestId('markdown-preview')
+    expect(preview).toHaveClass('layout-full')
+    expect(preview).not.toHaveClass('layout-centered')
+    expect(screen.getByRole('button', { name: '铺满' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: '居中' }))
+    expect(preview).toHaveClass('layout-centered')
+    expect(screen.getByRole('button', { name: '居中' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: '铺满' }))
+    expect(preview).toHaveClass('layout-full')
+  })
+
+  it('Markdown 模式导出 HTML 与当前显示布局一致', async () => {
+    let capturedBlob: Blob | null = null
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: (blob: Blob) => {
+        capturedBlob = blob
+        return 'blob:mock'
+      },
+      revokeObjectURL,
+    })
+    const clickSpy = vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(() => undefined)
+
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '# 导出测试' },
+    })
+    await screen.findByTestId('markdown-preview')
+
+    // 默认铺满布局 → 导出 HTML 铺满样式
+    fireEvent.click(screen.getByRole('button', { name: 'HTML' }))
+    expect(clickSpy).toHaveBeenCalled()
+    let text = await capturedBlob!.text()
+    expect(text).toContain('max-width:none')
+    expect(text).toContain('<h1>导出测试</h1>')
+
+    // 切换为居中 → 导出 HTML 居中样式
+    fireEvent.click(screen.getByRole('button', { name: '居中' }))
+    fireEvent.click(screen.getByRole('button', { name: 'HTML' }))
+    text = await capturedBlob!.text()
+    expect(text).toContain('max-width:52rem')
+    expect(text).toContain('margin:0 auto')
+
+    clickSpy.mockRestore()
+    vi.unstubAllGlobals()
+  })
+
+  it('Markdown 中的 mermaid 代码块渲染为图表', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '# 架构\n\n```mermaid\nflowchart LR\n  A --> B\n```' },
+    })
+
+    const preview = await screen.findByTestId('markdown-preview')
+    await waitFor(() => {
+      expect(preview.querySelector('.mermaid-block svg')).not.toBeNull()
+    })
+    expect(mermaidRenderMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^markdown-mermaid-/),
+      'flowchart LR\n  A --> B'
+    )
+  })
+
+  it('Markdown 中 mermaid 渲染失败时显示错误而不影响整篇文档', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    mermaidRenderMock.mockRejectedValueOnce(new Error('Parse error on line 2'))
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '# 标题\n\n```mermaid\nflowchart ??\n```\n\n正文段落' },
+    })
+
+    const preview = await screen.findByTestId('markdown-preview')
+    const errorBlock = await waitFor(() => preview.querySelector('.mermaid-inline-error'))
+    expect(errorBlock).toHaveTextContent('Parse error on line 2')
+    expect(preview.querySelector('h1')).toHaveTextContent('标题')
+    expect(preview.textContent).toContain('正文段落')
+  })
+
+  it('Markdown 中的 mermaid 块支持缩放与全屏查看', async () => {
+    render(<MermaidRenderer />)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: '# 图\n\n```mermaid\nflowchart LR\n  A --> B\n```' },
+    })
+
+    const preview = await screen.findByTestId('markdown-preview')
+    await waitFor(() => {
+      expect(preview.querySelector('.mermaid-block svg')).not.toBeNull()
+    })
+
+    const block = preview.querySelector('.mermaid-block') as HTMLElement
+    expect(block.querySelector('.mermaid-block-toolbar')).not.toBeNull()
+
+    // 缩放
+    const canvas = block.querySelector('.mermaid-block-canvas') as HTMLElement
+    ;(block.querySelector('button[aria-label="放大图表"]') as HTMLButtonElement).click()
+    expect(canvas.style.width).toBe('125%')
+    expect(block.querySelector('.mermaid-block-zoom-value')?.textContent).toBe('125%')
+
+    // 全屏打开
+    ;(block.querySelector('button[title="全屏查看"]') as HTMLButtonElement).click()
+    expect(document.querySelector('.mermaid-block-overlay')).not.toBeNull()
+
+    // ESC 退出
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(document.querySelector('.mermaid-block-overlay')).toBeNull()
   })
 
   it('可以清空代码和预览', async () => {
@@ -91,9 +281,9 @@ describe('MermaidRenderer', () => {
       fireEvent.click(screen.getByRole('button', { name: '清空' }))
     })
 
-    expect(screen.getByLabelText('Mermaid 代码编辑器')).toHaveValue('')
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('')
     expect(screen.queryByRole('img', { name: 'Mermaid 图表预览' })).not.toBeInTheDocument()
-    expect(screen.getByText('输入 Mermaid 代码后将在这里显示图表')).toBeInTheDocument()
+    expect(screen.getByText(/自动识别 Mermaid \/ Markdown/)).toBeInTheDocument()
   })
 
   it('支持放大、缩小和重置图表', async () => {

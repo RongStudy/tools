@@ -14,6 +14,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* marked-katex-extension 的 types 指向其源码 .ts，用本地声明替换以避免检查其源码 */
+    "paths": {
+      "marked-katex-extension": ["./src/types/marked-katex-extension.d.ts"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
