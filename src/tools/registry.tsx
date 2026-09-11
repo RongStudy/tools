@@ -64,7 +64,7 @@ export const tools: ToolDefinition[] = [
     path: '/mermaid',
     title: 'Mermaid / Markdown 渲染',
     navTitle: 'Mermaid / Markdown',
-    description: '自动识别 Mermaid 或 Markdown 内容并渲染，支持 GFM 与 LaTeX 数学公式',
+    description: '自动识别 Mermaid 或 Markdown 内容并渲染',
     category: '编码处理',
     component: MermaidRenderer,
   },
