@@ -529,6 +529,11 @@ const JsonFormatter = () => {
                 automaticLayout: true,
                 scrollBeyondLastLine: false,
                 readOnly: true,
+                guides: {
+                  bracketPairs: 'active',
+                  bracketPairsHorizontal: 'active',
+                },
+                bracketPairColorization: { enabled: true },
               }}
               onMount={(editor) => {
                 outputEditorRef.current = editor
