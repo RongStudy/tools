@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import ToolLayout from '../components/ToolLayout'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
@@ -205,14 +206,7 @@ const ScratchPad = () => {
     )
   }, [activeDocumentId, documents, fontSize])
 
-  useEffect(() => {
-    if (!isFullscreen) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsFullscreen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFullscreen])
+  useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
   const updateActiveDocument = useCallback((updater: (document: ScratchDocument) => ScratchDocument) => {
     setDocuments((currentDocuments) => currentDocuments.map((document) => (

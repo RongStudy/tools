@@ -5,6 +5,7 @@ import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
 import { detectLanguageFromFileName, detectLanguageFromContent } from '../utils/languageDetection'
 import { useDiffEditor } from '../hooks/useDiffEditor'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
 import type { MonacoDiffEditor } from '../types/monaco'
@@ -146,14 +147,7 @@ const CodeDiff = () => {
   } = useDiffEditor()
   const { showToast } = useToast()
 
-  useEffect(() => {
-    if (!isFullscreen) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsFullscreen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFullscreen])
+  useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
   useEffect(() => {
     writeExpiringStorage(

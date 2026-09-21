@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { loader } from '@monaco-editor/react'
 import { BrowserRouter, useLocation } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
@@ -76,7 +76,9 @@ function App() {
     <ToastProvider>
       <BrowserRouter basename="/tools">
         <AppShell tools={tools}>
-          <ToolRoutes />
+          <Suspense fallback={<div className="tool-route-loading">工具加载中</div>}>
+            <ToolRoutes />
+          </Suspense>
         </AppShell>
       </BrowserRouter>
     </ToastProvider>

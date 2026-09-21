@@ -1,4 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import SplitPaneDivider from '../components/SplitPaneDivider'
+import {
+  getSplitPaneGridStyle,
+  usePersistentSplitRatio,
+} from '../hooks/useSplitPane'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
@@ -7,6 +12,8 @@ import './UrlCodec.css'
 import '../styles/common.css'
 
 type CodecMode = 'component' | 'url'
+
+const URL_CODEC_SPLIT_RATIO_KEY = 'dev-tools:url-codec:split-ratio'
 
 const textToBase64 = (value: string) => {
   const bytes = new TextEncoder().encode(value)
@@ -55,6 +62,8 @@ const UrlCodec = () => {
   const [output, setOutput] = useState('')
   const [mode, setMode] = useState<CodecMode>('component')
   const [error, setError] = useState('')
+  const [splitRatio, setSplitRatio] = usePersistentSplitRatio(URL_CODEC_SPLIT_RATIO_KEY)
+  const gridRef = useRef<HTMLDivElement>(null)
   const { showToast } = useToast()
 
   const encode = () => {
@@ -187,7 +196,11 @@ const UrlCodec = () => {
       actions={toolbar}
       status={error ? <div className="url-codec-error">{error}</div> : null}
     >
-      <div className="url-codec-grid">
+      <div
+        ref={gridRef}
+        className="url-codec-grid"
+        style={getSplitPaneGridStyle(splitRatio)}
+      >
         <section className="url-codec-panel">
           <div className="url-codec-panel-header">
             <span>输入</span>
@@ -203,6 +216,13 @@ const UrlCodec = () => {
             spellCheck={false}
           />
         </section>
+
+        <SplitPaneDivider
+          containerRef={gridRef}
+          ratio={splitRatio}
+          onRatioChange={setSplitRatio}
+          label="调整输入输出宽度"
+        />
 
         <section className="url-codec-panel">
           <div className="url-codec-panel-header">

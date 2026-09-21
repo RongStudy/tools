@@ -110,42 +110,40 @@ describe('JsonFormatter', () => {
     })
   })
 
-  it('输入侧全屏应同时展示输入和输出双栏', async () => {
-    let fullscreenElement: Element | null = null
-    const requestFullscreen = vi.fn(() => {
-      fullscreenElement = screen.getByTestId('json-editor-container')
-      document.dispatchEvent(new Event('fullscreenchange'))
-      return Promise.resolve()
-    })
-    const exitFullscreen = vi.fn(() => {
-      fullscreenElement = null
-      document.dispatchEvent(new Event('fullscreenchange'))
-      return Promise.resolve()
-    })
-
-    Object.defineProperty(document, 'fullscreenElement', {
-      get: () => fullscreenElement,
-      configurable: true,
-    })
-    Object.defineProperty(HTMLElement.prototype, 'requestFullscreen', {
-      value: requestFullscreen,
-      configurable: true,
-    })
-    Object.defineProperty(document, 'exitFullscreen', {
-      value: exitFullscreen,
-      configurable: true,
-    })
-
+  it('输入侧全屏应在浏览器标签页内同时展示输入和输出双栏', () => {
     renderJsonFormatter()
 
+    const editorContainer = screen.getByTestId('json-editor-container')
+    const tool = editorContainer.closest('.json-formatter')
     fireEvent.click(screen.getByTitle('输入输出全屏'))
 
-    await waitFor(() => {
-      expect(screen.getByTestId('json-editor-container')).toHaveClass('dual-fullscreen-container')
-    })
+    expect(tool).toHaveClass('fullscreen-mode')
+    expect(editorContainer).toHaveClass('dual-fullscreen-container')
     expect(screen.getByLabelText('input-editor')).toBeInTheDocument()
     expect(screen.getByLabelText('output-editor')).toBeInTheDocument()
-    expect(requestFullscreen).toHaveBeenCalledTimes(1)
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(tool).not.toHaveClass('fullscreen-mode')
+    expect(editorContainer).not.toHaveClass('dual-fullscreen-container')
+  })
+
+  it('输出侧全屏应在浏览器标签页内仅展示输出', () => {
+    renderJsonFormatter()
+
+    const editorContainer = screen.getByTestId('json-editor-container')
+    const tool = editorContainer.closest('.json-formatter')
+    fireEvent.click(screen.getByTitle('全屏查看'))
+
+    expect(tool).toHaveClass('fullscreen-mode')
+    expect(editorContainer).toHaveClass('fullscreen-container')
+    expect(screen.queryByLabelText('input-editor')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('output-editor')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTitle('退出全屏'))
+
+    expect(tool).not.toHaveClass('fullscreen-mode')
+    expect(screen.getByLabelText('input-editor')).toBeInTheDocument()
   })
 
   it('重新挂载后应恢复两天内保存的多个 JSON', () => {
@@ -164,6 +162,63 @@ describe('JsonFormatter', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
     expect(screen.getByLabelText('input-editor')).toHaveValue('{"name":"tool"}')
     expect(screen.getByLabelText('output-editor')).toHaveValue('{\n  "name": "tool"\n}')
+  })
+
+  it('应为每个 JSON 独立保存输入输出分割比例', () => {
+    const { unmount } = renderJsonFormatter()
+
+    const firstSplitter = screen.getByRole('separator', { name: '调整输入输出宽度' })
+    expect(firstSplitter).toHaveAttribute('aria-valuenow', '30')
+    fireEvent.keyDown(firstSplitter, { key: 'ArrowRight' })
+    expect(firstSplitter).toHaveAttribute('aria-valuenow', '32')
+
+    fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    const secondSplitter = screen.getByRole('separator', { name: '调整输入输出宽度' })
+    expect(secondSplitter).toHaveAttribute('aria-valuenow', '30')
+    fireEvent.keyDown(secondSplitter, { key: 'ArrowLeft' })
+    expect(secondSplitter).toHaveAttribute('aria-valuenow', '28')
+
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
+    expect(screen.getByRole('separator', { name: '调整输入输出宽度' })).toHaveAttribute('aria-valuenow', '32')
+
+    unmount()
+    renderJsonFormatter()
+
+    expect(screen.getByRole('tab', { name: 'JSON 1' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('separator', { name: '调整输入输出宽度' })).toHaveAttribute('aria-valuenow', '32')
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 2' }))
+    expect(screen.getByRole('separator', { name: '调整输入输出宽度' })).toHaveAttribute('aria-valuenow', '28')
+  })
+
+  it('拖动分割线应按容器宽度调整并限制比例范围', () => {
+    renderJsonFormatter()
+
+    const container = screen.getByTestId('json-editor-container')
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      x: 100,
+      y: 0,
+      left: 100,
+      top: 0,
+      right: 1100,
+      bottom: 600,
+      width: 1000,
+      height: 600,
+      toJSON: () => ({}),
+    })
+    const splitter = screen.getByRole('separator', { name: '调整输入输出宽度' })
+    splitter.setPointerCapture = vi.fn()
+    splitter.hasPointerCapture = vi.fn(() => true)
+    splitter.releasePointerCapture = vi.fn()
+
+    fireEvent.pointerDown(splitter, { button: 0, pointerId: 1, clientX: 600 })
+    expect(splitter).toHaveAttribute('aria-valuenow', '50')
+
+    fireEvent.pointerMove(splitter, { pointerId: 1, clientX: 1050 })
+    expect(splitter).toHaveAttribute('aria-valuenow', '80')
+
+    fireEvent.pointerUp(splitter, { pointerId: 1 })
+    fireEvent.pointerMove(splitter, { pointerId: 1, clientX: 300 })
+    expect(splitter).toHaveAttribute('aria-valuenow', '80')
   })
 
   it('应兼容恢复旧版单组 JSON 草稿', () => {

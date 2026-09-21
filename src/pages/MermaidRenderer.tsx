@@ -7,6 +7,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import Editor from '@monaco-editor/react'
+import SplitPaneDivider from '../components/SplitPaneDivider'
+import {
+  getSplitPaneGridStyle,
+  usePersistentSplitRatio,
+} from '../hooks/useSplitPane'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import ToolLayout from '../components/ToolLayout'
 import { readExpiringStorage, TWO_DAYS_IN_MS, writeExpiringStorage } from '../utils/expiringStorage'
 import { detectFormat, type ContentFormat } from '../utils/detectFormat'
@@ -23,6 +29,7 @@ import {
 import './MermaidRenderer.css'
 
 const MERMAID_DRAFT_KEY = 'dev-tools:mermaid-renderer:draft'
+const MERMAID_SPLIT_RATIO_KEY = 'dev-tools:mermaid-renderer:split-ratio'
 const RENDER_DELAY_MS = 300
 const MIN_ZOOM = 50
 const MAX_ZOOM = 200
@@ -124,7 +131,9 @@ const MermaidRenderer = () => {
   const [isRendering, setIsRendering] = useState(false)
   const [zoom, setZoom] = useState(100)
   const [isDragging, setIsDragging] = useState(false)
+  const [splitRatio, setSplitRatio] = usePersistentSplitRatio(MERMAID_SPLIT_RATIO_KEY)
   const previewDragRef = useRef<PreviewDrag | null>(null)
+  const workspaceRef = useRef<HTMLDivElement>(null)
   const renderSequenceRef = useRef(0)
   const markdownMermaidSeqRef = useRef(0)
   const markdownPreviewRef = useRef<HTMLDivElement>(null)
@@ -201,14 +210,7 @@ const MermaidRenderer = () => {
     return () => window.clearTimeout(timer)
   }, [code, mode, renderContent])
 
-  useEffect(() => {
-    if (!isFullscreen) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsFullscreen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFullscreen])
+  useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
   // Markdown 内容中的 mermaid 代码块：DOM 注入后逐个异步渲染为 SVG
   useEffect(() => {
@@ -426,7 +428,11 @@ const MermaidRenderer = () => {
       actions={toolbar}
       hideHeader={isFullscreen}
     >
-      <div className={`mermaid-workspace ${isFullscreen ? 'preview-is-fullscreen' : ''}`}>
+      <div
+        ref={workspaceRef}
+        className={`mermaid-workspace ${isFullscreen ? 'preview-is-fullscreen' : ''}`}
+        style={getSplitPaneGridStyle(splitRatio)}
+      >
         {!isFullscreen && (
           <div className="editor-panel mermaid-code-panel">
             <div className="panel-header">
@@ -463,6 +469,15 @@ const MermaidRenderer = () => {
               />
             </div>
           </div>
+        )}
+
+        {!isFullscreen && (
+          <SplitPaneDivider
+            containerRef={workspaceRef}
+            ratio={splitRatio}
+            onRatioChange={setSplitRatio}
+            label="调整内容预览宽度"
+          />
         )}
 
         <div

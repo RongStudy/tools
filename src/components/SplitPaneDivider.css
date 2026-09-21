@@ -1,0 +1,42 @@
+.split-pane-divider {
+  position: relative;
+  min-width: 0.75rem;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.split-pane-divider::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-border-strong);
+  content: '';
+  transform: translateX(-50%);
+  transition: background-color 120ms ease, width 120ms ease;
+}
+
+.split-pane-divider span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 2.5rem;
+  border-radius: 2px;
+  background: var(--color-subtle);
+  transform: translate(-50%, -50%);
+}
+
+.split-pane-divider:hover::before,
+.split-pane-divider:focus-visible::before {
+  width: 3px;
+  background: var(--color-primary-hover);
+}
+
+.split-pane-divider:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}

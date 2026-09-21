@@ -420,6 +420,14 @@
   animation: tool-route-enter 0.16s ease-out;
 }
 
+.tool-route-loading {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  color: var(--color-muted);
+  font: 500 0.9rem/1.4 var(--font-text);
+}
+
 .tool-route-stack {
   display: flex;
   flex: 1;

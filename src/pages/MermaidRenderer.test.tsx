@@ -349,6 +349,20 @@ describe('MermaidRenderer', () => {
     expect(preview.scrollTop).toBe(130)
   })
 
+  it('应保存内容与预览的分割比例', () => {
+    const { unmount } = render(<MermaidRenderer />)
+
+    const divider = screen.getByRole('separator', { name: '调整内容预览宽度' })
+    expect(divider).toHaveAttribute('aria-valuenow', '30')
+    fireEvent.keyDown(divider, { key: 'ArrowRight' })
+    expect(divider).toHaveAttribute('aria-valuenow', '32')
+
+    unmount()
+    render(<MermaidRenderer />)
+
+    expect(screen.getByRole('separator', { name: '调整内容预览宽度' })).toHaveAttribute('aria-valuenow', '32')
+  })
+
   it('点击全屏按钮应切换全屏状态', async () => {
     render(<MermaidRenderer />)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })

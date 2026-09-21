@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import UrlCodec from './UrlCodec'
 import { ToastProvider } from '../components/Toast'
@@ -10,6 +10,10 @@ function renderUrlCodec() {
     </ToastProvider>
   )
 }
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('UrlCodec', () => {
   it('默认按参数值模式进行 URL Encode 和 Decode', () => {
@@ -97,5 +101,19 @@ describe('UrlCodec', () => {
     expect(screen.getByLabelText('编解码输出')).toHaveValue(
       '72726d8818f693066ceb69afa364218b692e62ea92b385782363780f47529c21'
     )
+  })
+
+  it('应保存输入输出的分割比例', () => {
+    const { unmount } = renderUrlCodec()
+
+    const divider = screen.getByRole('separator', { name: '调整输入输出宽度' })
+    expect(divider).toHaveAttribute('aria-valuenow', '30')
+    fireEvent.keyDown(divider, { key: 'ArrowLeft' })
+    expect(divider).toHaveAttribute('aria-valuenow', '28')
+
+    unmount()
+    renderUrlCodec()
+
+    expect(screen.getByRole('separator', { name: '调整输入输出宽度' })).toHaveAttribute('aria-valuenow', '28')
   })
 })

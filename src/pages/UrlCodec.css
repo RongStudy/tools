@@ -94,8 +94,11 @@
 
 .url-codec-grid {
   display: grid;
-  grid-template-columns: minmax(16rem, 3fr) minmax(24rem, 7fr);
-  gap: 1rem;
+  grid-template-columns:
+    minmax(10rem, var(--split-pane-start-ratio, 30fr))
+    0.75rem
+    minmax(10rem, var(--split-pane-end-ratio, 70fr));
+  gap: 0;
   flex: 1;
   min-height: 420px;
 }
@@ -153,6 +156,10 @@
   .url-codec-grid {
     grid-template-columns: 1fr;
     min-height: 760px;
+  }
+
+  .url-codec-grid > .split-pane-divider {
+    display: none;
   }
 }
 

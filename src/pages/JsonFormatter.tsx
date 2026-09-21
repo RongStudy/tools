@@ -1,22 +1,27 @@
-import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
+import SplitPaneDivider from '../components/SplitPaneDivider'
+import {
+  getSplitPaneGridStyle,
+} from '../hooks/useSplitPane'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
+import {
+  createJsonDocument,
+  DEFAULT_JSON_DOCUMENT,
+  formatJsonString,
+  normalizeJsonDocument,
+  unescapeJson,
+  type JsonDocument,
+} from '../utils/jsonFormatter'
 import type { MonacoEditor } from '../types/monaco'
 import './JsonFormatter.css'
 import '../styles/common.css'
 
 const JSON_FORMATTER_DRAFT_KEY = 'dev-tools:json-formatter:draft'
-
-type JsonDocument = {
-  id: string
-  name: string
-  input: string
-  output: string
-  error: string
-}
 
 type JsonFormatterDraft = {
   activeDocumentId: string
@@ -30,14 +35,6 @@ type LegacyJsonFormatterDraft = {
   indentSize: number
 }
 
-const DEFAULT_JSON_DOCUMENT: JsonDocument = {
-  id: 'json-1',
-  name: 'JSON 1',
-  input: '',
-  output: '',
-  error: '',
-}
-
 const DEFAULT_JSON_FORMATTER_DRAFT: JsonFormatterDraft = {
   activeDocumentId: DEFAULT_JSON_DOCUMENT.id,
   documents: [DEFAULT_JSON_DOCUMENT],
@@ -46,40 +43,15 @@ const DEFAULT_JSON_FORMATTER_DRAFT: JsonFormatterDraft = {
 
 const editorLoading = <div className="monaco-loading">编辑器加载中</div>
 
-const createJsonDocument = (documents: JsonDocument[]): JsonDocument => {
-  const highestDocumentNumber = documents.reduce((highest, document) => {
-    const match = /^JSON (\d+)$/.exec(document.name)
-    return match ? Math.max(highest, Number(match[1])) : highest
-  }, 0)
-  const nextDocumentNumber = highestDocumentNumber + 1
-
-  return {
-    id: `json-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    name: `JSON ${nextDocumentNumber}`,
-    input: '',
-    output: '',
-    error: '',
-  }
-}
-
-const isJsonDocument = (value: unknown): value is JsonDocument => {
-  if (!value || typeof value !== 'object') return false
-
-  const document = value as Partial<JsonDocument>
-  return typeof document.id === 'string'
-    && typeof document.name === 'string'
-    && typeof document.input === 'string'
-    && typeof document.output === 'string'
-    && typeof document.error === 'string'
-}
-
 const readJsonFormatterDraft = (): JsonFormatterDraft => {
   const savedDraft = readExpiringStorage<unknown>(JSON_FORMATTER_DRAFT_KEY)
   if (!savedDraft || typeof savedDraft !== 'object') return DEFAULT_JSON_FORMATTER_DRAFT
 
   const draft = savedDraft as Partial<JsonFormatterDraft & LegacyJsonFormatterDraft>
   if (Array.isArray(draft.documents)) {
-    const documents = draft.documents.filter(isJsonDocument)
+    const documents = draft.documents
+      .map(normalizeJsonDocument)
+      .filter((document): document is JsonDocument => document !== null)
     const activeDocumentId = documents.some((document) => document.id === draft.activeDocumentId)
       ? draft.activeDocumentId as string
       : documents[0]?.id
@@ -109,14 +81,14 @@ const JsonFormatter = () => {
   const editorRef = useRef<MonacoEditor | null>(null)
   const outputEditorRef = useRef<MonacoEditor | null>(null)
   const editorContainerRef = useRef<HTMLDivElement>(null)
-  const outputPanelRef = useRef<HTMLDivElement>(null)
 
   const { showToast } = useToast()
   const isOutputFullscreen = fullscreenMode === 'output'
   const isDualFullscreen = fullscreenMode === 'both'
   const isFullscreen = fullscreenMode !== 'none'
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
-  const { input, output, error } = activeDocument
+  const { input, output, error, splitRatio } = activeDocument
+  const editorGridStyle = getSplitPaneGridStyle(splitRatio)
 
   useEffect(() => {
     writeExpiringStorage(
@@ -126,66 +98,19 @@ const JsonFormatter = () => {
     )
   }, [activeDocumentId, documents, indentSize])
 
-  const enterFullscreen = useCallback(async (element: HTMLElement | null, mode: 'output' | 'both') => {
-    if (!element) return
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen?.()
-      }
-      if (element.requestFullscreen) {
-        await element.requestFullscreen()
-        setFullscreenMode(mode)
-      }
-    } catch (err) {
-      console.error('全屏操作失败:', err)
-    }
+  const exitFullscreen = useCallback(() => {
+    setFullscreenMode('none')
   }, [])
 
-  const exitFullscreen = useCallback(async () => {
-    try {
-      if (document.fullscreenElement && document.exitFullscreen) {
-        await document.exitFullscreen()
-      }
-      setFullscreenMode('none')
-    } catch (err) {
-      console.error('退出全屏失败:', err)
-    }
+  const toggleOutputFullscreen = useCallback(() => {
+    setFullscreenMode((currentMode) => currentMode === 'none' ? 'output' : 'none')
   }, [])
 
-  const toggleOutputFullscreen = useCallback(async () => {
-    if (isFullscreen) {
-      await exitFullscreen()
-      return
-    }
-    await enterFullscreen(outputPanelRef.current, 'output')
-  }, [enterFullscreen, exitFullscreen, isFullscreen])
-
-  const toggleDualFullscreen = useCallback(async () => {
-    if (isFullscreen) {
-      await exitFullscreen()
-      return
-    }
-    await enterFullscreen(editorContainerRef.current, 'both')
-  }, [enterFullscreen, exitFullscreen, isFullscreen])
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const fullscreenElement = document.fullscreenElement
-      if (!fullscreenElement) {
-        setFullscreenMode('none')
-      } else if (fullscreenElement === editorContainerRef.current) {
-        setFullscreenMode('both')
-      } else if (fullscreenElement === outputPanelRef.current) {
-        setFullscreenMode('output')
-      }
-    }
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
+  const toggleDualFullscreen = useCallback(() => {
+    setFullscreenMode((currentMode) => currentMode === 'none' ? 'both' : 'none')
   }, [])
+
+  useEscapeToClose(isFullscreen, exitFullscreen)
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -194,44 +119,9 @@ const JsonFormatter = () => {
     })
 
     return () => window.cancelAnimationFrame(frameId)
-  }, [activeDocumentId, error, fullscreenMode])
+  }, [activeDocumentId, error, fullscreenMode, splitRatio])
 
-  // 多层嵌套转义JSON的解转义
-  const unescapeJson = useMemo(() => (str: string): string => {
-    let result = str
-    let previousResult = ''
-
-    // 循环解转义，直到没有变化为止
-    while (result !== previousResult) {
-      previousResult = result
-      try {
-        const parsed = JSON.parse(result)
-        if (typeof parsed === 'string') {
-          result = parsed
-        } else {
-          break
-        }
-      } catch {
-        result = result
-          .replace(/\\"/g, '"')
-          .replace(/\\n/g, '\n')
-          .replace(/\\r/g, '\r')
-          .replace(/\\t/g, '\t')
-          .replace(/\\\\/g, '\\')
-      }
-    }
-
-    return result
-  }, [])
-
-  const formatJsonString = (value: string, size: number): string => {
-    let jsonStr = value.trim()
-    jsonStr = unescapeJson(jsonStr)
-    const jsonObj = JSON.parse(jsonStr)
-    return JSON.stringify(jsonObj, null, size)
-  }
-
-  const updateActiveDocument = (updates: Partial<Pick<JsonDocument, 'input' | 'output' | 'error'>>) => {
+  const updateActiveDocument = (updates: Partial<Pick<JsonDocument, 'input' | 'output' | 'error' | 'splitRatio'>>) => {
     setDocuments((currentDocuments) => currentDocuments.map((document) => (
       document.id === activeDocumentId ? { ...document, ...updates } : document
     )))
@@ -447,6 +337,7 @@ const JsonFormatter = () => {
         ref={editorContainerRef}
         data-testid="json-editor-container"
         className={`editor-container ${isOutputFullscreen ? 'fullscreen-container' : ''} ${isDualFullscreen ? 'dual-fullscreen-container' : ''}`}
+        style={editorGridStyle}
       >
         {!isOutputFullscreen && (
           <div className={`editor-panel ${isDualFullscreen ? 'fullscreen-panel' : ''}`}>
@@ -492,10 +383,16 @@ const JsonFormatter = () => {
           </div>
         )}
 
-        <div
-          ref={outputPanelRef}
-          className={`editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
-        >
+        {!isOutputFullscreen && (
+          <SplitPaneDivider
+            containerRef={editorContainerRef}
+            ratio={splitRatio}
+            onRatioChange={(nextRatio) => updateActiveDocument({ splitRatio: nextRatio })}
+            label="调整输入输出宽度"
+          />
+        )}
+
+        <div className={`editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}>
           <div className="panel-header">
             <span>输出</span>
             <div className="panel-actions">

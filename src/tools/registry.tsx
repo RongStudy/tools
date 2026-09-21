@@ -1,12 +1,13 @@
-import type { ComponentType } from 'react'
+import { lazy, type ComponentType } from 'react'
 import Home from '../pages/Home'
-import JsonFormatter from '../pages/JsonFormatter'
-import CodeDiff from '../pages/CodeDiff'
-import TimestampConverter from '../pages/TimestampConverter'
-import UrlCodec from '../pages/UrlCodec'
-import MermaidRenderer from '../pages/MermaidRenderer'
-import RegexTester from '../pages/RegexTester'
-import ScratchPad from '../pages/ScratchPad'
+
+const JsonFormatter = lazy(() => import('../pages/JsonFormatter'))
+const CodeDiff = lazy(() => import('../pages/CodeDiff'))
+const TimestampConverter = lazy(() => import('../pages/TimestampConverter'))
+const UrlCodec = lazy(() => import('../pages/UrlCodec'))
+const MermaidRenderer = lazy(() => import('../pages/MermaidRenderer'))
+const RegexTester = lazy(() => import('../pages/RegexTester'))
+const ScratchPad = lazy(() => import('../pages/ScratchPad'))
 
 export type ToolDefinition = {
   path: string
