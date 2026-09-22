@@ -6,6 +6,9 @@ dist/
 dist-ssr/
 build/
 
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Vite / tool caches
 .vite/
 node_modules/.vite/

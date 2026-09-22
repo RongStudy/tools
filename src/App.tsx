@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from 'react'
-import { loader } from '@monaco-editor/react'
-import { BrowserRouter, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { PlatformRouter } from '@platform'
+import { setupMonaco } from '@monaco-setup'
 import { ToastProvider } from './components/Toast'
 import AppShell from './components/AppShell'
 import { tools } from './tools/registry'
@@ -67,20 +68,20 @@ const ToolRoutes = () => {
 function App() {
   useEffect(() => {
     const restoreConsoleError = suppressMonacoCancellationErrorLogs()
-    void loader.init()
+    setupMonaco()
 
     return restoreConsoleError
   }, [])
 
   return (
     <ToastProvider>
-      <BrowserRouter basename="/tools">
+      <PlatformRouter>
         <AppShell tools={tools}>
           <Suspense fallback={<div className="tool-route-loading">工具加载中</div>}>
             <ToolRoutes />
           </Suspense>
         </AppShell>
-      </BrowserRouter>
+      </PlatformRouter>
     </ToastProvider>
   )
 }

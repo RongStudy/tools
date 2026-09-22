@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "开发工具",
+  "description": "JSON 格式化、代码对比、编解码、时间转换和 Mermaid 图表渲染工具。",
+  "version": "1.0.0",
+  "icons": {
+    "48": "icon.png"
+  },
+  "action": {
+    "default_title": "开发工具",
+    "default_icon": {
+      "48": "icon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}

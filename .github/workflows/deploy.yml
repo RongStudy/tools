@@ -13,6 +13,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Web 产物：部署到 GitHub Pages 的 /tools/ 子路径
   deploy:
     environment:
       name: github-pages
@@ -28,16 +29,45 @@ jobs:
           node-version: 24
           cache: 'npm'
 
-      - name: 3. 安装依赖并打包
+      - name: 3. 安装依赖并打包 Web 产物
         run: |
           npm ci
-          npm run build
+          npm run build:web
 
       - name: 4. 上传打包产物
         uses: actions/upload-pages-artifact@v5
         with:
-          path: './dist' # Vite 默认打包到 dist 目录
+          path: './dist/web'
 
       - name: 5. 正式发布到 Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  # Chrome 扩展产物：打包为可直接加载的 ZIP 并作为 artifact 上传
+  chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. 拉取代码
+        uses: actions/checkout@v6
+
+      - name: 2. 安装 Node.js 环境
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: 3. 安装依赖并打包 Chrome 扩展产物
+        run: |
+          npm ci
+          npm run build:chrome
+
+      - name: 4. 压缩扩展目录
+        working-directory: ./dist/chrome
+        run: zip -r ../../chrome-extension.zip .
+
+      - name: 5. 上传扩展产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: chrome-extension
+          path: chrome-extension.zip
+          if-no-files-found: error

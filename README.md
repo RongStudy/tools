@@ -87,15 +87,16 @@ npm install
 ### 开发模式
 
 ```bash
-npm run dev
+npm run dev          # Web target，http://localhost:3000/tools/
+npm run dev:chrome   # Chrome target，使用 hash 路由与本地 Monaco
 ```
-
-应用将在 `http://localhost:3000` 启动
 
 ### 构建生产版本
 
 ```bash
-npm run build
+npm run build          # 等价于 build:web
+npm run build:web      # Web 产物，输出到 dist/web，部署到 GitHub Pages 的 /tools/ 子路径
+npm run build:chrome   # Chrome 扩展产物，输出到 dist/chrome
 ```
 
 ### 预览生产构建
@@ -104,10 +105,47 @@ npm run build
 npm run preview
 ```
 
+## 构建目标
+
+两个 target 共用同一套页面、组件、工具注册表和测试，平台差异只在 Vite 配置和少量适配模块中：
+
+| 配置项 | Web target | Chrome target |
+|---|---|---|
+| Vite mode | `web` | `chrome` |
+| `base` | `/tools/` | `./` |
+| 路由 | `BrowserRouter`（`src/platform/web.tsx`） | `HashRouter`（`src/platform/chrome.tsx`） |
+| Monaco | `@monaco-editor/react` 的 CDN loader（`src/monaco/web.ts`） | 打进扩展包的本地 Monaco 与语言 Worker（`src/monaco/chrome.ts`） |
+| 扩展文件 | 不输出 | 输出 `manifest.json`、`background.js`、`icon.png` |
+| 输出目录 | `dist/web` | `dist/chrome` |
+
+平台模块通过 `vite.config.ts` 中的 `@platform`、`@monaco-setup` alias 在编译期选定，业务代码不感知运行环境，也不做运行时环境探测。
+
+Chrome target 的体积明显大于 Web target，差异来自本地 Monaco 本体、语言模块和各类 Worker。
+
+## Chrome 扩展
+
+`dist/chrome` 是一个可直接加载的 Manifest V3 扩展：
+
+1. 执行 `npm run build:chrome`；
+2. 打开 `chrome://extensions/` 并开启「开发者模式」；
+3. 点击「加载已解压的扩展程序」，选择 `dist/chrome` 目录；
+4. 点击工具栏中的扩展图标，会在新标签页打开完整工具页。
+
+实现说明：
+
+- 扩展专属文件放在独立的 `chrome/` 目录，不放进共享 `public/`，避免 Web 产物也发布扩展清单；
+- `manifest.json` 的 `version` 在构建时由 `package.json` 的 `version` 注入，无需两处手动同步；
+- Manifest V3 禁止远程执行代码，因此 Chrome target 不使用 Monaco CDN，Worker 也随扩展包一起发布；
+- 扩展页面没有服务端 history fallback，必须使用 hash 路由。
+
 ## 项目结构
 
 ```
 tool/
+├── chrome/                       # Chrome 扩展专属文件，仅在 build:chrome 时输出
+│   ├── manifest.json
+│   ├── background.js
+│   └── icon.png
 ├── src/
 │   ├── pages/
 │   │   ├── Home.tsx              # 首页
@@ -131,8 +169,19 @@ tool/
 │   │   └── Toast.tsx             # Toast 通知组件
 │   ├── hooks/
 │   │   └── useDiffEditor.ts      # Diff 编辑器 Hook
+│   ├── platform/                 # 路由等平台适配，按 target 二选一
+│   │   ├── types.ts              # 平台模块契约
+│   │   ├── web.tsx               # BrowserRouter + /tools basename
+│   │   └── chrome.tsx            # HashRouter
+│   ├── monaco/                   # Monaco 初始化，按 target 二选一
+│   │   ├── types.ts              # 平台模块契约
+│   │   ├── web.ts                # CDN loader
+│   │   └── chrome.ts             # 本地 Monaco + 语言 Worker
 │   ├── tools/
 │   │   └── registry.tsx          # 工具页注册表
+│   ├── types/
+│   │   ├── css.d.ts              # CSS 导入类型声明
+│   │   └── worker.d.ts           # Vite ?worker 导入类型声明
 │   ├── utils/
 │   │   ├── clipboard.ts          # 剪贴板工具
 │   │   ├── expiringStorage.ts    # 带过期时间的本地存储
@@ -141,10 +190,14 @@ tool/
 │   ├── App.css
 │   ├── main.tsx                  # 应用入口
 │   └── index.css                 # 全局样式
-├── public/
+├── public/                       # Web 与 Chrome 共用的静态资源
+├── dist/
+│   ├── web/                      # build:web 产物
+│   └── chrome/                   # build:chrome 产物
 ├── index.html
 ├── package.json
 ├── tsconfig.json
+├── tsconfig.node.json
 ├── vite.config.ts
 └── README.md
 ```
