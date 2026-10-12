@@ -24,13 +24,17 @@
 }
 
 .scratch-font-size {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
   min-width: 2.75rem;
   text-align: center;
-  font: 500 0.82rem/1.2 var(--font-mono);
+  font: 500 0.875rem/1.2 var(--font-mono);
   color: var(--color-muted);
   padding: 0.35rem 0.4rem;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--color-surface);
 }
 
@@ -147,6 +151,14 @@
   color: var(--color-text);
   font-size: 0.85rem;
   letter-spacing: -0.01em;
+}
+
+.scratch-pane.is-active .scratch-pane-header {
+  box-shadow: inset 0 -2px 0 var(--color-primary-border);
+}
+
+.scratch-pane.is-active .scratch-pane-label {
+  color: var(--color-primary-hover);
 }
 
 .scratch-pane-header select {

@@ -40,7 +40,7 @@
 }
 
 .btn-toggle {
-  min-height: 2.25rem;
+  min-height: 2.5rem;
   padding: 0.45rem 0.9rem;
   border: none;
   border-radius: 999px;
@@ -344,7 +344,8 @@
 }
 
 @media (max-width: 640px) {
-  .btn-toggle {
+  .btn-toggle,
+  .diff-controls .btn {
     min-height: 2.75rem;
   }
 

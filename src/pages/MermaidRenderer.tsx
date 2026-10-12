@@ -398,7 +398,7 @@ const MermaidRenderer = () => {
           <button
             key={option.value}
             type="button"
-            className={`btn-small mode-button ${mode === option.value ? 'active' : ''}`}
+            className={`btn btn-secondary mode-button ${mode === option.value ? 'active' : ''}`}
             onClick={() => setMode(option.value)}
             aria-pressed={mode === option.value}
           >

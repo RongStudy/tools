@@ -58,20 +58,19 @@
 }
 
 .url-codec-action-group .btn {
-  min-height: 2.25rem;
   padding-inline: 0.8rem;
 }
 
 .url-codec-mode button {
   min-width: 5rem;
-  min-height: 2.25rem;
+  min-height: 2.5rem;
   padding: 0.45rem 0.8rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--color-muted);
   cursor: pointer;
-  font: 500 0.88rem/1.2 var(--font-text);
+  font: 500 0.875rem/1.2 var(--font-text);
 }
 
 .url-codec-mode button:last-child {

@@ -155,19 +155,21 @@ Guidelines:
 
 # App Shell
 
-The app uses a persistent left sidebar and a full-height main workspace.
+The app uses a persistent icon Dock on the left and a full-height main workspace.
 
-Sidebar:
+Dock:
 
-- Default width: 300px.
-- Collapsed width: 76px.
-- Background: `--color-bg`.
-- Right border: `--color-border`.
-- The brand mark is a compact square, not a logo lockup.
-- Tool groups use muted category labels.
-- Tool rows show title plus short capability text.
-- Active tool rows use `--color-surface-muted` and `--color-primary-border`.
-- Collapsed mode shows stable initials or icons with tooltips/titles.
+- Fixed desktop width: 84px. Hovering never expands the rail or resizes the workspace.
+- The brand mark is a compact square; home and search have separate navigation controls.
+- Tools use replaceable SVG/image icons configured in the tool registry.
+- Each link has a stable 64px-tall slot, up to 76px wide (fitting beside the scrollbar in short windows), and a 40px icon surface.
+- Fine-pointer movement uses distance along the vertical rail to magnify nearby icon surfaces up to 1.45×, with spring smoothing and at most 6px of vertical displacement; link slots remain fixed. Leaving the rail springs back to rest.
+- Active tools use a lavender icon surface and a separate side indicator.
+- Hover and keyboard focus show a tool-name tooltip outside the scrolling rail.
+- Search opens a modal tool switcher; Cmd/Ctrl+K opens it from anywhere.
+- Short desktop windows scroll the tool list while brand and search remain reachable.
+- At widths up to 900px, use a horizontal scrolling launcher with visible short labels.
+- Touch pointers and reduced-motion preferences disable magnification.
 
 Main workspace:
 

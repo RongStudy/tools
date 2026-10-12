@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import ScratchPad from './ScratchPad'
 import { ToastProvider } from '../components/Toast'
@@ -30,7 +30,87 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.useRealTimers()
+})
+
+const mockDownloads = () => {
+  const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:scratch-download')
+  const revokeObjectURL = vi.fn()
+  vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+  const filenames: string[] = []
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    filenames.push(this.download)
+  })
+  return { createObjectURL, revokeObjectURL, filenames }
+}
+
 describe('ScratchPad', () => {
+  it('只下载最近获得焦点的分栏，保留完整文本并在下载后释放资源', async () => {
+    vi.useFakeTimers()
+    const { createObjectURL, revokeObjectURL, filenames } = mockDownloads()
+    renderScratchPad()
+    fireEvent.click(screen.getByRole('button', { name: /分栏/ }))
+    const editors = screen.getAllByLabelText('scratch-editor-plaintext')
+    fireEvent.change(editors[0], { target: { value: '不应导出的第一栏' } })
+    const content = '第二栏中文内容\n<原样保存> & 😀\n'
+    fireEvent.change(editors[1], { target: { value: content } })
+    fireEvent.focus(editors[1])
+    expect(editors[1].closest('.scratch-pane')).toHaveClass('is-active')
+    const save = screen.getByRole('button', { name: '保存本栏' })
+    expect(save).toHaveAttribute('title', '保存栏 2 到本地文件')
+    fireEvent.blur(editors[1])
+    fireEvent.focus(save)
+    fireEvent.click(save)
+    const blob = createObjectURL.mock.calls[0][0] as Blob
+    expect(await blob.text()).toBe(content)
+    expect(blob.type).toBe('text/plain;charset=utf-8')
+    expect(filenames).toEqual(['文本 1-栏 2.txt'])
+    expect(document.querySelector('a[download]')).not.toBeInTheDocument()
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1000)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:scratch-download')
+  })
+
+  it('记住每个文本的当前栏，关闭当前栏后只保存仍存在的分栏', async () => {
+    const { createObjectURL } = mockDownloads()
+    renderScratchPad()
+    fireEvent.click(screen.getByRole('button', { name: /分栏/ }))
+    const editors = screen.getAllByLabelText('scratch-editor-plaintext')
+    fireEvent.change(editors[0], { target: { value: '保留的第一栏' } })
+    fireEvent.change(editors[1], { target: { value: '原文本第二栏' } })
+    fireEvent.pointerDown(editors[1])
+    fireEvent.click(screen.getByRole('button', { name: '新建文本' }))
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '新文本内容' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存本栏' }))
+    expect(await (createObjectURL.mock.calls[0][0] as Blob).text()).toBe('新文本内容')
+    fireEvent.click(screen.getByRole('tab', { name: '文本 1' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存本栏' }))
+    expect(await (createObjectURL.mock.calls[1][0] as Blob).text()).toBe('原文本第二栏')
+    fireEvent.click(screen.getByRole('button', { name: '关闭栏 2' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存本栏' }))
+    expect(await (createObjectURL.mock.calls[2][0] as Blob).text()).toBe('保留的第一栏')
+  })
+
+  it('全屏模式也能保存当前空分栏', async () => {
+    const { createObjectURL } = mockDownloads()
+    renderScratchPad()
+    fireEvent.click(screen.getByTitle('浏览器内全屏'))
+    fireEvent.click(screen.getByRole('button', { name: '保存本栏' }))
+    expect(await (createObjectURL.mock.calls[0][0] as Blob).text()).toBe('')
+  })
+
+  it('下载失败时提供提示而不改变各栏内容', async () => {
+    const { createObjectURL } = mockDownloads()
+    createObjectURL.mockImplementation(() => { throw new Error('download unavailable') })
+    renderScratchPad()
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '仍保留的内容' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存本栏' }))
+    expect(await screen.findByText('保存文件失败，请重试')).toBeInTheDocument()
+    expect(screen.getByLabelText('scratch-editor-plaintext')).toHaveValue('仍保留的内容')
+  })
+
   it('新增分栏最多三个，超过后按钮禁用', () => {
     renderScratchPad()
 

@@ -194,8 +194,11 @@ const ScratchPad = () => {
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
   const [fontSize, setFontSize] = useState(initialDraft.fontSize)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [selectedPaneIds, setSelectedPaneIds] = useState<Record<string, string>>({})
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
   const { panes } = activeDocument
+  const selectedPaneIndex = Math.max(0, panes.findIndex((pane) => pane.id === selectedPaneIds[activeDocument.id]))
+  const selectedPane = panes[selectedPaneIndex]
   const { showToast } = useToast()
 
   useEffect(() => {
@@ -277,6 +280,34 @@ const ScratchPad = () => {
     }
   }
 
+  const selectPane = (paneId: string) => {
+    setSelectedPaneIds((current) => current[activeDocument.id] === paneId
+      ? current
+      : { ...current, [activeDocument.id]: paneId })
+  }
+
+  const saveSelectedPane = () => {
+    try {
+      const blob = new Blob([selectedPane.content], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const name = activeDocument.name.replace(/[\p{Cc}<>:"/\\|?*]/gu, '_') || '临时文本'
+      link.href = url
+      link.download = `${name}-栏 ${selectedPaneIndex + 1}.txt`
+      document.body.appendChild(link)
+      try {
+        link.click()
+        showToast(`已发起栏 ${selectedPaneIndex + 1} 的文件下载`)
+      } finally {
+        link.remove()
+        // Keep the URL alive until the browser has consumed the download click.
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
+    } catch {
+      showToast('保存文件失败，请重试', 'error')
+    }
+  }
+
   const totalChars = panes.reduce((sum, pane) => sum + pane.content.length, 0)
 
   const toolbar = (
@@ -284,7 +315,7 @@ const ScratchPad = () => {
       <div className="scratch-zoom-control" role="group" aria-label="字号缩放">
         <button
           onClick={zoomOut}
-          className="btn-small"
+          className="btn btn-secondary"
           disabled={fontSize <= MIN_FONT_SIZE}
           title="缩小字号"
         >
@@ -293,7 +324,7 @@ const ScratchPad = () => {
         <span className="scratch-font-size" title="当前字号">{fontSize}px</span>
         <button
           onClick={zoomIn}
-          className="btn-small"
+          className="btn btn-secondary"
           disabled={fontSize >= MAX_FONT_SIZE}
           title="放大字号"
         >
@@ -301,11 +332,10 @@ const ScratchPad = () => {
         </button>
         <button
           onClick={resetZoom}
-          className="btn-small"
-          disabled={fontSize === DEFAULT_FONT_SIZE}
-          title="重置字号"
+          className="btn btn-secondary"
+          title={`恢复默认字号（${DEFAULT_FONT_SIZE}px）`}
         >
-          重置
+          默认字号
         </button>
       </div>
       <button onClick={clearAllPanes} className="btn btn-danger">清空</button>
@@ -358,6 +388,14 @@ const ScratchPad = () => {
           <span>输入</span>
           <div className="panel-actions">
             <button
+              type="button"
+              onClick={saveSelectedPane}
+              className="btn-small"
+              title={`保存栏 ${selectedPaneIndex + 1} 到本地文件`}
+            >
+              保存本栏
+            </button>
+            <button
               onClick={addPane}
               className="btn-small"
               disabled={panes.length >= MAX_PANES}
@@ -380,7 +418,12 @@ const ScratchPad = () => {
           style={{ gridTemplateColumns: `repeat(${panes.length}, minmax(0, 1fr))` }}
         >
           {panes.map((pane, index) => (
-            <div className="scratch-pane" key={pane.id}>
+            <div
+              className={`scratch-pane${pane.id === selectedPane.id ? ' is-active' : ''}`}
+              key={pane.id}
+              onPointerDownCapture={() => selectPane(pane.id)}
+              onFocusCapture={() => selectPane(pane.id)}
+            >
               <div className="scratch-pane-header">
                 <span className="scratch-pane-label">栏 {index + 1}</span>
                 <select

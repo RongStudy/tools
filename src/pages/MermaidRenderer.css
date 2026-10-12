@@ -4,6 +4,7 @@
 
 .mermaid-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -11,9 +12,15 @@
 
 .mermaid-mode-switch {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.25rem;
   margin-right: auto;
+}
+
+.mermaid-toolbar .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .mermaid-layout-switch {
@@ -32,7 +39,8 @@
   border-color: var(--color-border-strong);
 }
 
-.mode-button.active {
+.mode-button.active,
+.mermaid-mode-switch .mode-button.active {
   color: #fff;
   background: var(--color-primary);
   border-color: var(--color-primary);
