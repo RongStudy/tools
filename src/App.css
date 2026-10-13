@@ -194,6 +194,7 @@
 .tool-route-stack { display: flex; flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .tool-route-panel { position: absolute; inset: 0; display: flex; min-width: 0; min-height: 0; opacity: 0; pointer-events: none; visibility: hidden; }
 .tool-route-panel.active { opacity: 1; pointer-events: auto; visibility: visible; z-index: 1; }
+.tool-route-panel.active:has(.fullscreen-mode) { z-index: 9999; }
 
 @keyframes tool-route-enter {
   from { opacity: .88; transform: translateY(4px); }

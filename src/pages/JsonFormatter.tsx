@@ -345,6 +345,7 @@ const JsonFormatter = () => {
                   fontSize: isDualFullscreen ? 16 : 14,
                   wordWrap: 'on',
                   automaticLayout: true,
+                  fixedOverflowWidgets: true,
                   scrollBeyondLastLine: false,
                   ariaLabel: 'JSON 输入',
                 }}
@@ -409,6 +410,7 @@ const JsonFormatter = () => {
                 fontSize: isFullscreen ? 16 : 14,
                 wordWrap: 'on',
                 automaticLayout: true,
+                fixedOverflowWidgets: true,
                 scrollBeyondLastLine: false,
                 readOnly: true,
                 ariaLabel: 'JSON 输出',
