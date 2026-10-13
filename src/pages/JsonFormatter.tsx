@@ -6,6 +6,7 @@ import {
 } from '../hooks/useSplitPane'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import ToolLayout from '../components/ToolLayout'
+import SaveFileDialog, { type SaveFileRequest } from '../components/SaveFileDialog'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
@@ -78,6 +79,7 @@ const JsonFormatter = () => {
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
   const [indentSize, setIndentSize] = useState(initialDraft.indentSize)
   const [fullscreenMode, setFullscreenMode] = useState<'none' | 'output' | 'both'>('none')
+  const [saveRequest, setSaveRequest] = useState<SaveFileRequest | null>(null)
   const editorRef = useRef<MonacoEditor | null>(null)
   const outputEditorRef = useRef<MonacoEditor | null>(null)
   const editorContainerRef = useRef<HTMLDivElement>(null)
@@ -397,6 +399,14 @@ const JsonFormatter = () => {
             <span>输出</span>
             <div className="panel-actions">
               <button
+                type="button"
+                className="btn-small"
+                disabled={!output}
+                onClick={() => setSaveRequest({ content: output, defaultFilename: `${activeDocument.name}.json`, mimeType: 'application/json;charset=utf-8' })}
+              >
+                保存到文件
+              </button>
+              <button
                 onClick={() => copyToClipboard(output)}
                 className="btn-small"
                 disabled={!output}
@@ -439,6 +449,7 @@ const JsonFormatter = () => {
           </div>
         </div>
       </div>
+      {saveRequest && <SaveFileDialog {...saveRequest} onClose={() => setSaveRequest(null)} />}
     </ToolLayout>
   )
 }

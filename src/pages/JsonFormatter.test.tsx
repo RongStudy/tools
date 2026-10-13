@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import JsonFormatter from './JsonFormatter'
 import { ToastProvider } from '../components/Toast'
@@ -31,7 +31,41 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe('JsonFormatter', () => {
+  it('保存当前标签的输出，支持自定义文件名及输出全屏', async () => {
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:json-download')
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL: vi.fn() })
+    const filenames: string[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      filenames.push(this.download)
+    })
+    renderJsonFormatter()
+    expect(screen.getByRole('button', { name: '保存到文件' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"first":1}' } })
+    fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"第二个":"中文😀"}' } })
+    fireEvent.click(screen.getByRole('button', { name: '压缩' }))
+    fireEvent.click(screen.getByTitle('全屏查看'))
+    fireEvent.click(screen.getByRole('button', { name: '保存到文件' }))
+    expect(screen.getByLabelText('文件名')).toHaveValue('JSON 2.json')
+    fireEvent.change(screen.getByLabelText('文件名'), { target: { value: '测试结果.json' } })
+    fireEvent.click(screen.getByRole('button', { name: /^保存$/ }))
+    expect(filenames).toEqual(['测试结果.json'])
+    const blob = createObjectURL.mock.calls[0][0]
+    expect(await blob.text()).toBe('{"第二个":"中文😀"}')
+    expect(blob.type).toBe('application/json;charset=utf-8')
+    fireEvent.click(screen.getByTitle('退出全屏'))
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存到文件' }))
+    fireEvent.click(screen.getByRole('button', { name: /^保存$/ }))
+    expect(await createObjectURL.mock.calls[1][0].text()).toBe('{\n  "first": 1\n}')
+    expect(filenames[1]).toBe('JSON 1.json')
+  })
+
   it('解析失败时应清空旧输出，避免展示过期结果', () => {
     renderJsonFormatter()
 

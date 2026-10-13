@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import ToolLayout from '../components/ToolLayout'
+import SaveFileDialog, { type SaveFileRequest } from '../components/SaveFileDialog'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
@@ -195,6 +196,7 @@ const ScratchPad = () => {
   const [fontSize, setFontSize] = useState(initialDraft.fontSize)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedPaneIds, setSelectedPaneIds] = useState<Record<string, string>>({})
+  const [saveRequest, setSaveRequest] = useState<SaveFileRequest | null>(null)
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
   const { panes } = activeDocument
   const selectedPaneIndex = Math.max(0, panes.findIndex((pane) => pane.id === selectedPaneIds[activeDocument.id]))
@@ -287,25 +289,11 @@ const ScratchPad = () => {
   }
 
   const saveSelectedPane = () => {
-    try {
-      const blob = new Blob([selectedPane.content], { type: 'text/plain;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      const name = activeDocument.name.replace(/[\p{Cc}<>:"/\\|?*]/gu, '_') || '临时文本'
-      link.href = url
-      link.download = `${name}-栏 ${selectedPaneIndex + 1}.txt`
-      document.body.appendChild(link)
-      try {
-        link.click()
-        showToast(`已发起栏 ${selectedPaneIndex + 1} 的文件下载`)
-      } finally {
-        link.remove()
-        // Keep the URL alive until the browser has consumed the download click.
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      }
-    } catch {
-      showToast('保存文件失败，请重试', 'error')
-    }
+    setSaveRequest({
+      content: selectedPane.content,
+      defaultFilename: `${activeDocument.name}-栏 ${selectedPaneIndex + 1}.txt`,
+      mimeType: 'text/plain;charset=utf-8',
+    })
   }
 
   const totalChars = panes.reduce((sum, pane) => sum + pane.content.length, 0)
@@ -475,6 +463,7 @@ const ScratchPad = () => {
           ))}
         </div>
       </div>
+      {saveRequest && <SaveFileDialog {...saveRequest} onClose={() => setSaveRequest(null)} />}
     </ToolLayout>
   )
 }
