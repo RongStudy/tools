@@ -1,13 +1,17 @@
-import { useState, useEffect, useCallback } from 'react'
+import EditorLanguageTools, { type EditorLanguageBinding } from '../components/EditorLanguageTools'
+import { languageEditorOptions } from '../monaco/languageCapabilities'
+import { useDraftPersistence } from '../hooks/useDraftPersistence'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import { diffLines, diffTrimmedLines } from 'diff'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
 import { detectLanguageFromFileName, detectLanguageFromContent } from '../utils/languageDetection'
 import { useDiffEditor } from '../hooks/useDiffEditor'
+import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { writeTextToClipboard } from '../utils/clipboard'
-import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
+import { readExpiringStorage } from '../utils/expiringStorage'
 import type { MonacoDiffEditor } from '../types/monaco'
 import './CodeDiff.css'
 import '../styles/common.css'
@@ -29,6 +33,8 @@ type CodeDiffDocument = {
   originalFileName: string
   modifiedFileName: string
   ignoreWhitespace: boolean
+  hideUnchanged: boolean
+  showMoves: boolean
 }
 
 type LegacyCodeDiffDraft = Omit<CodeDiffDocument, 'id' | 'name'>
@@ -43,6 +49,8 @@ const DEFAULT_CODE_DIFF_DOCUMENT: CodeDiffDocument = {
   originalFileName: '',
   modifiedFileName: '',
   ignoreWhitespace: false,
+  hideUnchanged: false,
+  showMoves: false,
 }
 
 const DEFAULT_CODE_DIFF_DRAFT: CodeDiffDraft = {
@@ -84,7 +92,11 @@ const readCodeDiffDraft = (): CodeDiffDraft => {
 
   const draft = savedDraft as Partial<CodeDiffDraft & LegacyCodeDiffDraft>
   if (Array.isArray(draft.documents)) {
-    const documents = draft.documents.filter(isCodeDiffDocument)
+    const documents = draft.documents.filter(isCodeDiffDocument).map((document) => ({
+      ...document,
+      hideUnchanged: document.hideUnchanged === true,
+      showMoves: document.showMoves === true,
+    }))
     const activeDocumentId = documents.some((document) => document.id === draft.activeDocumentId)
       ? draft.activeDocumentId as string
       : documents[0]?.id
@@ -131,12 +143,16 @@ const CodeDiff = () => {
     originalFileName,
     modifiedFileName,
     ignoreWhitespace,
+    hideUnchanged,
+    showMoves,
   } = activeDocument
+  const registerMonaco = useMonacoModels(documents.flatMap(({ id }) => [modelPath('diff', id, 'original'), modelPath('diff', id, 'modified')]))
   const [editorContent, setEditorContent] = useState(() => ({
     originalCode: activeDocument.originalCode,
     modifiedCode: activeDocument.modifiedCode,
   }))
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [languageBindings, setLanguageBindings] = useState<{ original: EditorLanguageBinding; modified: EditorLanguageBinding }>()
   const {
     handleEditorMount,
     navigateToNextDiff,
@@ -144,99 +160,19 @@ const CodeDiff = () => {
     getDiffCount,
     ensureEditable,
     setEditorCallbacks,
-  } = useDiffEditor()
+  } = useDiffEditor(activeDocument.id)
   const { showToast } = useToast()
 
   useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
-  useEffect(() => {
-    writeExpiringStorage(
-      CODE_DIFF_DRAFT_KEY,
-      { activeDocumentId, documents },
-      TWO_DAYS_IN_MS
-    )
-  }, [activeDocumentId, documents])
+  const draft = useMemo(() => ({ activeDocumentId, documents }), [activeDocumentId, documents])
+  useDraftPersistence(CODE_DIFF_DRAFT_KEY, draft)
 
   const updateActiveDocument = useCallback((updates: Partial<Omit<CodeDiffDocument, 'id' | 'name'>>) => {
     setDocuments((currentDocuments) => currentDocuments.map((document) => (
       document.id === activeDocumentId ? { ...document, ...updates } : document
     )))
   }, [activeDocumentId])
-
-  // 比较两个文件并输出差异到控制台
-  const logDifferences = useCallback((original: string, modified: string) => {
-    if (!original && !modified) return
-
-    const originalLines = original.split(/\r\n|\r|\n/)
-    const modifiedLines = modified.split(/\r\n|\r|\n/)
-    const maxLines = Math.max(originalLines.length, modifiedLines.length)
-
-    const differences: Array<{
-      lineNumber: number
-      original: string
-      modified: string
-      reason: string
-    }> = []
-
-    for (let i = 0; i < maxLines; i++) {
-      const origLine = originalLines[i] || ''
-      const modLine = modifiedLines[i] || ''
-
-      const comparableOrigLine = ignoreWhitespace ? origLine.trim() : origLine
-      const comparableModLine = ignoreWhitespace ? modLine.trim() : modLine
-
-      if (comparableOrigLine !== comparableModLine) {
-        const origTrimmed = origLine.trim()
-        const modTrimmed = modLine.trim()
-
-        let reason = '内容不同'
-        if (origTrimmed === modTrimmed) {
-          reason = '空白字符差异'
-        } else if (origLine.length !== modLine.length) {
-          reason = `长度不同 (原始: ${origLine.length}, 修改: ${modLine.length})`
-        }
-
-        const origDisplay = origLine.replace(/\s/g, (match) => {
-          if (match === ' ') return '·'
-          if (match === '\t') return '→'
-          if (match === '\r') return '\\r'
-          return `[${match.charCodeAt(0)}]`
-        })
-        const modDisplay = modLine.replace(/\s/g, (match) => {
-          if (match === ' ') return '·'
-          if (match === '\t') return '→'
-          if (match === '\r') return '\\r'
-          return `[${match.charCodeAt(0)}]`
-        })
-
-        differences.push({
-          lineNumber: i + 1,
-          original: origDisplay,
-          modified: modDisplay,
-          reason
-        })
-      }
-    }
-
-    if (differences.length > 0) {
-      console.group('🔍 代码差异分析')
-      console.log(`总共发现 ${differences.length} 处差异`)
-      console.table(differences)
-
-      differences.forEach(diff => {
-        console.group(`第 ${diff.lineNumber} 行 - ${diff.reason}`)
-        console.log('原始:', JSON.stringify(diff.original))
-        console.log('修改:', JSON.stringify(diff.modified))
-        console.log('原始字符码:', diff.original.split('').map(c => c.charCodeAt(0)).join(', '))
-        console.log('修改字符码:', diff.modified.split('').map(c => c.charCodeAt(0)).join(', '))
-        console.groupEnd()
-      })
-
-      console.groupEnd()
-    } else {
-      console.log('✅ 两个文件内容完全一致')
-    }
-  }, [ignoreWhitespace])
 
   // 处理文件选择
   const handleFileSelect = async (
@@ -406,13 +342,6 @@ const CodeDiff = () => {
     })
   }, [handleOriginalChange, handleModifiedChange, setEditorCallbacks])
 
-  // 当两个文件都加载后，比较差异（修复：使用 useCallback 稳定引用，正确声明依赖）
-  useEffect(() => {
-    if (originalCode && modifiedCode) {
-      logDifferences(originalCode, modifiedCode)
-    }
-  }, [originalCode, modifiedCode, logDifferences])
-
   // 确保编辑器可编辑（当内容变化时）
   useEffect(() => {
     const cleanup = ensureEditable()
@@ -421,16 +350,21 @@ const CodeDiff = () => {
 
   // 编辑器挂载回调工厂
   const createEditorMountHandler = useCallback(() => {
-    return (editor: MonacoDiffEditor) => {
+    return (editor: MonacoDiffEditor, monaco: Parameters<typeof registerMonaco>[0]) => {
+      registerMonaco(monaco)
+      setLanguageBindings({ original: { editor: editor.getOriginalEditor(), monaco }, modified: { editor: editor.getModifiedEditor(), monaco } })
       handleEditorMount(editor, {
         onOriginalChange: handleOriginalChange,
         onModifiedChange: handleModifiedChange,
       })
     }
-  }, [handleEditorMount, handleOriginalChange, handleModifiedChange])
+  }, [handleEditorMount, handleOriginalChange, handleModifiedChange, registerMonaco])
 
   // 公共编辑器选项
   const commonEditorOptions = {
+    ...languageEditorOptions,
+    originalAriaLabel: '原始代码',
+    modifiedAriaLabel: '修改代码',
     minimap: { enabled: true } as const,
     fontSize: 14,
     wordWrap: 'on' as const,
@@ -445,7 +379,16 @@ const CodeDiff = () => {
     originalEditable: true,
     formatOnPaste: false,
     formatOnType: false,
+    hideUnchangedRegions: { enabled: hideUnchanged },
+    experimental: { showMoves },
   }
+
+  const renderLanguageTools = () => (
+    <>
+      <EditorLanguageTools binding={languageBindings?.original} language={language} path={modelPath('diff', activeDocument.id, 'original')} label="原始代码" caption="原始" />
+      <EditorLanguageTools binding={languageBindings?.modified} language={language} path={modelPath('diff', activeDocument.id, 'modified')} label="修改代码" caption="修改" />
+    </>
+  )
 
   // 公共面板操作按钮
   const renderPanelActions = (isUnified: boolean) => (
@@ -536,6 +479,18 @@ const CodeDiff = () => {
           />
           <span className="toggle-slider"></span>
           <span className="toggle-label">忽略空格</span>
+        </label>
+      </div>
+      <div className="language-select">
+        <label className="toggle-switch">
+          <input type="checkbox" checked={hideUnchanged} onChange={(e) => updateActiveDocument({ hideUnchanged: e.target.checked })} />
+          <span className="toggle-slider"></span>
+          <span className="toggle-label">仅看差异</span>
+        </label>
+        <label className="toggle-switch">
+          <input type="checkbox" checked={showMoves} onChange={(e) => updateActiveDocument({ showMoves: e.target.checked })} />
+          <span className="toggle-slider"></span>
+          <span className="toggle-label">识别移动</span>
         </label>
       </div>
       <div className="language-select">
@@ -649,17 +604,19 @@ const CodeDiff = () => {
             <div className="panel-header">
               {renderPanelTitle()}
               <div className="panel-actions">
+                {renderLanguageTools()}
                 {renderPanelActions(false)}
               </div>
             </div>
             <DiffEditor
+              key={`${activeDocument.id}-split`}
               height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
               language={language}
               original={editorContent.originalCode}
               modified={editorContent.modifiedCode}
               loading={editorLoading}
-              originalModelPath="inmemory://model/code-diff/original"
-              modifiedModelPath="inmemory://model/code-diff/modified"
+              originalModelPath={modelPath('diff', activeDocument.id, 'original')}
+              modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
               keepCurrentOriginalModel
               keepCurrentModifiedModel
               theme="vs-dark"
@@ -681,18 +638,20 @@ const CodeDiff = () => {
             <div className="panel-header">
               {renderPanelTitle()}
               <div className="panel-actions">
+                {renderLanguageTools()}
                 {renderPanelActions(true)}
               </div>
             </div>
             {originalCode || modifiedCode ? (
               <DiffEditor
+                key={`${activeDocument.id}-unified`}
                 height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
                 language={language}
                 original={editorContent.originalCode}
                 modified={editorContent.modifiedCode}
                 loading={editorLoading}
-                originalModelPath="inmemory://model/code-diff/original"
-                modifiedModelPath="inmemory://model/code-diff/modified"
+                originalModelPath={modelPath('diff', activeDocument.id, 'original')}
+                modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
                 keepCurrentOriginalModel
                 keepCurrentModifiedModel
                 theme="vs-dark"

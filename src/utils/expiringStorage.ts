@@ -42,7 +42,7 @@ export const writeExpiringStorage = <T>(
   ttlMs = TWO_DAYS_IN_MS
 ) => {
   const storage = getLocalStorage()
-  if (!storage) return
+  if (!storage) return false
 
   try {
     const payload: ExpiringStoragePayload<T> = {
@@ -50,7 +50,8 @@ export const writeExpiringStorage = <T>(
       expiresAt: Date.now() + ttlMs,
     }
     storage.setItem(key, JSON.stringify(payload))
+    return true
   } catch {
-    // localStorage may be unavailable or full; failing to persist should not break editing.
+    return false
   }
 }

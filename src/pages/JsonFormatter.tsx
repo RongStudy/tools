@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import SplitPaneDivider from '../components/SplitPaneDivider'
 import {
@@ -7,17 +7,23 @@ import {
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import ToolLayout from '../components/ToolLayout'
 import SaveFileDialog, { type SaveFileRequest } from '../components/SaveFileDialog'
+import JsonSchemaDialog from '../components/JsonSchemaDialog'
+import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
+import { languageEditorOptions } from '../monaco/languageCapabilities'
+import { configureJsonSchemas } from '../monaco/jsonSchema'
+import type { editor as MonacoEditorNamespace } from 'monaco-editor'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
-import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
+import { readExpiringStorage } from '../utils/expiringStorage'
 import {
   createJsonDocument,
   DEFAULT_JSON_DOCUMENT,
-  formatJsonString,
   normalizeJsonDocument,
-  unescapeJson,
   type JsonDocument,
 } from '../utils/jsonFormatter'
+import { useDraftPersistence } from '../hooks/useDraftPersistence'
+import { useJsonTasks } from '../hooks/useJsonTasks'
+import type { JsonOperation } from '../utils/jsonText'
 import type { MonacoEditor } from '../types/monaco'
 import './JsonFormatter.css'
 import '../styles/common.css'
@@ -80,6 +86,9 @@ const JsonFormatter = () => {
   const [indentSize, setIndentSize] = useState(initialDraft.indentSize)
   const [fullscreenMode, setFullscreenMode] = useState<'none' | 'output' | 'both'>('none')
   const [saveRequest, setSaveRequest] = useState<SaveFileRequest | null>(null)
+  const [showSchema, setShowSchema] = useState(false)
+  const [monacoMounted, setMonacoMounted] = useState(false)
+  const [diagnostics, setDiagnostics] = useState<{ path: string; markers: MonacoEditorNamespace.IMarker[] }>({ path: '', markers: [] })
   const editorRef = useRef<MonacoEditor | null>(null)
   const outputEditorRef = useRef<MonacoEditor | null>(null)
   const editorContainerRef = useRef<HTMLDivElement>(null)
@@ -91,14 +100,38 @@ const JsonFormatter = () => {
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
   const { input, output, error, splitRatio } = activeDocument
   const editorGridStyle = getSplitPaneGridStyle(splitRatio)
+  const inputPath = modelPath('json', activeDocument.id, 'input.json')
+  const registerMonaco = useMonacoModels(documents.flatMap(({ id }) => [modelPath('json', id, 'input.json'), modelPath('json', id, 'output.json')]))
+  const schemaDocuments = JSON.stringify(documents.map(({ id, schema }) => ({ path: modelPath('json', id, 'input.json'), schema })))
 
   useEffect(() => {
-    writeExpiringStorage(
-      JSON_FORMATTER_DRAFT_KEY,
-      { activeDocumentId, documents, indentSize },
-      TWO_DAYS_IN_MS
-    )
-  }, [activeDocumentId, documents, indentSize])
+    if (!monacoMounted) return
+    let cancelled = false
+    void import('monaco-editor/languages/features/json/register').then(({ jsonDefaults }) => {
+      if (!cancelled) configureJsonSchemas(jsonDefaults, JSON.parse(schemaDocuments))
+    })
+    return () => { cancelled = true }
+  }, [monacoMounted, schemaDocuments])
+
+  const handleValidate = useCallback((markers: MonacoEditorNamespace.IMarker[]) => {
+    const path = editorRef.current?.getModel()?.uri.toString() ?? ''
+    setDiagnostics({ path, markers })
+  }, [])
+
+  const draft = useMemo(() => ({ activeDocumentId, documents, indentSize }), [activeDocumentId, documents, indentSize])
+  useDraftPersistence(JSON_FORMATTER_DRAFT_KEY, draft)
+  const { process, cancel, busyIds } = useJsonTasks()
+
+  useEffect(() => {
+    // A page may have closed while its worker was still running. Resume those previews.
+    initialDraft.documents.filter((document) => document.input && !document.output && !document.error).forEach((document) => {
+      process(document.id, document.input, 'format', initialDraft.indentSize, (result) => {
+        setDocuments((current) => current.map((item) => (
+          item.id === document.id && item.input === document.input ? { ...item, ...result } : item
+        )))
+      })
+    })
+  }, [initialDraft, process])
 
   const exitFullscreen = useCallback(() => {
     setFullscreenMode('none')
@@ -123,103 +156,27 @@ const JsonFormatter = () => {
     return () => window.cancelAnimationFrame(frameId)
   }, [activeDocumentId, error, fullscreenMode, splitRatio])
 
-  const updateActiveDocument = (updates: Partial<Pick<JsonDocument, 'input' | 'output' | 'error' | 'splitRatio'>>) => {
+  const updateActiveDocument = (updates: Partial<Pick<JsonDocument, 'input' | 'output' | 'error' | 'splitRatio' | 'schema'>>) => {
     setDocuments((currentDocuments) => currentDocuments.map((document) => (
       document.id === activeDocumentId ? { ...document, ...updates } : document
     )))
   }
 
-  // 格式化JSON
-  const formatJson = () => {
-    try {
-      const jsonStr = input.trim()
-
-      if (!jsonStr) {
-        updateActiveDocument({ output: '', error: '' })
-        return
-      }
-
-      updateActiveDocument({ output: formatJsonString(jsonStr, indentSize), error: '' })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      updateActiveDocument({ error: `格式错误: ${message}`, output: '' })
-    }
+  const processInput = (text: string, operation: JsonOperation, nextIndentSize = indentSize, debounce = false) => {
+    const documentId = activeDocumentId
+    updateActiveDocument({ input: text, output: '', error: '' })
+    process(documentId, text, operation, nextIndentSize, (result) => {
+      setDocuments((current) => current.map((document) => (
+        document.id === documentId && document.input === text ? { ...document, ...result } : document
+      )))
+    }, debounce)
   }
-
-  // 压缩JSON
-  const compressJson = () => {
-    try {
-      let jsonStr = input.trim()
-
-      if (!jsonStr) {
-        updateActiveDocument({ output: '', error: '' })
-        return
-      }
-
-      jsonStr = unescapeJson(jsonStr)
-      const jsonObj = JSON.parse(jsonStr)
-      const compressed = JSON.stringify(jsonObj)
-      updateActiveDocument({ output: compressed, error: '' })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      updateActiveDocument({ error: `格式错误: ${message}`, output: '' })
-    }
-  }
-
-  // 转义JSON
-  const escapeJson = () => {
-    try {
-      const jsonStr = input.trim()
-
-      if (!jsonStr) {
-        updateActiveDocument({ output: '', error: '' })
-        return
-      }
-
-      const escaped = JSON.stringify(jsonStr)
-      updateActiveDocument({ output: escaped, error: '' })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      updateActiveDocument({ error: `处理错误: ${message}`, output: '' })
-    }
-  }
-
-  // 解转义JSON
-  const unescapeJsonAction = () => {
-    try {
-      const jsonStr = input.trim()
-
-      if (!jsonStr) {
-        updateActiveDocument({ output: '', error: '' })
-        return
-      }
-
-      const unescaped = unescapeJson(jsonStr)
-      updateActiveDocument({ output: unescaped, error: '' })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      updateActiveDocument({ error: `处理错误: ${message}`, output: '' })
-    }
-  }
-
-  // 实时预览
+  const formatJson = () => processInput(input, 'format')
+  const compressJson = () => processInput(input, 'compress')
+  const escapeJson = () => processInput(input, 'escape')
+  const unescapeJsonAction = () => processInput(input, 'unescape')
   const handleInputChange = (value: string | undefined, nextIndentSize = indentSize) => {
-    const newValue = value || ''
-
-    if (newValue.trim()) {
-      try {
-        updateActiveDocument({
-          input: newValue,
-          output: formatJsonString(newValue, nextIndentSize),
-          error: '',
-        })
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err)
-        updateActiveDocument({ input: newValue, error: `格式错误: ${message}`, output: '' })
-      }
-    } else {
-      updateActiveDocument({ input: '', output: '', error: '' })
-    }
+    processInput(value ?? '', 'format', nextIndentSize, true)
   }
 
   // 复制到剪贴板
@@ -234,6 +191,7 @@ const JsonFormatter = () => {
 
   // 清空内容
   const clearAll = () => {
+    cancel(activeDocumentId)
     updateActiveDocument({ input: '', output: '', error: '' })
   }
 
@@ -244,6 +202,7 @@ const JsonFormatter = () => {
   }
 
   const closeDocument = (documentId: string) => {
+    cancel(documentId)
     if (documents.length === 1) {
       clearAll()
       return
@@ -282,14 +241,21 @@ const JsonFormatter = () => {
       <button onClick={compressJson} className="btn btn-secondary">压缩</button>
       <button onClick={escapeJson} className="btn btn-secondary">转义</button>
       <button onClick={unescapeJsonAction} className="btn btn-secondary">解转义</button>
+      <button onClick={() => setShowSchema(true)} className="btn btn-secondary" aria-pressed={Boolean(activeDocument.schema)}>Schema{activeDocument.schema ? ' · 已启用' : ''}</button>
       <button onClick={clearAll} className="btn btn-danger">清空</button>
     </div>
   )
 
-  const status = error ? (
+  const firstDiagnostic = diagnostics.path === inputPath ? diagnostics.markers[0] : undefined
+  const status = error || firstDiagnostic ? (
     <div className="error-message">
       <span className="error-icon">!</span>
-      {error}
+      {error || firstDiagnostic?.message}
+      {firstDiagnostic && <button type="button" className="btn-small" onClick={() => {
+        editorRef.current?.setPosition({ lineNumber: firstDiagnostic.startLineNumber, column: firstDiagnostic.startColumn })
+        editorRef.current?.revealLineInCenter(firstDiagnostic.startLineNumber)
+        editorRef.current?.focus()
+      }}>定位 {firstDiagnostic.startLineNumber}:{firstDiagnostic.startColumn}</button>}
     </div>
   ) : null
 
@@ -366,19 +332,26 @@ const JsonFormatter = () => {
               <Editor
                 height="100%"
                 defaultLanguage="json"
+                path={inputPath}
+                keepCurrentModel
                 value={input}
                 loading={editorLoading}
                 onChange={(value) => handleInputChange(value)}
+                onValidate={handleValidate}
                 theme="vs-dark"
                 options={{
+                  ...languageEditorOptions,
                   minimap: { enabled: false },
                   fontSize: isDualFullscreen ? 16 : 14,
                   wordWrap: 'on',
                   automaticLayout: true,
                   scrollBeyondLastLine: false,
+                  ariaLabel: 'JSON 输入',
                 }}
-                onMount={(editor) => {
+                onMount={(editor, monaco) => {
                   editorRef.current = editor
+                  registerMonaco(monaco)
+                  setMonacoMounted(true)
                 }}
               />
             </div>
@@ -396,7 +369,7 @@ const JsonFormatter = () => {
 
         <div className={`editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}>
           <div className="panel-header">
-            <span>输出</span>
+            <span>输出{busyIds.includes(activeDocumentId) && <span role="status"> · 处理中…</span>}</span>
             <div className="panel-actions">
               <button
                 type="button"
@@ -426,6 +399,8 @@ const JsonFormatter = () => {
             <Editor
               height="100%"
               defaultLanguage="json"
+              path={modelPath('json', activeDocument.id, 'output.json')}
+              keepCurrentModel
               value={output}
               loading={editorLoading}
               theme="vs-dark"
@@ -436,20 +411,23 @@ const JsonFormatter = () => {
                 automaticLayout: true,
                 scrollBeyondLastLine: false,
                 readOnly: true,
+                ariaLabel: 'JSON 输出',
                 guides: {
                   bracketPairs: 'active',
                   bracketPairsHorizontal: 'active',
                 },
                 bracketPairColorization: { enabled: true },
               }}
-              onMount={(editor) => {
+              onMount={(editor, monaco) => {
                 outputEditorRef.current = editor
+                registerMonaco(monaco)
               }}
             />
           </div>
         </div>
       </div>
       {saveRequest && <SaveFileDialog {...saveRequest} onClose={() => setSaveRequest(null)} />}
+      {showSchema && <JsonSchemaDialog value={activeDocument.schema} onSave={(schema) => updateActiveDocument({ schema })} onClose={() => setShowSchema(false)} />}
     </ToolLayout>
   )
 }

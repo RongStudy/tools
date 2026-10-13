@@ -8,7 +8,8 @@ type DiffSide = 'original' | 'modified'
  * 封装 Monaco DiffEditor 的可编辑强制设置、事件监听、差异导航等功能
  * 修复了原实现中的内存泄漏和闭包问题
  */
-export function useDiffEditor() {
+export function useDiffEditor(viewStateKey = 'default') {
+  const viewStatesRef = useRef(new Map<string, ReturnType<MonacoDiffEditor['saveViewState']>>())
   const diffEditorRef = useRef<MonacoDiffEditor | null>(null)
   const isUnmountingRef = useRef(false)
   const disposablesRef = useRef<Array<{ dispose: () => void }>>([])
@@ -35,11 +36,13 @@ export function useDiffEditor() {
 
       originalEditor.updateOptions({
         readOnly: false,
+        ariaLabel: '原始代码',
         wordWrap: 'on',
         wrappingIndent: 'same',
       })
       modifiedEditor.updateOptions({
         readOnly: false,
+        ariaLabel: '修改代码',
         wordWrap: 'on',
         wrappingIndent: 'same',
       })
@@ -78,11 +81,12 @@ export function useDiffEditor() {
 
       if (!Number.isFinite(nextRatio)) return
       editor.updateOptions({ splitViewDefaultRatio: nextRatio })
+      forceEditable(editor)
       editor.layout()
     } catch {
       // 布局信息在 Monaco 初始化早期可能暂不可用，忽略即可。
     }
-  }, [])
+  }, [forceEditable])
 
   /** 更新编辑器内容变化回调，避免 DiffEditor 不重建时闭包过期 */
   const setEditorCallbacks = useCallback((callbacks: {
@@ -244,11 +248,22 @@ export function useDiffEditor() {
           wrappingIndent: 'same',
         })
         setupEditorListeners(editor)
+        const viewState = viewStatesRef.current.get(viewStateKey)
+        if (viewState) editor.restoreViewState(viewState)
+        const saveViewState = () => {
+          if (editor.saveViewState) viewStatesRef.current.set(viewStateKey, editor.saveViewState())
+        }
+        for (const codeEditor of [originalEditor, modifiedEditor]) {
+          const selectionListener = codeEditor.onDidChangeCursorSelection?.(saveViewState)
+          const scrollListener = codeEditor.onDidScrollChange?.(saveViewState)
+          if (selectionListener) disposablesRef.current.push(selectionListener)
+          if (scrollListener) disposablesRef.current.push(scrollListener)
+        }
       }
     } catch (error) {
       console.error('编辑器挂载失败:', error)
     }
-  }, [setEditorCallbacks, setupEditorListeners])
+  }, [setEditorCallbacks, setupEditorListeners, viewStateKey])
 
   /** 导航到下一个差异 */
   const navigateToNextDiff = useCallback(() => {

@@ -1,9 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { EditorProps } from '@monaco-editor/react'
+import { ToastProvider } from '../components/Toast'
 import MermaidRenderer, { DEFAULT_MERMAID_CODE } from './MermaidRenderer'
 
-const { mermaidRenderMock } = vi.hoisted(() => ({
+const { mermaidRenderMock, setMarkersMock, renderCommands } = vi.hoisted(() => ({
   mermaidRenderMock: vi.fn(),
+  setMarkersMock: vi.fn(),
+  renderCommands: [] as Array<() => void>,
 }))
 
 vi.mock('mermaid', () => ({
@@ -13,33 +17,56 @@ vi.mock('mermaid', () => ({
   },
 }))
 
-vi.mock('@monaco-editor/react', () => ({
-  default: ({
-    value,
-    onChange,
-  }: {
+vi.mock('@monaco-editor/react', async () => {
+  const { useEffect, useRef } = await import('react')
+  const MockEditor = ({ value, onChange, onMount, language }: {
     value?: string
+    language?: string
     onChange?: (value: string | undefined) => void
-  }) => (
-    <textarea
-      aria-label="内容编辑器"
-      value={value}
-      onChange={(event) => onChange?.(event.target.value)}
-    />
-  ),
-}))
+    onMount?: EditorProps['onMount']
+  }) => {
+    const source = useRef(value)
+    source.current = value
+    const mount = useRef(onMount)
+    useEffect(() => {
+      const model = {
+        getLineCount: () => (source.current ?? '').split('\n').length,
+        getLineMaxColumn: (line: number) => ((source.current ?? '').split('\n')[line - 1]?.length ?? 0) + 1,
+      }
+      mount.current?.({
+        getModel: () => model,
+        getValue: () => source.current ?? '',
+        addCommand: (_key: number, command: () => void) => { renderCommands.push(command) },
+      } as unknown as Parameters<NonNullable<EditorProps['onMount']>>[0], {
+        KeyMod: { CtrlCmd: 1 }, KeyCode: { Enter: 2 }, MarkerSeverity: { Error: 8 },
+        editor: { setModelMarkers: setMarkersMock },
+      } as unknown as Parameters<NonNullable<EditorProps['onMount']>>[1])
+    }, [])
+    return (
+      <textarea
+        aria-label="内容编辑器"
+        data-language={language}
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+    )
+  }
+  return { default: MockEditor }
+})
 
 describe('MermaidRenderer', () => {
   beforeEach(() => {
     localStorage.clear()
     mermaidRenderMock.mockReset()
+    setMarkersMock.mockClear()
+    renderCommands.length = 0
     mermaidRenderMock.mockResolvedValue({
       svg: '<svg viewBox="0 0 120 60"><text>diagram</text></svg>',
     })
   })
 
   it('默认示例会自动渲染为图表', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
 
     await waitFor(() => {
       expect(mermaidRenderMock).toHaveBeenCalledWith(
@@ -53,7 +80,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('修改代码后会实时重新渲染', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     mermaidRenderMock.mockClear()
 
@@ -70,7 +97,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('语法错误时保留工作区尺寸并显示错误', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     mermaidRenderMock.mockRejectedValueOnce(new Error('Parse error on line 2'))
 
@@ -84,7 +111,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('自动识别 Markdown 内容并渲染', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -97,8 +124,42 @@ describe('MermaidRenderer', () => {
     expect(screen.getByRole('status')).toHaveTextContent('已渲染')
   })
 
+  it('退出全屏后为重新挂载的模型恢复错误标记，切到 Markdown 后清除', async () => {
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    mermaidRenderMock.mockRejectedValue(new Error('Parse error on line 2'))
+    fireEvent.change(screen.getByLabelText('内容编辑器'), {
+      target: { value: 'flowchart LR\n A[broken' },
+    })
+    await screen.findByRole('alert')
+    const firstModel = setMarkersMock.mock.lastCall?.[0]
+    expect(setMarkersMock.mock.lastCall?.[2]).toEqual([expect.objectContaining({ startLineNumber: 2, severity: 8 })])
+    fireEvent.click(screen.getByRole('button', { name: /全屏/ }))
+    setMarkersMock.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: /退出全屏/ }))
+    await waitFor(() => expect(setMarkersMock.mock.lastCall?.[2]).toEqual([
+      expect.objectContaining({ startLineNumber: 2, message: 'Parse error on line 2' }),
+    ]))
+    expect(setMarkersMock.mock.lastCall?.[0]).not.toBe(firstModel)
+    fireEvent.click(screen.getByRole('button', { name: 'Markdown' }))
+    await screen.findByTestId('markdown-preview')
+    expect(setMarkersMock.mock.lastCall?.[2]).toEqual([])
+  })
+
+  it('渲染快捷键使用最新模式并同步编辑器语言', async () => {
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    fireEvent.click(screen.getByRole('button', { name: 'Markdown' }))
+    fireEvent.change(screen.getByLabelText('内容编辑器'), { target: { value: '# 快捷键' } })
+    mermaidRenderMock.mockClear()
+    await act(async () => { renderCommands[0]() })
+    expect(screen.getByTestId('markdown-preview')).toHaveTextContent('快捷键')
+    expect(screen.getByLabelText('内容编辑器')).toHaveAttribute('data-language', 'markdown')
+    expect(mermaidRenderMock).not.toHaveBeenCalled()
+  })
+
   it('支持 LaTeX 数学公式（行内与块级）', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -110,7 +171,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('支持 GFM 表格与任务列表', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -123,7 +184,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('可以手动切换渲染格式', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     // 强制 Markdown 模式
@@ -149,7 +210,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('Markdown 预览默认铺满显示，可切换为居中', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -182,7 +243,7 @@ describe('MermaidRenderer', () => {
     })
     const clickSpy = vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(() => undefined)
 
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -209,7 +270,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('Markdown 中的 mermaid 代码块渲染为图表', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -227,7 +288,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('Markdown 中 mermaid 渲染失败时显示错误而不影响整篇文档', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     mermaidRenderMock.mockRejectedValueOnce(new Error('Parse error on line 2'))
 
@@ -243,7 +304,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('Markdown 中的 mermaid 块支持缩放与全屏查看', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -274,7 +335,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('可以清空代码和预览', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     await act(async () => {
@@ -287,7 +348,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('支持放大、缩小和重置图表', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     const diagram = await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     const canvas = screen.getByTestId('mermaid-canvas')
 
@@ -308,7 +369,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('支持按住鼠标拖动超出预览区的图表', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     const preview = screen.getByTestId('mermaid-preview-body')
 
@@ -350,7 +411,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('应保存内容与预览的分割比例', () => {
-    const { unmount } = render(<MermaidRenderer />)
+    const { unmount } = render(<ToastProvider><MermaidRenderer /></ToastProvider>)
 
     const divider = screen.getByRole('separator', { name: '调整内容预览宽度' })
     expect(divider).toHaveAttribute('aria-valuenow', '30')
@@ -358,13 +419,13 @@ describe('MermaidRenderer', () => {
     expect(divider).toHaveAttribute('aria-valuenow', '32')
 
     unmount()
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
 
     expect(screen.getByRole('separator', { name: '调整内容预览宽度' })).toHaveAttribute('aria-valuenow', '32')
   })
 
   it('点击全屏按钮应切换全屏状态', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     const fullscreenButton = screen.getByRole('button', { name: /全屏/ })
@@ -381,7 +442,7 @@ describe('MermaidRenderer', () => {
   })
 
   it('全屏状态下按 ESC 键应退出全屏', async () => {
-    render(<MermaidRenderer />)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     const fullscreenButton = screen.getByRole('button', { name: /全屏/ })

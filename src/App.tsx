@@ -17,6 +17,23 @@ const isCachedToolPath = (path: string) => CACHED_TOOL_PATHS.includes(path)
 const ToolRoutes = () => {
   const location = useLocation()
   const activePath = location.pathname.replace(/\/+$/, '') || '/'
+  const needsMonaco = [...CACHED_TOOL_PATHS, '/mermaid'].includes(activePath)
+  const [monacoReady, setMonacoReady] = useState(false)
+  const [monacoError, setMonacoError] = useState(false)
+  const [initializationAttempt, setInitializationAttempt] = useState(0)
+  const retryMonaco = () => setInitializationAttempt((attempt) => attempt + 1)
+
+  useEffect(() => {
+    if (!needsMonaco || monacoReady) return
+    let cancelled = false
+    setMonacoError(false)
+    void setupMonaco().then(() => {
+      if (!cancelled) setMonacoReady(true)
+    }).catch(() => {
+      if (!cancelled) setMonacoError(true)
+    })
+    return () => { cancelled = true }
+  }, [needsMonaco, monacoReady, initializationAttempt])
   const [mountedCachedPaths, setMountedCachedPaths] = useState<string[]>(() => (
     isCachedToolPath(activePath) ? [activePath] : []
   ))
@@ -34,6 +51,14 @@ const ToolRoutes = () => {
       paths.includes(activePath) ? paths : [...paths, activePath]
     ))
   }, [activePath])
+
+  if (!monacoReady && [...CACHED_TOOL_PATHS, '/mermaid'].includes(activePath)) {
+    return monacoError ? (
+      <div className="tool-route-loading" role="alert">
+        编辑器加载失败 <button className="btn-small" onClick={retryMonaco}>重试</button>
+      </div>
+    ) : <div className="tool-route-loading" role="status">编辑器加载中</div>
+  }
 
   if (!isCachedToolPath(activePath)) {
     if (!activeTool) return null
@@ -66,12 +91,7 @@ const ToolRoutes = () => {
 }
 
 function App() {
-  useEffect(() => {
-    const restoreConsoleError = suppressMonacoCancellationErrorLogs()
-    setupMonaco()
-
-    return restoreConsoleError
-  }, [])
+  useEffect(() => suppressMonacoCancellationErrorLogs(), [])
 
   return (
     <ToastProvider>

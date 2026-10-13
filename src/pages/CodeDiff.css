@@ -32,11 +32,12 @@
 
 .view-mode-toggle {
   display: flex;
-  border: 1px solid var(--color-border);
+  /* Draw the frame inside so the group stays as tall as its buttons. */
+  box-shadow: inset 0 0 0 1px var(--color-border);
   border-radius: 999px;
   overflow: hidden;
   background: var(--color-bg);
-  padding: 0.2rem;
+  padding: 0 0.2rem;
 }
 
 .btn-toggle {
@@ -78,7 +79,19 @@
 }
 
 .toggle-switch input[type="checkbox"] {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.toggle-switch input[type="checkbox"]:focus-visible + .toggle-slider {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .toggle-slider {
@@ -260,6 +273,7 @@
 .panel-title span:first-child {
   font-weight: 600;
   color: var(--color-text);
+  white-space: nowrap;
 }
 
 .file-name {
@@ -345,7 +359,8 @@
 
 @media (max-width: 640px) {
   .btn-toggle,
-  .diff-controls .btn {
+  .diff-controls .btn,
+  .diff-controls select {
     min-height: 2.75rem;
   }
 

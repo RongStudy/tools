@@ -181,8 +181,8 @@
 .scratch-pane-close {
   display: grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
   border: 0;
   background: transparent;
   color: var(--color-subtle);
@@ -208,6 +208,17 @@
 }
 
 @media (max-width: 640px) {
+  .scratch-editor-body {
+    grid-template-columns: 1fr !important;
+    grid-auto-rows: minmax(260px, 1fr);
+    overflow-y: auto;
+  }
+
+  .scratch-pane + .scratch-pane {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
   .scratch-tabs {
     align-items: stretch;
     flex-direction: column;

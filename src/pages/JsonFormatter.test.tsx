@@ -36,6 +36,45 @@ afterEach(() => {
 })
 
 describe('JsonFormatter', () => {
+  it('格式化和压缩保留大整数和高精度小数', () => {
+    renderJsonFormatter()
+    const source = '{"id":9007199254740993,"decimal":0.123456789012345678901}'
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: source } })
+    expect(screen.getByLabelText('output-editor')).toHaveValue('{\n  "id": 9007199254740993,\n  "decimal": 0.123456789012345678901\n}')
+    fireEvent.click(screen.getByRole('button', { name: '压缩' }))
+    expect(screen.getByLabelText('output-editor')).toHaveValue(source)
+  })
+
+  it('恢复处理期间保存的草稿时补齐预览', () => {
+    localStorage.setItem('dev-tools:json-formatter:draft', JSON.stringify({
+      value: { activeDocumentId: 'pending', indentSize: 2, documents: [{
+        id: 'pending', name: 'JSON 1', input: '{"id":9007199254740993}', output: '', error: '', splitRatio: 30,
+      }] }, expiresAt: Date.now() + 60_000,
+    }))
+    renderJsonFormatter()
+    expect(screen.getByLabelText('output-editor')).toHaveValue('{\n  "id": 9007199254740993\n}')
+  })
+
+  it('Schema 按文档保存，拒绝无效规则并可移除', () => {
+    renderJsonFormatter()
+    fireEvent.click(screen.getByRole('button', { name: 'Schema' }))
+    const schema = screen.getByLabelText('当前文档的校验规则')
+    fireEvent.change(schema, { target: { value: '[]' } })
+    fireEvent.click(screen.getByRole('button', { name: '应用' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Schema 必须是 JSON 对象或布尔值')
+    const source = '{"type":"object","required":["name"]}'
+    fireEvent.change(schema, { target: { value: source } })
+    fireEvent.click(screen.getByRole('button', { name: '应用' }))
+    expect(screen.getByRole('button', { name: 'Schema · 已启用' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    expect(screen.getByRole('button', { name: 'Schema' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Schema · 已启用' }))
+    expect(screen.getByLabelText('当前文档的校验规则')).toHaveValue(source)
+    fireEvent.change(screen.getByLabelText('当前文档的校验规则'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: '应用' }))
+    expect(screen.getByRole('button', { name: 'Schema' })).toBeInTheDocument()
+  })
   it('保存当前标签的输出，支持自定义文件名及输出全屏', async () => {
     const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:json-download')
     vi.stubGlobal('URL', { createObjectURL, revokeObjectURL: vi.fn() })

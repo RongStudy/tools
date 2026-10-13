@@ -1,0 +1,22 @@
+.json-schema-dialog {
+  width: min(640px, 100%);
+}
+
+.json-schema-dialog textarea {
+  display: block;
+  width: 100%;
+  height: min(360px, 45vh);
+  min-height: 140px;
+  resize: vertical;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 0.875rem/1.5 var(--font-mono);
+}
+
+.json-schema-dialog textarea:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}

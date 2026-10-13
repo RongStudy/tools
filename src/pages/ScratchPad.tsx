@@ -1,11 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useDraftPersistence } from '../hooks/useDraftPersistence'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
+import EditorLanguageTools, { type EditorLanguageBinding } from '../components/EditorLanguageTools'
+import { languageEditorOptions } from '../monaco/languageCapabilities'
+import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import ToolLayout from '../components/ToolLayout'
 import SaveFileDialog, { type SaveFileRequest } from '../components/SaveFileDialog'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useToast } from '../components/toastContext'
 import { writeTextToClipboard } from '../utils/clipboard'
-import { readExpiringStorage, writeExpiringStorage, TWO_DAYS_IN_MS } from '../utils/expiringStorage'
+import { readExpiringStorage } from '../utils/expiringStorage'
 import './ScratchPad.css'
 import '../styles/common.css'
 
@@ -197,19 +201,21 @@ const ScratchPad = () => {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedPaneIds, setSelectedPaneIds] = useState<Record<string, string>>({})
   const [saveRequest, setSaveRequest] = useState<SaveFileRequest | null>(null)
+  const [paneBindings, setPaneBindings] = useState<Record<string, EditorLanguageBinding>>({})
+  const paneIdsKey = documents.flatMap((document) => document.panes.map((pane) => pane.id)).join('\n')
+  useEffect(() => {
+    const liveIds = new Set(paneIdsKey.split('\n'))
+    setPaneBindings((current) => Object.fromEntries(Object.entries(current).filter(([id]) => liveIds.has(id))))
+  }, [paneIdsKey])
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
   const { panes } = activeDocument
+  const registerMonaco = useMonacoModels(documents.flatMap((document) => document.panes.map((pane) => modelPath('scratch', document.id, pane.id))))
   const selectedPaneIndex = Math.max(0, panes.findIndex((pane) => pane.id === selectedPaneIds[activeDocument.id]))
   const selectedPane = panes[selectedPaneIndex]
   const { showToast } = useToast()
 
-  useEffect(() => {
-    writeExpiringStorage(
-      SCRATCH_PAD_DRAFT_KEY,
-      { activeDocumentId, documents, fontSize },
-      TWO_DAYS_IN_MS
-    )
-  }, [activeDocumentId, documents, fontSize])
+  const draft = useMemo(() => ({ activeDocumentId, documents, fontSize }), [activeDocumentId, documents, fontSize])
+  useDraftPersistence(SCRATCH_PAD_DRAFT_KEY, draft)
 
   useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
@@ -431,6 +437,12 @@ const ScratchPad = () => {
                 >
                   复制
                 </button>
+                <EditorLanguageTools
+                  binding={paneBindings[pane.id]}
+                  language={pane.language}
+                  path={modelPath('scratch', activeDocument.id, pane.id)}
+                  label={`栏 ${index + 1}`}
+                />
                 {panes.length > 1 && (
                   <button
                     onClick={() => removePane(pane.id)}
@@ -445,17 +457,25 @@ const ScratchPad = () => {
               <div className="scratch-pane-editor">
                 <Editor
                   height="100%"
+                  path={modelPath('scratch', activeDocument.id, pane.id)}
+                  keepCurrentModel
+                  onMount={(editor, monaco) => {
+                    registerMonaco(monaco)
+                    setPaneBindings((current) => ({ ...current, [pane.id]: { editor, monaco } }))
+                  }}
                   language={pane.language}
                   value={pane.content}
                   loading={editorLoading}
                   onChange={(value) => updatePane(pane.id, { content: value ?? '' })}
                   theme="vs-dark"
                   options={{
+                    ...languageEditorOptions,
                     minimap: { enabled: false },
                     fontSize,
                     wordWrap: 'on',
                     automaticLayout: true,
                     scrollBeyondLastLine: false,
+                    ariaLabel: `临时文本栏 ${index + 1}`,
                   }}
                 />
               </div>

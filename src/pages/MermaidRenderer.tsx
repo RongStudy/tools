@@ -1,3 +1,4 @@
+import { useDraftPersistence } from '../hooks/useDraftPersistence'
 import {
   useCallback,
   useEffect,
@@ -7,6 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import Editor from '@monaco-editor/react'
+import type { editor as MonacoEditorNamespace } from 'monaco-editor'
 import SplitPaneDivider from '../components/SplitPaneDivider'
 import {
   getSplitPaneGridStyle,
@@ -14,7 +16,7 @@ import {
 } from '../hooks/useSplitPane'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import ToolLayout from '../components/ToolLayout'
-import { readExpiringStorage, TWO_DAYS_IN_MS, writeExpiringStorage } from '../utils/expiringStorage'
+import { readExpiringStorage } from '../utils/expiringStorage'
 import { detectFormat, type ContentFormat } from '../utils/detectFormat'
 import { enhanceMermaidBlock } from '../utils/mermaidBlockViewer'
 import {
@@ -138,6 +140,11 @@ const MermaidRenderer = () => {
   const markdownMermaidSeqRef = useRef(0)
   const markdownPreviewRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [editorState, setEditorState] = useState<{
+    editor: MonacoEditorNamespace.IStandaloneCodeEditor
+    monaco: Parameters<NonNullable<import('@monaco-editor/react').EditorProps['onMount']>>[1]
+  } | null>(null)
+  const renderContentRef = useRef<(source: string) => Promise<void>>(async () => {})
 
   const renderContent = useCallback(async (source: string) => {
     const sequence = ++renderSequenceRef.current
@@ -199,10 +206,27 @@ const MermaidRenderer = () => {
       }
     }
   }, [mode])
+  renderContentRef.current = renderContent
 
   useEffect(() => {
-    writeExpiringStorage(MERMAID_DRAFT_KEY, code, TWO_DAYS_IN_MS)
+    const monaco = editorState?.monaco
+    const model = editorState?.editor.getModel()
+    if (!monaco || !model) return
+    const match = /(?:Parse error on line|line)\s+(\d+)/i.exec(error)
+    const line = Math.min(model.getLineCount(), Math.max(1, Number(match?.[1] ?? 1)))
+    monaco.editor.setModelMarkers(model, 'mermaid-renderer', error && activeFormat === 'mermaid' ? [{
+      severity: monaco.MarkerSeverity.Error,
+      message: error,
+      startLineNumber: line,
+      endLineNumber: line,
+      startColumn: 1,
+      endColumn: model.getLineMaxColumn(line),
+    }] : [])
+  }, [error, activeFormat, code, editorState])
 
+  useDraftPersistence(MERMAID_DRAFT_KEY, code)
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       void renderContent(code)
     }, RENDER_DELAY_MS)
@@ -445,14 +469,15 @@ const MermaidRenderer = () => {
             <div className="mermaid-editor-body">
               <Editor
                 height="100%"
-                defaultLanguage="markdown"
+                language={(mode === 'auto' ? detectFormat(code) : mode) === 'mermaid' ? 'mermaid' : 'markdown'}
                 value={code}
                 loading={editorLoading}
                 onChange={(value) => setCode(value ?? '')}
                 onMount={(editor, monaco) => {
+                  setEditorState({ editor, monaco })
                   editor.addCommand(
                     monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-                    () => void renderContent(editor.getValue())
+                    () => void renderContentRef.current(editor.getValue())
                   )
                 }}
                 theme="vs-dark"

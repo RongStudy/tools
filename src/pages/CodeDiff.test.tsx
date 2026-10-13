@@ -27,6 +27,8 @@ vi.mock('@monaco-editor/react', () => ({
       wordWrapOverride2?: string
       enableSplitViewResizing?: boolean
       splitViewDefaultRatio?: number
+      hideUnchangedRegions?: { enabled: boolean }
+      experimental?: { showMoves: boolean }
     }
   }) => (
     <div
@@ -38,6 +40,8 @@ vi.mock('@monaco-editor/react', () => ({
       data-word-wrap-override-2={String(options?.wordWrapOverride2)}
       data-enable-split-view-resizing={String(options?.enableSplitViewResizing)}
       data-split-view-default-ratio={String(options?.splitViewDefaultRatio)}
+      data-hide-unchanged={String(options?.hideUnchangedRegions?.enabled)}
+      data-show-moves={String(options?.experimental?.showMoves)}
       data-original-model-path={originalModelPath}
       data-modified-model-path={modifiedModelPath}
       data-keep-current-original-model={String(keepCurrentOriginalModel)}
@@ -114,10 +118,24 @@ describe('CodeDiff', () => {
     renderCodeDiff()
 
     const diffEditor = screen.getByTestId('diff-editor')
-    expect(diffEditor).toHaveAttribute('data-original-model-path', 'inmemory://model/code-diff/original')
-    expect(diffEditor).toHaveAttribute('data-modified-model-path', 'inmemory://model/code-diff/modified')
+    expect(diffEditor).toHaveAttribute('data-original-model-path', 'inmemory://dev-tools/diff/diff-1/original')
+    expect(diffEditor).toHaveAttribute('data-modified-model-path', 'inmemory://dev-tools/diff/diff-1/modified')
     expect(diffEditor).toHaveAttribute('data-keep-current-original-model', 'true')
     expect(diffEditor).toHaveAttribute('data-keep-current-modified-model', 'true')
+  })
+
+  it('新文档使用独立模型，差异折叠和移动检测设置随文档恢复', () => {
+    renderCodeDiff()
+    fireEvent.click(screen.getByRole('checkbox', { name: '仅看差异' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: '识别移动' }))
+    const originalPath = screen.getByTestId('diff-editor').getAttribute('data-original-model-path')
+    fireEvent.click(screen.getByRole('button', { name: '新建对比' }))
+    expect(screen.getByTestId('diff-editor').getAttribute('data-original-model-path')).not.toBe(originalPath)
+    expect(screen.getByRole('checkbox', { name: '仅看差异' })).not.toBeChecked()
+    fireEvent.click(screen.getByRole('tab', { name: '对比 1' }))
+    expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-original-model-path', originalPath)
+    expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-hide-unchanged', 'true')
+    expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-show-moves', 'true')
   })
 
   it('重新挂载后应恢复两天内保存的左右文档内容', async () => {

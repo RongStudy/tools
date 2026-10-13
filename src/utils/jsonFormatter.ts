@@ -7,6 +7,7 @@ export type JsonDocument = {
   output: string
   error: string
   splitRatio: number
+  schema: string
 }
 
 export const DEFAULT_JSON_DOCUMENT: JsonDocument = {
@@ -16,6 +17,7 @@ export const DEFAULT_JSON_DOCUMENT: JsonDocument = {
   output: '',
   error: '',
   splitRatio: DEFAULT_SPLIT_RATIO,
+  schema: '',
 }
 
 export const createJsonDocument = (documents: JsonDocument[]): JsonDocument => {
@@ -32,6 +34,7 @@ export const createJsonDocument = (documents: JsonDocument[]): JsonDocument => {
     output: '',
     error: '',
     splitRatio: DEFAULT_SPLIT_RATIO,
+    schema: '',
   }
 }
 
@@ -53,39 +56,11 @@ export const normalizeJsonDocument = (value: unknown): JsonDocument | null => {
     input: document.input,
     output: document.output,
     error: document.error,
+    schema: typeof document.schema === 'string' ? document.schema : '',
     splitRatio: typeof document.splitRatio === 'number' && Number.isFinite(document.splitRatio)
       ? clampSplitRatio(document.splitRatio)
       : DEFAULT_SPLIT_RATIO,
   }
 }
 
-export const unescapeJson = (value: string): string => {
-  let result = value
-  let previousResult = ''
-
-  while (result !== previousResult) {
-    previousResult = result
-    try {
-      const parsed = JSON.parse(result)
-      if (typeof parsed === 'string') {
-        result = parsed
-      } else {
-        break
-      }
-    } catch {
-      result = result
-        .replace(/\\"/g, '"')
-        .replace(/\\n/g, '\n')
-        .replace(/\\r/g, '\r')
-        .replace(/\\t/g, '\t')
-        .replace(/\\\\/g, '\\')
-    }
-  }
-
-  return result
-}
-
-export const formatJsonString = (value: string, indentSize: number): string => {
-  const jsonValue = JSON.parse(unescapeJson(value.trim()))
-  return JSON.stringify(jsonValue, null, indentSize)
-}
+export { formatJsonString, unescapeJson } from './jsonText'
