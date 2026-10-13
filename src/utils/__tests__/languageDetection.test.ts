@@ -80,6 +80,19 @@ describe('detectLanguageFromFileName', () => {
 })
 
 describe('detectLanguageFromContent', () => {
+  it('distinguishes short JS/TS declarations from Go and ordinary prose', () => {
+    expect(detectLanguageFromContent('const value = 1;')).toBe('javascript')
+    expect(detectLanguageFromContent('const value: number = 1;')).toBe('typescript')
+    expect(detectLanguageFromContent('important classes and types of documents')).toBe('plaintext')
+    expect(detectLanguageFromContent('import foo')).toBe('python')
+    expect(detectLanguageFromContent('import java.util.List;')).toBe('java')
+    expect(detectLanguageFromContent('package main\nfunc main() {}')).toBe('go')
+  })
+
+  it('ignores conflicting language hints beyond the bounded sample', () => {
+    expect(detectLanguageFromContent('notes\n'.repeat(60) + '<?php echo $name;')).toBe('plaintext')
+    expect(detectLanguageFromContent('x'.repeat(20_000) + '<?php echo $name;')).toBe('plaintext')
+  })
   it('应检测有效的 JSON 内容', () => {
     expect(detectLanguageFromContent('{"name": "test", "value": 123}')).toBe('json')
     expect(detectLanguageFromContent('[1, 2, 3]')).toBe('json')

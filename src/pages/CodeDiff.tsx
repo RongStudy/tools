@@ -6,7 +6,7 @@ import { DiffEditor } from '@monaco-editor/react'
 import { diffLines, diffTrimmedLines } from 'diff'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
-import { detectLanguageFromFileName, detectLanguageFromContent } from '../utils/languageDetection'
+import { useDetectedLanguages } from '../hooks/useDetectedLanguages'
 import { useDiffEditor } from '../hooks/useDiffEditor'
 import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
@@ -21,6 +21,7 @@ const CODE_DIFF_DRAFT_KEY = 'dev-tools:code-diff:draft'
 type CodeDiffDraft = {
   activeDocumentId: string
   documents: CodeDiffDocument[]
+  languageDetectionVersion?: number
 }
 
 type CodeDiffDocument = {
@@ -45,7 +46,7 @@ const DEFAULT_CODE_DIFF_DOCUMENT: CodeDiffDocument = {
   originalCode: '',
   modifiedCode: '',
   viewMode: 'split',
-  language: 'plaintext',
+  language: 'auto',
   originalFileName: '',
   modifiedFileName: '',
   ignoreWhitespace: false,
@@ -94,6 +95,7 @@ const readCodeDiffDraft = (): CodeDiffDraft => {
   if (Array.isArray(draft.documents)) {
     const documents = draft.documents.filter(isCodeDiffDocument).map((document) => ({
       ...document,
+      language: draft.languageDetectionVersion !== 1 && document.language === 'plaintext' ? 'auto' : document.language,
       hideUnchanged: document.hideUnchanged === true,
       showMoves: document.showMoves === true,
     }))
@@ -117,7 +119,7 @@ const readCodeDiffDraft = (): CodeDiffDraft => {
         originalCode: draft.originalCode,
         modifiedCode: draft.modifiedCode,
         viewMode: draft.viewMode,
-        language: draft.language,
+        language: draft.language === 'plaintext' ? 'auto' : draft.language,
         originalFileName: draft.originalFileName,
         modifiedFileName: draft.modifiedFileName,
         ignoreWhitespace: draft.ignoreWhitespace,
@@ -146,6 +148,13 @@ const CodeDiff = () => {
     hideUnchanged,
     showMoves,
   } = activeDocument
+  const languageInputs = useMemo(() => [
+    { id: `${activeDocument.id}/original`, language, content: originalCode, filename: originalFileName },
+    { id: `${activeDocument.id}/modified`, language, content: modifiedCode, filename: modifiedFileName },
+  ], [activeDocument.id, language, originalCode, modifiedCode, originalFileName, modifiedFileName])
+  const detectedLanguages = useDetectedLanguages(languageInputs)
+  const originalLanguage = detectedLanguages[`${activeDocument.id}/original`]
+  const modifiedLanguage = detectedLanguages[`${activeDocument.id}/modified`]
   const registerMonaco = useMonacoModels(documents.flatMap(({ id }) => [modelPath('diff', id, 'original'), modelPath('diff', id, 'modified')]))
   const [editorContent, setEditorContent] = useState(() => ({
     originalCode: activeDocument.originalCode,
@@ -165,7 +174,7 @@ const CodeDiff = () => {
 
   useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
-  const draft = useMemo(() => ({ activeDocumentId, documents }), [activeDocumentId, documents])
+  const draft = useMemo(() => ({ activeDocumentId, documents, languageDetectionVersion: 1 }), [activeDocumentId, documents])
   useDraftPersistence(CODE_DIFF_DRAFT_KEY, draft)
 
   const updateActiveDocument = useCallback((updates: Partial<Omit<CodeDiffDocument, 'id' | 'name'>>) => {
@@ -183,28 +192,16 @@ const CodeDiff = () => {
     if (!file) return
 
     const fileName = file.name
-    const detectedLangFromFile = detectLanguageFromFileName(fileName)
 
     try {
       const text = await file.text()
 
-      // 如果从文件名检测不到，尝试从内容检测（传入当前 language 作为回退）
-      const detectedLang = detectedLangFromFile === 'plaintext'
-        ? detectLanguageFromContent(text, language)
-        : detectedLangFromFile
-
       if (type === 'original') {
         updateActiveDocument({ originalCode: text, originalFileName: fileName })
         setEditorContent((currentContent) => ({ ...currentContent, originalCode: text }))
-        if (!language || language === 'plaintext') {
-          updateActiveDocument({ language: detectedLang })
-        }
       } else {
         updateActiveDocument({ modifiedCode: text, modifiedFileName: fileName })
         setEditorContent((currentContent) => ({ ...currentContent, modifiedCode: text }))
-        if (!language || language === 'plaintext') {
-          updateActiveDocument({ language: detectedLang })
-        }
       }
 
       showToast(`文件加载成功: ${fileName}`)
@@ -259,7 +256,7 @@ const CodeDiff = () => {
       modifiedCode: '',
       originalFileName: '',
       modifiedFileName: '',
-      language: 'plaintext',
+      language: 'auto',
     })
     setEditorContent({
       originalCode: '',
@@ -316,24 +313,11 @@ const CodeDiff = () => {
   // 编辑器内容变化回调
   const handleOriginalChange = useCallback((value: string) => {
     updateActiveDocument({ originalCode: value })
-    // 如果语言是自动检测且代码不为空，尝试从内容检测语言
-    if (language === 'plaintext' && value.trim()) {
-      const detectedLang = detectLanguageFromContent(value, 'plaintext')
-      if (detectedLang !== 'plaintext') {
-        updateActiveDocument({ language: detectedLang })
-      }
-    }
-  }, [language, updateActiveDocument])
+  }, [updateActiveDocument])
 
   const handleModifiedChange = useCallback((value: string) => {
     updateActiveDocument({ modifiedCode: value })
-    if (language === 'plaintext' && value.trim()) {
-      const detectedLang = detectLanguageFromContent(value, 'plaintext')
-      if (detectedLang !== 'plaintext') {
-        updateActiveDocument({ language: detectedLang })
-      }
-    }
-  }, [language, updateActiveDocument])
+  }, [updateActiveDocument])
 
   useEffect(() => {
     setEditorCallbacks({
@@ -385,8 +369,9 @@ const CodeDiff = () => {
 
   const renderLanguageTools = () => (
     <>
-      <EditorLanguageTools binding={languageBindings?.original} language={language} path={modelPath('diff', activeDocument.id, 'original')} label="原始代码" caption="原始" />
-      <EditorLanguageTools binding={languageBindings?.modified} language={language} path={modelPath('diff', activeDocument.id, 'modified')} label="修改代码" caption="修改" />
+      {language === 'auto' && <span className="editor-language-label" role="status" aria-label="自动检测结果">原始：{originalLanguage} · 修改：{modifiedLanguage}</span>}
+      <EditorLanguageTools binding={languageBindings?.original} language={originalLanguage} path={modelPath('diff', activeDocument.id, 'original')} label="原始代码" caption="原始" />
+      <EditorLanguageTools binding={languageBindings?.modified} language={modifiedLanguage} path={modelPath('diff', activeDocument.id, 'modified')} label="修改代码" caption="修改" />
     </>
   )
 
@@ -501,7 +486,8 @@ const CodeDiff = () => {
           value={language}
           onChange={(e) => updateActiveDocument({ language: e.target.value })}
         >
-          <option value="plaintext">自动检测</option>
+          <option value="auto">自动检测</option>
+          <option value="plaintext">纯文本</option>
           <option value="javascript">JavaScript</option>
           <option value="typescript">TypeScript</option>
           <option value="python">Python</option>
@@ -611,7 +597,8 @@ const CodeDiff = () => {
             <DiffEditor
               key={`${activeDocument.id}-split`}
               height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
-              language={language}
+              originalLanguage={originalLanguage}
+              modifiedLanguage={modifiedLanguage}
               original={editorContent.originalCode}
               modified={editorContent.modifiedCode}
               loading={editorLoading}
@@ -646,7 +633,8 @@ const CodeDiff = () => {
               <DiffEditor
                 key={`${activeDocument.id}-unified`}
                 height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
-                language={language}
+                originalLanguage={originalLanguage}
+                modifiedLanguage={modifiedLanguage}
                 original={editorContent.originalCode}
                 modified={editorContent.modifiedCode}
                 loading={editorLoading}

@@ -1,209 +1,68 @@
-import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import ToolIcon from '../components/ToolIcon'
+import jsonIcon from '../assets/tool-icons/json.png'
+import diffIcon from '../assets/tool-icons/diff.png'
+import regexIcon from '../assets/tool-icons/regex.png'
+import codecIcon from '../assets/tool-icons/codec.png'
+import clockIcon from '../assets/tool-icons/clock.png'
+import diagramIcon from '../assets/tool-icons/diagram.png'
+import noteIcon from '../assets/tool-icons/note.png'
 import './Home.css'
 
 const toolLinks = [
-  {
-    path: '/json',
-    title: 'JSON格式化',
-    meta: 'Format / Compress / Escape',
-    accent: '#5e6ad2',
-  },
-  {
-    path: '/code-diff',
-    title: '代码对比',
-    meta: 'Side by side diff',
-    accent: '#828fff',
-  },
-  {
-    path: '/regex',
-    title: '正则表达式',
-    meta: 'Match / Replace / Split',
-    accent: '#d0d6e0',
-  },
-  {
-    path: '/url-codec',
-    title: '编解码',
-    meta: 'URL / Base64 / Unicode',
-    accent: '#7a7fad',
-  },
-  {
-    path: '/timestamp',
-    title: '时间戳转换',
-    meta: 'Timestamp / Date time',
-    accent: '#d0d6e0',
-  },
-  {
-    path: '/mermaid',
-    title: 'Mermaid / Markdown 渲染',
-    meta: 'Diagram / Markdown / LaTeX',
-    accent: '#8a8f98',
-  },
-  {
-    path: '/scratch-pad',
-    title: '临时文本',
-    meta: 'Scratch / Notes / Zoom',
-    accent: '#8e94c4',
-  },
+  { path: '/json', title: 'JSON 格式化', description: '让数据结构一目了然', meta: '格式化 · 压缩 · 转义', icon: jsonIcon, preview: 'json' },
+  { path: '/code-diff', title: '代码对比', description: '快速定位每一处改动', meta: '分栏对比 · 统一视图', icon: diffIcon, preview: 'diff' },
+  { path: '/regex', title: '正则表达式', description: '验证匹配，查看捕获结果', meta: '匹配 · 替换 · 分割', icon: regexIcon, preview: 'regex' },
+  { path: '/url-codec', title: '编解码', description: '在文本与编码之间转换', meta: 'URL · Base64 · Unicode', icon: codecIcon, preview: 'codec' },
+  { path: '/timestamp', title: '时间戳转换', description: '把数字还原为具体时间', meta: '秒 · 毫秒 · 日期时间', icon: clockIcon, preview: 'timestamp' },
+  { path: '/mermaid', title: 'Mermaid / Markdown', description: '把文字变成图表和文档', meta: '流程图 · 文档 · 公式', icon: diagramIcon, preview: 'diagram' },
+  { path: '/scratch-pad', title: '临时文本', description: '随手记录，继续你的思路', meta: '多标签 · 分栏 · 自动识别', icon: noteIcon, preview: 'note' },
 ]
 
-const Home = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const context = canvas.getContext('2d')
-    if (!context) return
-
-    let frameId = 0
-    let width = 0
-    let height = 0
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect()
-      width = Math.max(1, Math.floor(rect.width))
-      height = Math.max(1, Math.floor(rect.height))
-      canvas.width = Math.floor(width * dpr)
-      canvas.height = Math.floor(height * dpr)
-      context.setTransform(dpr, 0, 0, dpr, 0, 0)
-    }
-
-    const drawRoundedRect = (
-      x: number,
-      y: number,
-      rectWidth: number,
-      rectHeight: number,
-      radius: number
-    ) => {
-      context.beginPath()
-      context.moveTo(x + radius, y)
-      context.lineTo(x + rectWidth - radius, y)
-      context.quadraticCurveTo(x + rectWidth, y, x + rectWidth, y + radius)
-      context.lineTo(x + rectWidth, y + rectHeight - radius)
-      context.quadraticCurveTo(x + rectWidth, y + rectHeight, x + rectWidth - radius, y + rectHeight)
-      context.lineTo(x + radius, y + rectHeight)
-      context.quadraticCurveTo(x, y + rectHeight, x, y + rectHeight - radius)
-      context.lineTo(x, y + radius)
-      context.quadraticCurveTo(x, y, x + radius, y)
-    }
-
-    const draw = (time: number) => {
-      context.clearRect(0, 0, width, height)
-      context.fillStyle = '#010102'
-      context.fillRect(0, 0, width, height)
-
-      const gridSize = 34
-      context.strokeStyle = '#18191a'
-      context.lineWidth = 1
-      for (let x = (time / 80) % gridSize; x < width; x += gridSize) {
-        context.beginPath()
-        context.moveTo(x, 0)
-        context.lineTo(x, height)
-        context.stroke()
-      }
-      for (let y = 0; y < height; y += gridSize) {
-        context.beginPath()
-        context.moveTo(0, y)
-        context.lineTo(width, y)
-        context.stroke()
-      }
-
-      const centerX = width * 0.52
-      const centerY = height * 0.48
-      const nodes = [
-        { x: centerX - 210, y: centerY - 80, color: '#5e6ad2', label: '{}' },
-        { x: centerX + 160, y: centerY - 120, color: '#828fff', label: '<>' },
-        { x: centerX - 20, y: centerY + 105, color: '#7a7fad', label: 'ms' },
-      ]
-
-      context.lineWidth = 2
-      nodes.forEach((node, index) => {
-        const next = nodes[(index + 1) % nodes.length]
-        const progress = (Math.sin(time / 700 + index) + 1) / 2
-        context.strokeStyle = '#34343a'
-        context.beginPath()
-        context.moveTo(node.x, node.y)
-        context.lineTo(next.x, next.y)
-        context.stroke()
-
-        context.strokeStyle = node.color
-        context.beginPath()
-        context.moveTo(node.x, node.y)
-        context.lineTo(node.x + (next.x - node.x) * progress, node.y + (next.y - node.y) * progress)
-        context.stroke()
-      })
-
-      nodes.forEach((node) => {
-        drawRoundedRect(node.x - 46, node.y - 32, 92, 64, 8)
-        context.fillStyle = '#0f1011'
-        context.fill()
-        context.strokeStyle = '#23252a'
-        context.stroke()
-
-        context.fillStyle = node.color
-        context.font = '700 20px ui-monospace, SFMono-Regular, Menlo, monospace'
-        context.textAlign = 'center'
-        context.textBaseline = 'middle'
-        context.fillText(node.label, node.x, node.y)
-      })
-
-      drawRoundedRect(centerX - 72, centerY - 44, 144, 88, 8)
-      context.fillStyle = '#141516'
-      context.fill()
-      context.strokeStyle = '#34343a'
-      context.stroke()
-      context.fillStyle = '#f7f8f8'
-      context.font = '700 17px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif'
-      context.textAlign = 'center'
-      context.textBaseline = 'middle'
-      context.fillText('Forge', centerX, centerY - 7)
-      context.fillStyle = '#8a8f98'
-      context.font = '500 12px ui-monospace, SFMono-Regular, Menlo, monospace'
-      context.fillText('ready', centerX, centerY + 20)
-
-      frameId = window.requestAnimationFrame(draw)
-    }
-
-    resize()
-    window.addEventListener('resize', resize)
-    frameId = window.requestAnimationFrame(draw)
-
-    return () => {
-      window.cancelAnimationFrame(frameId)
-      window.removeEventListener('resize', resize)
-    }
-  }, [])
-
-  return (
-    <section className="home-page">
-      <canvas ref={canvasRef} className="home-canvas" aria-hidden="true" />
-      <div className="home-content">
-        <div className="home-copy">
-          <p className="home-kicker">Forge</p>
-          <h2>Forge</h2>
-          <p>把常用的格式化、对比和时间转换放在一个清爽工作区。</p>
-        </div>
-
-        <div className="home-tool-grid" aria-label="常用工具">
-          {toolLinks.map((tool) => (
-            <Link
-              key={tool.path}
-              to={tool.path}
-              className="home-tool-card"
-              style={{ '--tool-accent': tool.accent } as React.CSSProperties}
-            >
-              <span className="home-tool-mark"></span>
-              <span className="home-tool-title">{tool.title}</span>
-              <small>{tool.meta}</small>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
+const ToolPreview = ({ type }: { type: string }) => {
+  switch (type) {
+    case 'json':
+      return <div className="home-preview-code"><span className="home-preview-line"><i>1</i>{'{'}</span><span className="home-preview-line"><i>2</i><span>&nbsp; <b>"name"</b>: <em>"Forge"</em>,</span></span><span className="home-preview-line"><i>3</i><span>&nbsp; <b>"ready"</b>: <strong>true</strong></span></span><span className="home-preview-line"><i>4</i>{'}'}</span></div>
+    case 'diff':
+      return <div className="home-preview-diff"><span className="home-diff-removed"><i>−</i><span>const timeout = <b>1000</b>;</span></span><span className="home-diff-added"><i>+</i><span>const timeout = <b>3000</b>;</span></span><span className="home-diff-context"><i> </i>await connect(timeout);</span></div>
+    case 'regex':
+      return <div className="home-preview-regex"><code><span>/</span>{'[a-z]+@[a-z]+\\.[a-z]+'}<span>/g</span></code><p>联系 <mark>hello@forge.dev</mark></p></div>
+    case 'codec':
+      return <div className="home-preview-conversion"><code>Hello, Forge!</code><span className="home-conversion-arrow">↓ <small>Base64</small></span><code>SGVsbG8sIEZvcmdlIQ==</code></div>
+    case 'timestamp':
+      return <div className="home-preview-conversion"><code>1700000000000 <small>ms</small></code><span className="home-conversion-arrow">↓ <small>UTC</small></span><code>2023-11-14 22:13:20</code></div>
+    case 'diagram':
+      return <div className="home-preview-diagram"><span>开始</span><i>⟶</i><span className="home-diagram-process">处理</span><i>⟶</i><span>完成</span></div>
+    default:
+      return <div className="home-preview-code home-preview-note"><span className="home-preview-line"><i>1</i><b># 今日笔记</b></span><span className="home-preview-line"><i>2</i>整理接口参数</span><span className="home-preview-line"><i>3</i><span>记录调试思路<span className="home-note-caret" /></span></span></div>
+  }
 }
+
+const Home = () => (
+  <section className="home-page" aria-labelledby="home-title">
+    <header className="home-header">
+      <div className="home-copy">
+        <p className="home-kicker">FORGE <span>/ WORKSPACE</span></p>
+        <h2 id="home-title">开发工作台</h2>
+        <p className="home-description">常用工具，就在手边。</p>
+      </div>
+      <div className="home-shortcut"><span>快速切换工具</span><kbd>⌘ / Ctrl</kbd><kbd>K</kbd></div>
+    </header>
+    <div className="home-tool-grid" aria-label="常用工具">
+      {toolLinks.map((tool, index) => (
+        <Link key={tool.path} to={tool.path} className={`home-tool-card home-tool-${tool.preview}`} aria-label={tool.title}>
+          <div className="home-card-heading">
+            <span className="home-tool-icon"><ToolIcon src={tool.icon} /></span>
+            <div className="home-card-copy"><h3>{tool.title}</h3><p>{tool.description}</p></div>
+            <span className="home-tool-arrow" aria-hidden="true">↗</span>
+          </div>
+          <div className="home-tool-preview" aria-hidden="true"><ToolPreview type={tool.preview} /></div>
+          <div className="home-card-footer"><span>{tool.meta}</span><span className="home-card-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span></div>
+        </Link>
+      ))}
+    </div>
+    <footer className="home-footer"><span>格式化、对比、记录，一处完成。</span><span>7 个工具 · 随时开始</span></footer>
+  </section>
+)
 
 export default Home

@@ -126,6 +126,15 @@
   justify-content: flex-end;
 }
 
+.panel-header > span,
+.panel-actions > span,
+.panel-actions > small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  line-height: 1.2;
+}
+
 .monaco-loading {
   height: 100%;
   min-height: 100%;

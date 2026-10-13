@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import ScratchPad from './ScratchPad'
 import { ToastProvider } from '../components/Toast'
 
@@ -47,6 +47,34 @@ const mockDownloads = () => {
 }
 
 describe('ScratchPad', () => {
+  it('自动模式持续识别各栏，手动选择固定语言，重挂载后保留模式', () => {
+    vi.useFakeTimers()
+    const { unmount } = renderScratchPad()
+    const language = screen.getByRole('combobox', { name: '栏 1 语言' })
+    expect(language).toHaveValue('auto')
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '<?php echo $name;' } })
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByLabelText('scratch-editor-php')).toBeInTheDocument()
+    expect(language).toHaveValue('auto')
+    fireEvent.change(screen.getByLabelText('scratch-editor-php'), { target: { value: 'package main\nfunc main() {}' } })
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByLabelText('scratch-editor-go')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /分栏/ }))
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: 'public class Main {}' } })
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByLabelText('scratch-editor-java')).toBeInTheDocument()
+    expect(screen.getByLabelText('scratch-editor-go')).toBeInTheDocument()
+    fireEvent.change(language, { target: { value: 'plaintext' } })
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByLabelText('scratch-editor-plaintext')).toHaveValue('package main\nfunc main() {}')
+    unmount()
+    renderScratchPad()
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByRole('combobox', { name: '栏 1 语言' })).toHaveValue('plaintext')
+    expect(screen.getByRole('combobox', { name: '栏 2 语言' })).toHaveValue('auto')
+    expect(screen.getByLabelText('scratch-editor-java')).toBeInTheDocument()
+  })
+
   it('只下载最近获得焦点的分栏，保留完整文本并在下载后释放资源', async () => {
     vi.useFakeTimers()
     const { createObjectURL, revokeObjectURL, filenames } = mockDownloads()

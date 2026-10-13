@@ -312,6 +312,13 @@
   font-size: 0.78rem;
 }
 
+.regex-result-toolbar > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  line-height: 1.2;
+}
+
 .regex-highlight-preview {
   min-height: 0;
   overflow: auto;

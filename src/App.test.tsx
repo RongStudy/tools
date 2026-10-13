@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
-const { setupMonaco } = vi.hoisted(() => ({ setupMonaco: vi.fn() }))
+const { setupMonaco, routerState } = vi.hoisted(() => ({ setupMonaco: vi.fn(), routerState: { path: '/' } }))
 vi.mock('@monaco-setup', () => ({ setupMonaco }))
 vi.mock('@platform', async () => {
   const { MemoryRouter } = await import('react-router-dom')
-  return { PlatformRouter: ({ children }: { children: ReactNode }) => <MemoryRouter>{children}</MemoryRouter> }
+  return { PlatformRouter: ({ children }: { children: ReactNode }) => <MemoryRouter initialEntries={[routerState.path]}>{children}</MemoryRouter> }
 })
 vi.mock('./components/AppShell', async () => {
   const { Link } = await import('react-router-dom')
@@ -18,7 +18,8 @@ vi.mock('./tools/registry', () => ({ tools: [
   { path: '/json', component: () => <div>json page</div> },
   { path: '/timestamp', component: () => <div>timestamp page</div> },
 ] }))
-beforeEach(() => { setupMonaco.mockReset(); setupMonaco.mockResolvedValue(undefined) })
+beforeEach(() => { setupMonaco.mockReset(); setupMonaco.mockResolvedValue(undefined); routerState.path = '/' })
+afterEach(() => vi.unstubAllGlobals())
 
 describe('route based Monaco initialization', () => {
   it('skips homepage and noneditor tools and initializes only on first editor navigation', async () => {
@@ -44,5 +45,53 @@ describe('route based Monaco initialization', () => {
     fireEvent.click(screen.getByRole('button', { name: '重试' }))
     await screen.findByText('json page')
     await waitFor(() => expect(setupMonaco).toHaveBeenCalledTimes(2))
+  })
+})
+
+describe('mobile access', () => {
+  const device = (userAgent: string, width: number, platform = '', maxTouchPoints = 0, mobile = false) => {
+    vi.stubGlobal('navigator', { userAgent, platform, maxTouchPoints, userAgentData: { mobile } })
+    vi.stubGlobal('innerWidth', width)
+  }
+
+  it.each([
+    ['iPhone', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Mobile/15E148', false],
+    ['Android phone', 'Mozilla/5.0 (Linux; Android 15) Chrome/130.0 Mobile Safari/537.36', false],
+    ['client hints phone', 'Mozilla/5.0', true],
+  ])('blocks %s even with a large viewport and skips editor initialization on direct links', (_, userAgent, mobile) => {
+    device(userAgent, 1200, '', 5, mobile)
+    routerState.path = '/json'
+    render(<App />)
+    expect(screen.getByRole('heading', { name: '请使用 PC 访问' })).toBeInTheDocument()
+    expect(screen.queryByText('json page')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(setupMonaco).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['iPad', 'Mozilla/5.0 (iPad; CPU OS 18_0)', 'iPad'],
+    ['iPad desktop mode', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)', 'MacIntel'],
+    ['Android tablet', 'Mozilla/5.0 (Linux; Android 15) Chrome/130.0 Safari/537.36', 'Linux armv8l'],
+  ])('allows %s above the desktop layout breakpoint and updates when rotated', async (_, userAgent, platform) => {
+    device(userAgent, 900, platform, 5)
+    routerState.path = '/json'
+    render(<App />)
+    expect(screen.getByText('当前屏幕宽度不足，请尝试横屏或使用电脑打开。')).toBeInTheDocument()
+    expect(setupMonaco).not.toHaveBeenCalled()
+    vi.stubGlobal('innerWidth', 901)
+    fireEvent(window, new Event('resize'))
+    await screen.findByText('json page')
+    expect(setupMonaco).toHaveBeenCalledTimes(1)
+    vi.stubGlobal('innerWidth', 834)
+    fireEvent(window, new Event('resize'))
+    expect(screen.getByRole('heading', { name: '请使用 PC 访问' })).toBeInTheDocument()
+    expect(screen.queryByText('json page')).not.toBeInTheDocument()
+  })
+
+  it('keeps a desktop browser usable in a narrow window, including touch enabled PCs', () => {
+    device('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0', 390, 'Win32', 10)
+    render(<App />)
+    expect(screen.getByText('home page')).toBeInTheDocument()
+    expect(screen.queryByText('请使用 PC 访问')).not.toBeInTheDocument()
   })
 })

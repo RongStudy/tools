@@ -161,8 +161,9 @@ export function detectLanguageFromFileName(fileName: string): string {
 export function detectLanguageFromContent(code: string, fallbackLanguage: string = 'plaintext'): string {
   if (!code || !code.trim()) return fallbackLanguage
   
-  const trimmedCode = code.trim()
-  const codeLines = trimmedCode.split('\n').slice(0, 50) // 只检查前50行以提高性能
+  // Bound every rule, not just the line-based ones, for large pasted documents.
+  const trimmedCode = code.slice(0, 20_000).trim().split('\n').slice(0, 50).join('\n')
+  const codeLines = trimmedCode.split('\n')
   const codeLower = trimmedCode.toLowerCase()
   
   // 使用评分机制，每个语言累积分数
@@ -228,7 +229,7 @@ export function detectLanguageFromContent(code: string, fallbackLanguage: string
   }
   
   // Python 检测
-  if (codeLines.some(line => line.match(/^(def |class |import |from |if __name__)/))) {
+  if (codeLines.some(line => line.match(/^\s*(def\s+\w+\s*\([^)]*\)\s*:|class\s+\w+[^\n]*:|import\s+[\w.]+\s*$|from\s+[\w.]+\s+import\s|if __name__)/))) {
     scores['python'] = (scores['python'] || 0) + 8
   }
   if (codeLines.some(line => line.match(/print\s*\(|lambda |yield |async def |@/))) {
@@ -239,14 +240,14 @@ export function detectLanguageFromContent(code: string, fallbackLanguage: string
   }
   
   // JavaScript/TypeScript 检测
-  const jsKeywords = /(import|export|const|let|var|function|class|interface|type|=>|async|await)/
-  if (codeLines.some(line => jsKeywords.test(line))) {
+  const jsKeywords = /\b(import|export|const|let|var|function|class|interface|type|async|await)\b|=>/g
+  if (trimmedCode.match(jsKeywords)) {
     const tsFeatures = /(:\s*(string|number|boolean|any|void|object|Array|Promise)|interface\s+\w+|type\s+\w+\s*=|as\s+\w+|<[A-Z]\w+>)/g
     const tsMatches = trimmedCode.match(tsFeatures)
     const jsMatches = trimmedCode.match(jsKeywords)
     
     if (tsMatches && tsMatches.length > 0) {
-      scores['typescript'] = (scores['typescript'] || 0) + (tsMatches.length * 2)
+      scores['typescript'] = (tsMatches.length * 2) + ((jsMatches?.length ?? 0) * 2) + 5
     }
     if (jsMatches && jsMatches.length > 0) {
       scores['javascript'] = (scores['javascript'] || 0) + (jsMatches.length * 2)
@@ -255,9 +256,12 @@ export function detectLanguageFromContent(code: string, fallbackLanguage: string
   if (trimmedCode.match(/require\(|module\.exports|exports\./)) {
     scores['javascript'] = (scores['javascript'] || 0) + 5
   }
+  if (/\b(const|let|var)\s+\w+\s*=|\bfunction\s+\w*\s*\(|=>/.test(trimmedCode)) {
+    scores['javascript'] = (scores['javascript'] || 0) + 5
+  }
   
   // Java 检测
-  if (codeLines.some(line => line.match(/^(public|private|protected|class|interface|package|import)\s/))) {
+  if (codeLines.some(line => line.match(/^\s*((public|private|protected)\s+|package\s+[\w.]+\s*;|import\s+(static\s+)?[\w.*]+\s*;)/))) {
     scores['java'] = (scores['java'] || 0) + 8
   }
   if (codeLines.some(line => line.match(/@Override|@Deprecated|@SuppressWarnings/))) {
@@ -288,10 +292,10 @@ export function detectLanguageFromContent(code: string, fallbackLanguage: string
   }
   
   // Go 检测
-  if (codeLines.some(line => line.match(/^(package|import|func |var |const |type |go |defer )/))) {
+  if (codeLines.some(line => line.match(/^\s*(package\s+\w+\s*$|import\s*("|\()|func\s|go\s|defer\s)/))) {
     scores['go'] = (scores['go'] || 0) + 8
   }
-  if (trimmedCode.match(/func\s+\w+\s*\(|:= |\.(String|Int|Bool)\(/)) {
+  if (trimmedCode.match(/func\s+(\([^)]*\)\s*)?\w+\s*\(|:=/)) {
     scores['go'] = (scores['go'] || 0) + 5
   }
   
@@ -307,7 +311,7 @@ export function detectLanguageFromContent(code: string, fallbackLanguage: string
   if (trimmedCode.match(/^<\?php|<\?=/)) {
     scores['php'] = (scores['php'] || 0) + 10
   }
-  if (codeLines.some(line => line.match(/\$[a-zA-Z_]+|->|::|function\s+\w+\s*\(/))) {
+  if (codeLines.some(line => line.match(/\$[a-zA-Z_]+|->\s*\w+/))) {
     scores['php'] = (scores['php'] || 0) + 5
   }
   
@@ -338,7 +342,7 @@ export function detectLanguageFromContent(code: string, fallbackLanguage: string
   // 找到得分最高的语言
   const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1])
   
-  if (sortedScores.length > 0 && sortedScores[0][1] >= 5) {
+  if (sortedScores.length > 0 && sortedScores[0][1] >= 5 && sortedScores[0][1] > (sortedScores[1]?.[1] ?? 0)) {
     return sortedScores[0][0]
   }
   

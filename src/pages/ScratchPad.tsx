@@ -1,3 +1,4 @@
+import { useDetectedLanguages } from '../hooks/useDetectedLanguages'
 import { useDraftPersistence } from '../hooks/useDraftPersistence'
 import { useMemo, useState, useCallback, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
@@ -50,7 +51,7 @@ type LegacyScratchPadDraft = {
   fontSize: number
 }
 
-const createPane = (content = '', language = 'plaintext'): ScratchPane => ({
+const createPane = (content = '', language = 'auto'): ScratchPane => ({
   id: `pane-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   content,
   language,
@@ -59,7 +60,7 @@ const createPane = (content = '', language = 'plaintext'): ScratchPane => ({
 const DEFAULT_SCRATCH_DOCUMENT: ScratchDocument = {
   id: 'scratch-1',
   name: '文本 1',
-  panes: [{ id: 'pane-1', content: '', language: 'plaintext' }],
+  panes: [{ id: 'pane-1', content: '', language: 'auto' }],
 }
 
 const DEFAULT_SCRATCH_PAD_DRAFT: ScratchPadDraft = {
@@ -69,6 +70,7 @@ const DEFAULT_SCRATCH_PAD_DRAFT: ScratchPadDraft = {
 }
 
 const LANGUAGES = [
+  { value: 'auto', label: '自动检测' },
   { value: 'plaintext', label: '纯文本' },
   { value: 'javascript', label: 'JavaScript' },
   { value: 'typescript', label: 'TypeScript' },
@@ -209,6 +211,8 @@ const ScratchPad = () => {
   }, [paneIdsKey])
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? documents[0]
   const { panes } = activeDocument
+  const languageInputs = useMemo(() => panes.map((pane) => ({ ...pane, id: `${activeDocument.id}/${pane.id}` })), [activeDocument.id, panes])
+  const detectedLanguages = useDetectedLanguages(languageInputs)
   const registerMonaco = useMonacoModels(documents.flatMap((document) => document.panes.map((pane) => modelPath('scratch', document.id, pane.id))))
   const selectedPaneIndex = Math.max(0, panes.findIndex((pane) => pane.id === selectedPaneIds[activeDocument.id]))
   const selectedPane = panes[selectedPaneIndex]
@@ -426,7 +430,7 @@ const ScratchPad = () => {
                   aria-label={`栏 ${index + 1} 语言`}
                 >
                   {LANGUAGES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                    <option key={option.value} value={option.value}>{option.value === 'auto' && pane.language === 'auto' ? `自动 · ${LANGUAGES.find((item) => item.value === detectedLanguages[`${activeDocument.id}/${pane.id}`])?.label ?? '纯文本'}` : option.label}</option>
                   ))}
                 </select>
                 <button
@@ -439,7 +443,7 @@ const ScratchPad = () => {
                 </button>
                 <EditorLanguageTools
                   binding={paneBindings[pane.id]}
-                  language={pane.language}
+                  language={detectedLanguages[`${activeDocument.id}/${pane.id}`]}
                   path={modelPath('scratch', activeDocument.id, pane.id)}
                   label={`栏 ${index + 1}`}
                 />
@@ -463,7 +467,7 @@ const ScratchPad = () => {
                     registerMonaco(monaco)
                     setPaneBindings((current) => ({ ...current, [pane.id]: { editor, monaco } }))
                   }}
-                  language={pane.language}
+                  language={detectedLanguages[`${activeDocument.id}/${pane.id}`]}
                   value={pane.content}
                   loading={editorLoading}
                   onChange={(value) => updatePane(pane.id, { content: value ?? '' })}

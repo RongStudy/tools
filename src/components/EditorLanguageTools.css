@@ -67,4 +67,15 @@
   .editor-problems { width: min(320px, calc(100vw - 36px)); }
 }
 
-.editor-language-label { color: var(--color-muted); font-size: 0.8rem; }
+.editor-language-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
+
+.panel-actions .editor-language-label,
+.editor-language-tools .editor-language-label {
+  color: var(--color-muted);
+  font: 500 0.78rem/1.2 var(--font-text);
+  letter-spacing: 0;
+}

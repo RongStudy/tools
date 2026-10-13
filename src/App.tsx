@@ -4,6 +4,8 @@ import { PlatformRouter } from '@platform'
 import { setupMonaco } from '@monaco-setup'
 import { ToastProvider } from './components/Toast'
 import AppShell from './components/AppShell'
+import MobileAccessNotice from './components/MobileAccessNotice'
+import { getDeviceKind, TABLET_MIN_WIDTH } from './utils/device'
 import { tools } from './tools/registry'
 import { suppressMonacoCancellationErrorLogs } from './utils/monacoErrorFilter'
 import './App.css'
@@ -92,6 +94,19 @@ const ToolRoutes = () => {
 
 function App() {
   useEffect(() => suppressMonacoCancellationErrorLogs(), [])
+  const [device] = useState(getDeviceKind)
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
+
+  useEffect(() => {
+    if (device !== 'tablet') return
+    const updateWidth = () => setViewportWidth(window.innerWidth)
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [device])
+
+  if (device === 'phone' || (device === 'tablet' && viewportWidth < TABLET_MIN_WIDTH)) {
+    return <MobileAccessNotice tablet={device === 'tablet'} />
+  }
 
   return (
     <ToastProvider>

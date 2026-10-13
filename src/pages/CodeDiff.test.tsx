@@ -12,9 +12,13 @@ vi.mock('@monaco-editor/react', () => ({
     keepCurrentOriginalModel,
     keepCurrentModifiedModel,
     options,
+    originalLanguage,
+    modifiedLanguage,
   }: {
     original: string
     modified: string
+    originalLanguage?: string
+    modifiedLanguage?: string
     originalModelPath?: string
     modifiedModelPath?: string
     keepCurrentOriginalModel?: boolean
@@ -33,6 +37,8 @@ vi.mock('@monaco-editor/react', () => ({
   }) => (
     <div
       data-testid="diff-editor"
+      data-original-language={originalLanguage}
+      data-modified-language={modifiedLanguage}
       data-original-editable={String(options?.originalEditable)}
       data-format-on-paste={String(options?.formatOnPaste)}
       data-format-on-type={String(options?.formatOnType)}
@@ -66,6 +72,34 @@ beforeEach(() => {
 })
 
 describe('CodeDiff', () => {
+  it('自动模式反复识别左右内容，不覆盖手动模式并保留纯文本选择', async () => {
+    const { unmount } = renderCodeDiff()
+    const language = screen.getByRole('combobox', { name: '语言:' })
+    const load = (side: string, text: string) => fireEvent.change(screen.getByLabelText(`加载${side}文件`), {
+      target: { files: [new File([text], 'snippet.txt')] },
+    })
+    load('原始', '<?php echo $name;')
+    load('修改', 'public class Main {}')
+    await waitFor(() => {
+      expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-original-language', 'php')
+      expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'java')
+    })
+    expect(language).toHaveValue('auto')
+    load('原始', 'package main\nfunc main() {}')
+    await waitFor(() => expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-original-language', 'go'))
+    expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'java')
+    fireEvent.change(language, { target: { value: 'php' } })
+    load('修改', 'package main\nfunc main() {}')
+    await waitFor(() => expect(screen.getByLabelText('modified-code')).toHaveValue('package main\nfunc main() {}'))
+    expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'php')
+    fireEvent.change(language, { target: { value: 'auto' } })
+    await waitFor(() => expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'go'))
+    fireEvent.change(language, { target: { value: 'plaintext' } })
+    unmount()
+    renderCodeDiff()
+    expect(screen.getByRole('combobox', { name: '语言:' })).toHaveValue('plaintext')
+  })
+
   it('加载文件后应保留原始空白字符，不应提前规范化展示内容', async () => {
     renderCodeDiff()
 

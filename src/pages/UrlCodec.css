@@ -126,6 +126,9 @@
 }
 
 .url-codec-panel-header span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
   color: var(--color-text);
   font-weight: 650;
 }
