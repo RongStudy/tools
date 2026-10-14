@@ -151,6 +151,17 @@
   width: max-content;
 }
 
+/* 搜索按钮提示位于编辑器外层，显示时允许它越过面板内部的裁剪边界。 */
+.editor-panel:has(.context-view.monaco-component .workbench-hover.compact),
+.editor-panel :has(.context-view.monaco-component .workbench-hover.compact) {
+  overflow: visible;
+}
+
+.editor-panel:has(.context-view.monaco-component .workbench-hover.compact) > .panel-header {
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
 .monaco-loading::before {
   content: '';
   width: 0.8rem;
