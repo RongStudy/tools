@@ -146,6 +146,11 @@
   font-size: 0.88rem;
 }
 
+/* Monaco 工具提示按测量尺寸定位，避免窄编辑器内再次换行后覆盖触发按钮。 */
+.context-view.monaco-component .workbench-hover-container:has(.workbench-hover.compact) {
+  width: max-content;
+}
+
 .monaco-loading::before {
   content: '';
   width: 0.8rem;

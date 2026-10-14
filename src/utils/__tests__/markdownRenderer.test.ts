@@ -39,6 +39,81 @@ describe('renderMarkdown', () => {
     expect(html).toContain('<strong>safe</strong>')
   })
 
+  it('注释中的 Mermaid 箭头不会提前结束隐藏模板', () => {
+    const html = renderMarkdown([
+      '# 正式正文',
+      '',
+      '<!-- 以下为模板骨架，不构成正文。',
+      '',
+      '## 隐藏模板',
+      '',
+      '```mermaid',
+      'flowchart LR',
+      '  A["触发条件"] --> B["用户动作"]',
+      '  B --> C{"业务判断"}',
+      '```',
+      '',
+      '## 隐藏验收表',
+      '',
+      '| 验收 ID | Given |',
+      '| --- | --- |',
+      '| AC-001 | `<条件>` |',
+      '-->',
+      '',
+      '## 后续正文',
+    ].join('\n'))
+    const preview = document.createElement('div')
+    preview.innerHTML = html
+    expect(preview.textContent).toBe('正式正文\n后续正文\n')
+    expect(preview.querySelector('pre, table, .mermaid-block')).toBeNull()
+  })
+
+  it('保持普通、行内和连续注释的结束位置', () => {
+    const html = renderMarkdown([
+      '<!-- 注释一 -->',
+      '',
+      '正文 <!-- 行内注释 --> 保留',
+      '',
+      '<!-- 多行注释',
+      '在这里结束 -->',
+      '',
+      '**后续内容**',
+      '',
+      '<!-- 注释二 -->',
+    ].join('\n'))
+    expect(html).toContain('正文  保留')
+    expect(html).toContain('<strong>后续内容</strong>')
+    expect(html).not.toContain('注释')
+  })
+
+  it.each(['```', '~~~~'])('注释中的 %s 围栏保留箭头，较短围栏不结束代码块', (fence) => {
+    const html = renderMarkdown([
+      '<!-- 隐藏模板',
+      `${fence}mermaid`,
+      'A --> B',
+      fence[0].repeat(fence.length - 1),
+      'B --> C',
+      fence,
+      '隐藏文字',
+      '-->',
+      '',
+      '保留正文',
+    ].join('\n'))
+    expect(html).toBe('<p>保留正文</p>\n')
+  })
+
+  it('代码示例中的 HTML 注释保持为代码，不被隐藏', () => {
+    const html = renderMarkdown('```text\n<!-- 示例\nA --> B\n-->\n```\n\n`<!-- 行内代码 -->`')
+    expect(html).toContain('&lt;!-- 示例')
+    expect(html).toContain('A --&gt; B')
+    expect(html).toContain('<code>&lt;!-- 行内代码 --&gt;</code>')
+  })
+
+  it('未闭合注释隐藏至文档末尾，独立结束符可关闭未闭合围栏', () => {
+    expect(renderMarkdown('# 正文\n\n<!-- 隐藏\n```mermaid\nA --> B')).toBe('<h1>正文</h1>\n')
+    expect(renderMarkdown('<!-- 隐藏\n```mermaid\nA --> B\n-->\n\n保留')).toBe('<p>保留</p>\n')
+  })
+
   it('mermaid 代码块输出占位容器，源码存于模块暂存区', () => {
     const source = 'flowchart LR\n  A --> B\n  B --> C'
     const html = renderMarkdown('```mermaid\n' + source + '\n```')

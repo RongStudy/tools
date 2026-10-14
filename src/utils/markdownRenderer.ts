@@ -51,6 +51,43 @@ markdown.use(
 )
 
 markdown.use({
+  extensions: [{
+    name: 'markdownComment',
+    level: 'block',
+    tokenizer(source) {
+      if (!/^ {0,3}<!--/.test(source)) return
+
+      // 文档模板注释可能包裹 Mermaid 代码，围栏内的 --> 是箭头而非结束符。
+      // 在词法阶段整体消费注释，避免提前结束后破坏后续 Markdown 的结构。
+      let fence = ''
+      let offset = 0
+      for (const line of source.split('\n')) {
+        const closing = line.indexOf('-->')
+        if (closing !== -1 && (!fence || /^\s*-->\s*$/.test(line))) {
+          return { type: 'markdownComment', raw: source.slice(0, offset + closing + 3) }
+        }
+
+        const marker = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line)
+        if (marker) {
+          if (!fence && (marker[1][0] !== '`' || !marker[2].includes('`'))) {
+            fence = marker[1]
+          } else if (
+            marker[1][0] === fence[0] &&
+            marker[1].length >= fence.length &&
+            !marker[2].trim()
+          ) {
+            fence = ''
+          }
+        }
+        offset += line.length + 1
+      }
+
+      return { type: 'markdownComment', raw: source }
+    },
+    renderer() {
+      return ''
+    },
+  }],
   renderer: {
     code({ text, lang }: { text: string; lang?: string }) {
       const language = (lang || '').trim().split(/\s+/)[0]
