@@ -1,6 +1,7 @@
 import { lazy, type ComponentType } from 'react'
 import Home from '../pages/Home'
 import type { ToolIconName } from '../components/ToolIcon'
+import toolPaths from './paths.json'
 import homeIcon from '../assets/tool-icons/home.png'
 import jsonIcon from '../assets/tool-icons/json.png'
 import diffIcon from '../assets/tool-icons/diff.png'
@@ -45,7 +46,7 @@ export type ToolDefinition = {
 
 const toolDefinitions: ToolDefinition[] = [
   {
-    path: '/',
+    path: toolPaths.home,
     title: '首页',
     navTitle: '首页',
     description: '工具总览与快速入口',
@@ -55,7 +56,7 @@ const toolDefinitions: ToolDefinition[] = [
     isTool: false,
   },
   {
-    path: '/json',
+    path: toolPaths.json,
     title: 'JSON格式化工具',
     navTitle: 'JSON格式化',
     description: '格式化、压缩、转义和解转义 JSON 内容',
@@ -64,7 +65,7 @@ const toolDefinitions: ToolDefinition[] = [
     component: JsonFormatter,
   },
   {
-    path: '/code-diff',
+    path: toolPaths.codeDiff,
     title: '代码对比',
     navTitle: '代码对比',
     description: '对比两段代码或文件内容，支持分栏和统一视图',
@@ -73,7 +74,7 @@ const toolDefinitions: ToolDefinition[] = [
     component: CodeDiff,
   },
   {
-    path: '/regex',
+    path: toolPaths.regex,
     title: '正则表达式',
     navTitle: '正则表达式',
     description: '测试匹配、捕获组、替换和文本分割',
@@ -82,7 +83,7 @@ const toolDefinitions: ToolDefinition[] = [
     component: RegexTester,
   },
   {
-    path: '/url-codec',
+    path: toolPaths.urlCodec,
     title: '编解码',
     navTitle: '编解码',
     description: 'URL、Base64、Unicode 编解码与 MD5、SHA-256 摘要',
@@ -91,7 +92,7 @@ const toolDefinitions: ToolDefinition[] = [
     component: UrlCodec,
   },
   {
-    path: '/mermaid',
+    path: toolPaths.mermaid,
     title: 'Mermaid / Markdown 渲染',
     navTitle: 'Mermaid / Markdown',
     description: '自动识别 Mermaid 或 Markdown 内容并渲染',
@@ -100,7 +101,7 @@ const toolDefinitions: ToolDefinition[] = [
     component: MermaidRenderer,
   },
   {
-    path: '/timestamp',
+    path: toolPaths.timestamp,
     title: '时间戳转换',
     navTitle: '时间戳转换',
     description: '查看当前时间戳，互转时间戳和日期时间',
@@ -109,7 +110,7 @@ const toolDefinitions: ToolDefinition[] = [
     component: TimestampConverter,
   },
   {
-    path: '/scratch-pad',
+    path: toolPaths.scratchPad,
     title: '临时文本输入',
     navTitle: '临时文本',
     description: '随手记录或粘贴文本，支持多标签、字号缩放和全屏编辑',

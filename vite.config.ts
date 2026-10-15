@@ -8,11 +8,37 @@ type BuildTarget = 'web' | 'chrome'
 
 const chromeDir = fileURLToPath(new URL('./chrome/', import.meta.url))
 const packageJsonPath = fileURLToPath(new URL('./package.json', import.meta.url))
+const toolPathsPath = fileURLToPath(new URL('./src/tools/paths.json', import.meta.url))
 
 /** Chrome target 需要复制到产物根目录的扩展专属文件 */
 const chromeExtensionFiles = ['manifest.json', 'background.js', 'icon.png'] as const
 
 const resolveTarget = (mode: string): BuildTarget => (mode === 'chrome' ? 'chrome' : 'web')
+
+/** GitHub Pages 没有 history fallback，为每个工具路径输出可直接访问的入口。 */
+const webRouteEntries = (): Plugin => ({
+  name: 'web-route-entries',
+  apply: 'build',
+  generateBundle: {
+    order: 'post',
+    handler(_options, bundle) {
+      const index = bundle['index.html']
+      if (!index || index.type !== 'asset') {
+        this.error('Web route entries require a built index.html')
+      }
+
+      const paths = JSON.parse(readFileSync(toolPathsPath, 'utf8')) as Record<string, string>
+      for (const path of Object.values(paths)) {
+        if (path === '/') continue
+        this.emitFile({
+          type: 'asset',
+          fileName: `${path.slice(1)}/index.html`,
+          source: index.source,
+        })
+      }
+    },
+  },
+})
 
 /**
  * 把 chrome/ 下的扩展专属文件写进 Chrome 产物根目录。
@@ -44,7 +70,7 @@ export default defineConfig(({ mode }) => {
     // Web 版部署在 GitHub Pages 的 /tools/ 子路径下；
     // 扩展页由 chrome-extension:// 加载，必须使用相对资源路径。
     base: isChrome ? './' : '/tools/',
-    plugins: [react(), ...(isChrome ? [chromeExtensionAssets()] : [])],
+    plugins: [react(), ...(isChrome ? [chromeExtensionAssets()] : [webRouteEntries()])],
     resolve: {
       // 平台差异集中在 alias 选定的适配模块里，业务代码不感知运行环境。
       alias: {

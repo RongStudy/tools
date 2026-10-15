@@ -120,6 +120,8 @@ npm run preview
 
 平台模块通过 `vite.config.ts` 中的 `@platform`、`@monaco-setup` alias 在编译期选定，业务代码不感知运行环境，也不做运行时环境探测。
 
+Web 构建会根据 `src/tools/paths.json` 为每个工具生成 `<工具路径>/index.html`，确保 GitHub Pages 上直接访问或刷新子页面也能加载。工具注册表共用这份路径清单，新增工具时需在清单中登记路径。
+
 Chrome target 的体积明显大于 Web target，差异来自本地 Monaco 本体、语言模块和各类 Worker。
 
 ## Chrome 扩展

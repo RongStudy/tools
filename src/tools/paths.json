@@ -1,0 +1,10 @@
+{
+  "home": "/",
+  "json": "/json",
+  "codeDiff": "/code-diff",
+  "regex": "/regex",
+  "urlCodec": "/url-codec",
+  "mermaid": "/mermaid",
+  "timestamp": "/timestamp",
+  "scratchPad": "/scratch-pad"
+}
