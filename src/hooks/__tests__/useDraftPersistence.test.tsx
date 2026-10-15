@@ -35,7 +35,8 @@ describe('draft persistence', () => {
     expect(readExpiringStorage('draft')).toBe('last')
   })
   it('reports quota failure once and retries the unsaved latest draft', () => {
-    const setItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => { throw new DOMException('Full', 'QuotaExceededError') })
+    // jsdom Storage 的实例属性由 Proxy 管理，在原型上拦截才能模拟写入失败。
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Full', 'QuotaExceededError') })
     const { rerender, unmount } = renderHook(({ value }) => useDraftPersistence('draft', value), { initialProps: { value: 'first' } })
     act(() => { vi.advanceTimersByTime(600) })
     rerender({ value: 'second' })

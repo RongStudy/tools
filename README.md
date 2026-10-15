@@ -80,9 +80,17 @@
 
 ### 安装依赖
 
+使用 Node.js 24，与 CI 保持一致。
+
 ```bash
-npm install
+npm ci
 ```
+
+ESLint 10 使用 `eslint.config.js` 平面配置。依赖升级后应执行 `npm run lint`、`npm test`、两个 target 的构建以及 `npm audit --registry=https://registry.npmjs.org`。
+
+依赖兼容说明：Monaco 的 DOMPurify、Mermaid 的 KaTeX 通过 `overrides` 统一使用已修复版本；KaTeX 固定为 `0.18.10`，避免安装被弃用的 `0.18.11`，同时满足 Markdown 公式扩展的版本要求。
+
+`package.json` 的 `allowScripts` 仅按版本批准 esbuild 的二进制安装脚本；macOS 可选依赖 fsevents 使用包内的预编译二进制，显式禁止其安装脚本。升级 esbuild 后，需检查新版脚本并运行 `npm install-scripts approve esbuild` 更新批准记录。
 
 ### 开发模式
 

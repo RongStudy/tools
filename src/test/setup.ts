@@ -28,7 +28,7 @@ const createMemoryStorage = (): Storage => {
 const ensureUsableLocalStorage = () => {
   if (typeof window === 'undefined') return
 
-  let storage: Storage | null = null
+  let storage: Storage | null
   try {
     storage = window.localStorage
   } catch {
