@@ -85,6 +85,7 @@ const changeMotionPreference = (motion: boolean) => act(() => {
 })
 
 beforeEach(() => {
+  localStorage.clear()
   profile = { desktop: true, hover: true, fine: true, motion: true }
   mediaListeners = new Map()
   frames = new Map()
@@ -117,6 +118,20 @@ afterEach(() => {
 })
 
 describe('AppShell Dock navigation', () => {
+  it('switches and remembers the selected theme', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderAppShell()
+    expect(document.documentElement.dataset.theme).toBe('dark')
+
+    await user.click(screen.getByRole('button', { name: '切换到浅色主题' }))
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(localStorage.getItem('dev-tools:theme')).toBe('light')
+
+    unmount()
+    renderAppShell()
+    expect(screen.getByRole('button', { name: '切换到深色主题' })).toBeInTheDocument()
+  })
+
   it('renders named tool links and updates the accessible current page after navigation', async () => {
     const user = userEvent.setup()
     renderAppShell('/json')

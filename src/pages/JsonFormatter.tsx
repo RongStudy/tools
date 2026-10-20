@@ -13,6 +13,7 @@ import { languageEditorOptions } from '../monaco/languageCapabilities'
 import { configureJsonSchemas } from '../monaco/jsonSchema'
 import type { editor as MonacoEditorNamespace } from 'monaco-editor'
 import { useToast } from '../components/toastContext'
+import { useAppTheme } from '../themeContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage } from '../utils/expiringStorage'
 import {
@@ -80,6 +81,7 @@ const readJsonFormatterDraft = (): JsonFormatterDraft => {
 }
 
 const JsonFormatter = () => {
+  const { monacoTheme } = useAppTheme()
   const [initialDraft] = useState(readJsonFormatterDraft)
   const [documents, setDocuments] = useState(initialDraft.documents)
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
@@ -338,7 +340,7 @@ const JsonFormatter = () => {
                 loading={editorLoading}
                 onChange={(value) => handleInputChange(value)}
                 onValidate={handleValidate}
-                theme="vs-dark"
+                theme={monacoTheme}
                 options={{
                   ...languageEditorOptions,
                   minimap: { enabled: false },
@@ -404,7 +406,7 @@ const JsonFormatter = () => {
               keepCurrentModel
               value={output}
               loading={editorLoading}
-              theme="vs-dark"
+              theme={monacoTheme}
               options={{
                 minimap: { enabled: !isFullscreen },
                 fontSize: isFullscreen ? 16 : 14,

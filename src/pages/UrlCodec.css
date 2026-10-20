@@ -25,9 +25,8 @@
   display: flex;
   overflow: hidden;
   box-shadow: inset 0 0 0 1px var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg);
-  padding: 0 0.2rem;
+  border-radius: 8px;
+  background: var(--color-surface);
 }
 
 .url-codec-action-group,
@@ -38,48 +37,63 @@
 }
 
 .url-codec-utility-group {
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .url-codec-action-group {
   min-height: 2.5rem;
-  padding: 0 0.2rem;
+  gap: 0;
+  overflow: hidden;
   box-shadow: inset 0 0 0 1px var(--color-border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--color-surface);
 }
 
 .url-codec-action-group > span {
-  min-width: 3.75rem;
-  padding: 0 0.5rem;
+  padding: 0 0.65rem;
   color: var(--color-muted);
   font: 500 0.78rem/1.2 var(--font-text);
   white-space: nowrap;
 }
 
 .url-codec-action-group .btn {
-  padding-inline: 0.8rem;
+  min-height: 2.5rem;
+  padding-inline: 0.65rem;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.url-codec-action-group .btn:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.url-codec-action-group .btn:focus-visible,
+.url-codec-mode button:focus-visible {
+  position: relative;
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
 }
 
 .url-codec-mode button {
-  min-width: 5rem;
   min-height: 2.5rem;
-  padding: 0.45rem 0.8rem;
+  padding: 0.45rem 0.75rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--color-muted);
   cursor: pointer;
   font: 500 0.875rem/1.2 var(--font-text);
 }
 
-.url-codec-mode button:last-child {
-  border-right: 0;
+.url-codec-mode button + button {
+  border-left: 1px solid var(--color-border);
 }
 
 .url-codec-mode button.active {
-  background: var(--color-surface-muted);
-  color: var(--color-text);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-muted);
 }
 
 .url-codec-error {
@@ -112,6 +126,9 @@
   border-radius: 16px;
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme='dark'] .url-codec-panel {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
@@ -140,7 +157,7 @@
   resize: none;
   border: 0;
   padding: 1rem;
-  background: #0f1011;
+  background: var(--color-surface);
   color: var(--color-text);
   font: 0.92rem/1.65 var(--font-mono);
   outline: none;
@@ -177,7 +194,7 @@
 
   .url-codec-action-group {
     display: grid;
-    grid-template-columns: minmax(4.25rem, auto) 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) 1fr 1fr;
   }
 
   .url-codec-utility-group {

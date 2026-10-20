@@ -163,17 +163,17 @@ const UrlCodec = () => {
       </div>
       <div className="url-codec-action-group" aria-label="URL 操作">
         <span>URL</span>
-        <button type="button" className="btn btn-primary" aria-label="URL Encode" onClick={encode}>编码</button>
+        <button type="button" className="btn btn-secondary" aria-label="URL Encode" onClick={encode}>编码</button>
         <button type="button" className="btn btn-secondary" aria-label="URL Decode" onClick={decode}>解码</button>
       </div>
       <div className="url-codec-action-group" aria-label="Base64 操作">
         <span>Base64</span>
-        <button type="button" className="btn btn-primary" aria-label="Base64 Encode" onClick={base64Encode}>编码</button>
+        <button type="button" className="btn btn-secondary" aria-label="Base64 Encode" onClick={base64Encode}>编码</button>
         <button type="button" className="btn btn-secondary" aria-label="Base64 Decode" onClick={base64Decode}>解码</button>
       </div>
       <div className="url-codec-action-group" aria-label="Unicode 操作">
         <span>Unicode</span>
-        <button type="button" className="btn btn-primary" aria-label="Unicode Encode" onClick={encodeUnicode}>编码</button>
+        <button type="button" className="btn btn-secondary" aria-label="Unicode Encode" onClick={encodeUnicode}>编码</button>
         <button type="button" className="btn btn-secondary" aria-label="Unicode Decode" onClick={decodeUnicode}>解码</button>
       </div>
       <div className="url-codec-action-group" aria-label="摘要操作">

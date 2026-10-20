@@ -6,6 +6,8 @@ import { useDockMagnification } from '../hooks/useDockMagnification'
 import ToolIcon from './ToolIcon'
 import ToolSearchDialog from './ToolSearchDialog'
 import forgeIcon from '../assets/tool-icons/forge.png'
+import { ThemeProvider } from '../theme'
+import { useAppTheme } from '../themeContext'
 
 type AppShellProps = {
   tools: ToolDefinition[]
@@ -19,7 +21,8 @@ type Tooltip = {
   top: number
 }
 
-const AppShell = ({ tools, children }: AppShellProps) => {
+const AppShellContent = ({ tools, children }: AppShellProps) => {
+  const { theme, toggleTheme } = useAppTheme()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [tooltip, setTooltip] = useState<Tooltip | null>(null)
   const tooltipId = useId()
@@ -88,6 +91,16 @@ const AppShell = ({ tools, children }: AppShellProps) => {
             </NavLink>
           ))}
         </nav>
+        <button
+          type="button"
+          className="dock-theme-toggle"
+          aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+          title={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+          onClick={toggleTheme}
+        >
+          <span aria-hidden="true">{theme === 'dark' ? '☼' : '☾'}</span>
+          <span className="dock-theme-label">{theme === 'dark' ? '浅色' : '深色'}</span>
+        </button>
         <button type="button" className="dock-search" aria-label="搜索工具" aria-haspopup="dialog" aria-expanded={isSearchOpen} aria-describedby={tooltip?.key === 'search' ? tooltipId : undefined} onClick={openSearch} onPointerEnter={(event) => { if (event.pointerType !== 'touch') showTooltip(event.currentTarget, 'search', '搜索工具 · ⌘K / Ctrl+K') }} onPointerLeave={() => setTooltip(null)} onFocus={(event) => showTooltip(event.currentTarget, 'search', '搜索工具 · ⌘K / Ctrl+K')} onBlur={() => setTooltip(null)}>
           <ToolIcon name="search" />
         </button>
@@ -98,5 +111,11 @@ const AppShell = ({ tools, children }: AppShellProps) => {
     </div>
   )
 }
+
+const AppShell = (props: AppShellProps) => (
+  <ThemeProvider>
+    <AppShellContent {...props} />
+  </ThemeProvider>
+)
 
 export default AppShell

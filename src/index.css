@@ -35,6 +35,34 @@
   --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
+:root[data-theme='light'] {
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f3f6;
+  --color-surface-raised: #e9edf2;
+  --color-surface-deep: #eef1f5;
+  --color-text: #20232b;
+  --color-muted: #5d6572;
+  --color-subtle: #7d8694;
+  --color-border: #e1e5eb;
+  --color-border-strong: #cbd2dc;
+  --color-border-tertiary: #b9c1cc;
+  --color-primary: #4f5bc3;
+  --color-primary-hover: #3f4cae;
+  --color-primary-soft: rgba(79, 91, 195, 0.1);
+  --color-primary-border: rgba(79, 91, 195, 0.34);
+  --color-primary-muted: #3f4a91;
+  --color-danger: #c83b4b;
+  --color-danger-hover: #a92e3d;
+  --color-danger-soft: rgba(200, 59, 75, 0.1);
+  --color-success: #218642;
+  --color-success-hover: #176b34;
+  --color-info: #5d65a4;
+  --color-info-hover: #4c548d;
+  --color-focus: rgba(79, 91, 195, 0.38);
+  --shadow-panel: 0 1px 2px rgba(31, 40, 55, 0.04);
+}
+
 body {
   font-family: var(--font-text);
   -webkit-font-smoothing: antialiased;

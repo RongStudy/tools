@@ -16,6 +16,7 @@ import {
 } from '../hooks/useSplitPane'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import ToolLayout from '../components/ToolLayout'
+import { useAppTheme, type AppTheme } from '../themeContext'
 import { readExpiringStorage } from '../utils/expiringStorage'
 import { detectFormat, type ContentFormat } from '../utils/detectFormat'
 import { enhanceMermaidBlock } from '../utils/mermaidBlockViewer'
@@ -65,31 +66,43 @@ export const DEFAULT_MERMAID_CODE = `flowchart LR
   D --> A`
 
 let mermaidPromise: Promise<typeof import('mermaid')['default']> | null = null
+let initializedMermaidTheme: AppTheme | null = null
 
-const loadMermaid = () => {
+const loadMermaid = async (theme: AppTheme) => {
   if (!mermaidPromise) {
-    mermaidPromise = import('mermaid').then(({ default: mermaid }) => {
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'dark',
-        suppressErrorRendering: true,
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-        themeVariables: {
-          background: '#0f1011',
-          primaryColor: '#18191a',
-          primaryTextColor: '#f7f8f8',
-          primaryBorderColor: '#5e6ad2',
-          lineColor: '#8a8f98',
-          secondaryColor: '#141516',
-          tertiaryColor: '#191a1b',
-        },
-      })
-      return mermaid
-    })
+    mermaidPromise = import('mermaid').then(({ default: mermaid }) => mermaid)
   }
 
-  return mermaidPromise
+  const mermaid = await mermaidPromise
+  if (initializedMermaidTheme !== theme) {
+    const light = theme === 'light'
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: light ? 'default' : 'dark',
+      suppressErrorRendering: true,
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+      themeVariables: light ? {
+        background: '#ffffff',
+        primaryColor: '#eef1f5',
+        primaryTextColor: '#20232b',
+        primaryBorderColor: '#4f5bc3',
+        lineColor: '#5d6572',
+        secondaryColor: '#f1f3f6',
+        tertiaryColor: '#ffffff',
+      } : {
+        background: '#0f1011',
+        primaryColor: '#18191a',
+        primaryTextColor: '#f7f8f8',
+        primaryBorderColor: '#5e6ad2',
+        lineColor: '#8a8f98',
+        secondaryColor: '#141516',
+        tertiaryColor: '#191a1b',
+      },
+    })
+    initializedMermaidTheme = theme
+  }
+  return mermaid
 }
 
 const editorLoading = <div className="monaco-loading">编辑器加载中</div>
@@ -120,6 +133,7 @@ const downloadBlob = (blob: Blob, filename: string) => {
 }
 
 const MermaidRenderer = () => {
+  const { theme, monacoTheme } = useAppTheme()
   const [initialCode] = useState(() => (
     readExpiringStorage<string>(MERMAID_DRAFT_KEY) ?? DEFAULT_MERMAID_CODE
   ))
@@ -164,7 +178,7 @@ const MermaidRenderer = () => {
       setActiveFormat('mermaid')
       setIsRendering(true)
       try {
-        const mermaid = await loadMermaid()
+        const mermaid = await loadMermaid(theme)
         const result = await mermaid.render(`mermaid-diagram-${sequence}`, source)
         if (sequence !== renderSequenceRef.current) return
 
@@ -205,7 +219,7 @@ const MermaidRenderer = () => {
         setIsRendering(false)
       }
     }
-  }, [mode])
+  }, [mode, theme])
   renderContentRef.current = renderContent
 
   useEffect(() => {
@@ -254,7 +268,7 @@ const MermaidRenderer = () => {
         if (!source) continue
 
         try {
-          const mermaid = await loadMermaid()
+          const mermaid = await loadMermaid(theme)
           const result = await mermaid.render(
             `markdown-mermaid-${++markdownMermaidSeqRef.current}`,
             source
@@ -281,7 +295,7 @@ const MermaidRenderer = () => {
     return () => {
       cancelled = true
     }
-  }, [activeFormat, html])
+  }, [activeFormat, html, theme])
 
   const resetExample = () => {
     setCode(mode === 'markdown' || (mode === 'auto' && activeFormat === 'markdown')
@@ -366,7 +380,7 @@ const MermaidRenderer = () => {
         return
       }
 
-      context.fillStyle = '#0f1011'
+      context.fillStyle = theme === 'light' ? '#ffffff' : '#0f1011'
       context.fillRect(0, 0, canvas.width, canvas.height)
       context.drawImage(image, 0, 0, canvas.width, canvas.height)
       canvas.toBlob((blob) => {
@@ -480,7 +494,7 @@ const MermaidRenderer = () => {
                     () => void renderContentRef.current(editor.getValue())
                   )
                 }}
-                theme="vs-dark"
+                theme={monacoTheme}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,

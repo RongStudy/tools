@@ -7,6 +7,7 @@ import ToolLayout from '../components/ToolLayout'
 import { getSplitPaneGridStyle, usePersistentSplitRatio } from '../hooks/useSplitPane'
 import { languageEditorOptions } from '../monaco/languageCapabilities'
 import { useToast } from '../components/toastContext'
+import { useAppTheme } from '../themeContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { parseAnimationUrl, parseLottieJson, prepareLottieData, validateLottieData, type LottieData } from '../utils/lottie'
 import pulse from '../assets/lottie/pulse.json'
@@ -25,6 +26,7 @@ type AnimationSource = { data: LottieData; baseUrl: string; autoplay: boolean }
 type PlaybackStatus = 'loading' | 'playing' | 'paused' | 'empty' | 'error'
 
 const LottiePlayer = () => {
+  const { monacoTheme } = useAppTheme()
   const [json, setJson] = useState(() => JSON.stringify(pulse, null, 2))
   const [url, setUrl] = useState('')
   const [error, setError] = useState('')
@@ -215,7 +217,7 @@ const LottiePlayer = () => {
           </div>
           <div className="lottie-editor">
             <Editor height="100%" language="json" value={json} onChange={changeJson}
-              loading={<div className="monaco-loading">编辑器加载中</div>} theme="vs-dark"
+              loading={<div className="monaco-loading">编辑器加载中</div>} theme={monacoTheme}
               path="inmemory://dev-tools/lottie/animation.json"
               options={{ ...languageEditorOptions, minimap: { enabled: false }, fontSize: 14,
                 wordWrap: 'on', automaticLayout: true, fixedOverflowWidgets: true,

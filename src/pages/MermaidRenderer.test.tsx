@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EditorProps } from '@monaco-editor/react'
 import { ToastProvider } from '../components/Toast'
+import { ThemeProvider } from '../theme'
+import { useAppTheme } from '../themeContext'
 import MermaidRenderer, { DEFAULT_MERMAID_CODE } from './MermaidRenderer'
 
 const { mermaidRenderMock, setMarkersMock, renderCommands } = vi.hoisted(() => ({
@@ -19,9 +21,10 @@ vi.mock('mermaid', () => ({
 
 vi.mock('@monaco-editor/react', async () => {
   const { useEffect, useRef } = await import('react')
-  const MockEditor = ({ value, onChange, onMount, language }: {
+  const MockEditor = ({ value, onChange, onMount, language, theme }: {
     value?: string
     language?: string
+    theme?: string
     onChange?: (value: string | undefined) => void
     onMount?: EditorProps['onMount']
   }) => {
@@ -46,6 +49,7 @@ vi.mock('@monaco-editor/react', async () => {
       <textarea
         aria-label="内容编辑器"
         data-language={language}
+        data-theme={theme}
         value={value}
         onChange={(event) => onChange?.(event.target.value)}
       />
@@ -63,6 +67,22 @@ describe('MermaidRenderer', () => {
     mermaidRenderMock.mockResolvedValue({
       svg: '<svg viewBox="0 0 120 60"><text>diagram</text></svg>',
     })
+  })
+
+  it('switches Monaco and Mermaid themes without replacing the editor', async () => {
+    const ThemeToggle = () => {
+      const { toggleTheme } = useAppTheme()
+      return <button onClick={toggleTheme}>切换主题</button>
+    }
+    render(<ThemeProvider><ToastProvider><ThemeToggle /><MermaidRenderer /></ToastProvider></ThemeProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    const editor = screen.getByLabelText('内容编辑器')
+    expect(editor).toHaveAttribute('data-theme', 'vs-dark')
+
+    fireEvent.click(screen.getByRole('button', { name: '切换主题' }))
+    await waitFor(() => expect(editor).toHaveAttribute('data-theme', 'vs'))
+    await waitFor(() => expect(mermaidRenderMock).toHaveBeenCalledTimes(2))
+    expect(editor).toBe(screen.getByLabelText('内容编辑器'))
   })
 
   it('默认示例会自动渲染为图表', async () => {

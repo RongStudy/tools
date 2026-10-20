@@ -1,7 +1,7 @@
 ---
 version: beta
 name: Developer Tools Workbench
-description: "A dense, dark, keyboard-friendly workspace for everyday developer utilities. The interface prioritizes readable editors, stable panels, fast scanning, and low-distraction controls over marketing polish."
+description: "A dense, keyboard-friendly workspace for everyday developer utilities, with coordinated dark and light themes. The interface prioritizes readable editors, stable panels, fast scanning, and low-distraction controls over marketing polish."
 
 colors:
   bg: "#010102"
@@ -28,6 +28,28 @@ colors:
   info: "#7a7fad"
   info-hover: "#8e94c4"
   focus: "rgba(94, 105, 209, 0.5)"
+
+light-colors:
+  bg: "#f6f7f9"
+  surface: "#ffffff"
+  surface-muted: "#f1f3f6"
+  surface-raised: "#e9edf2"
+  surface-deep: "#eef1f5"
+  text: "#20232b"
+  muted: "#5d6572"
+  subtle: "#7d8694"
+  border: "#e1e5eb"
+  border-strong: "#cbd2dc"
+  border-tertiary: "#b9c1cc"
+  primary: "#4f5bc3"
+  primary-hover: "#3f4cae"
+  primary-soft: "rgba(79, 91, 195, 0.1)"
+  primary-border: "rgba(79, 91, 195, 0.34)"
+  primary-muted: "#3f4a91"
+  danger: "#c83b4b"
+  success: "#218642"
+  info: "#5d65a4"
+  focus: "rgba(79, 91, 195, 0.38)"
 
 typography:
   display:
@@ -73,7 +95,7 @@ spacing:
 
 This project is a developer utility workbench, not a marketing site. Design decisions should make repeated tool use faster, calmer, and more legible.
 
-The product should feel like a precise desktop tool: dark, compact, stable, and functional. Decoration is acceptable only when it reinforces orientation, state, or the specific utility being used.
+The product should feel like a precise desktop tool: compact, stable, and functional in either theme. Decoration is acceptable only when it reinforces orientation, state, or the specific utility being used.
 
 # Principles
 
@@ -97,7 +119,7 @@ The product should feel like a precise desktop tool: dark, compact, stable, and 
 
 # Color System
 
-The application uses a near-black canvas with a small surface ladder. The interface should stay quiet and legible during long editor sessions.
+Dark is the default and uses a near-black canvas with a small surface ladder. Light uses a cool neutral gray canvas with white working surfaces; it should not read as blue, beige, or an all-white sheet. Both themes should stay quiet and legible during long editor sessions.
 
 Primary surfaces:
 
@@ -135,6 +157,28 @@ Accent and state:
 
 Use semantic colors sparingly. Do not use red, green, or info colors as page decoration.
 
+Light theme surface ladder:
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--color-bg` | `#f6f7f9` | App canvas and Dock |
+| `--color-surface` | `#ffffff` | Editors, panels, controls |
+| `--color-surface-muted` | `#f1f3f6` | Panel headers and subtle fills |
+| `--color-surface-raised` | `#e9edf2` | Hovered controls |
+| `--color-text` | `#20232b` | Primary text |
+| `--color-muted` | `#5d6572` | Secondary text |
+| `--color-border` | `#e1e5eb` | Borders and dividers |
+| `--color-primary` | `#4f5bc3` | Primary action |
+
+Keep white text on filled primary buttons. Use darker semantic colors for text on light surfaces. Use borders and subtle surface differences for separation; shadows, if any, remain barely perceptible.
+
+Theme behavior:
+
+- Default to dark on first use. Place a labeled theme toggle in the persistent Dock and remember the user's choice locally.
+- Switch the shell, tool panels, dialogs, previews, scrollbars, and embedded editors together. Monaco uses `vs-dark` in dark mode and `vs` in light mode.
+- Mermaid diagrams and Markdown code highlighting must follow the selected theme. Standalone Markdown exports use a self-contained light document style.
+- Preserve layout and editor state during theme changes. Theme switching must not remount editors or discard drafts.
+
 # Typography
 
 Use the existing font variables:
@@ -164,7 +208,9 @@ Dock:
 - Tools use replaceable SVG/image icons configured in the tool registry.
 - Each link has a stable 64px-tall slot, up to 76px wide (fitting beside the scrollbar in short windows), and a 40px icon surface.
 - Fine-pointer movement uses distance along the vertical rail to magnify nearby icon surfaces up to 1.45×, with spring smoothing and at most 6px of vertical displacement; link slots remain fixed. Leaving the rail springs back to rest.
-- Active tools use a lavender icon surface and a separate side indicator.
+- Active tools use a lavender icon surface and a separate side indicator in both themes.
+- A theme toggle remains reachable beside search on desktop and in the horizontal launcher on smaller screens.
+- Image-based tool icons must remain legible on both surface ladders; use a dark presentation in light mode while keeping the brand mark legible on its filled background.
 - Hover and keyboard focus show a tool-name tooltip outside the scrolling rail.
 - Search opens a modal tool switcher; Cmd/Ctrl+K opens it from anywhere.
 - Short desktop windows scroll the tool list while brand and search remain reachable.
@@ -220,7 +266,7 @@ Editor panel:
 - Header background: `--color-surface-muted`.
 - Header minimum height: 56px.
 - Body fills available height.
-- Use an inset top highlight only when it improves separation on dark surfaces.
+- Use an inset top highlight only in the dark theme when it improves separation.
 
 Panel headers:
 
@@ -242,7 +288,7 @@ Monaco editor surfaces should feel integrated with the app.
 
 Rules:
 
-- Use dark editor themes by default.
+- Use dark editor themes by default and switch Monaco to its light theme with the app.
 - Loading states must preserve final editor dimensions.
 - Fullscreen mode removes radius and fills the viewport.
 - Split editors collapse to stacked panels on smaller screens.
@@ -257,7 +303,7 @@ Buttons:
 | Class | Use | Treatment |
 | --- | --- | --- |
 | `.btn-primary` | Main affirmative action | Lavender fill, white text |
-| `.btn-secondary` | Normal action | Dark surface, border, white text |
+| `.btn-secondary` | Normal action | Theme surface, border, theme text |
 | `.btn-danger` | Destructive action | Soft red fill, red text |
 | `.btn-small` | Panel toolbar actions | 32px minimum height |
 | `.btn-fullscreen` | Editor focus mode | Soft lavender treatment |
@@ -372,7 +418,7 @@ When adding a new tool:
 # Do
 
 - Keep the active tool's working surface visually dominant.
-- Reuse the existing dark tokens and panel structure.
+- Reuse the existing semantic tokens and panel structure in both themes.
 - Use compact, direct Chinese UI labels.
 - Preserve heights while async states, errors, or copied states appear.
 - Use Monaco-friendly layouts with `min-height: 0` and contained overflow.

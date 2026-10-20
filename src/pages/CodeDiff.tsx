@@ -6,6 +6,7 @@ import { DiffEditor } from '@monaco-editor/react'
 import { diffLines, diffTrimmedLines } from 'diff'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
+import { useAppTheme } from '../themeContext'
 import { useDetectedLanguages } from '../hooks/useDetectedLanguages'
 import { useDiffEditor } from '../hooks/useDiffEditor'
 import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
@@ -133,6 +134,7 @@ const readCodeDiffDraft = (): CodeDiffDraft => {
 const editorLoading = <div className="monaco-loading">编辑器加载中</div>
 
 const CodeDiff = () => {
+  const { monacoTheme } = useAppTheme()
   const [initialDraft] = useState(readCodeDiffDraft)
   const [documents, setDocuments] = useState(initialDraft.documents)
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
@@ -606,7 +608,7 @@ const CodeDiff = () => {
               modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
               keepCurrentOriginalModel
               keepCurrentModifiedModel
-              theme="vs-dark"
+              theme={monacoTheme}
               options={{
                 ...commonEditorOptions,
                 renderSideBySide: true,
@@ -642,7 +644,7 @@ const CodeDiff = () => {
                 modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
                 keepCurrentOriginalModel
                 keepCurrentModifiedModel
-                theme="vs-dark"
+                theme={monacoTheme}
                 options={{
                   ...commonEditorOptions,
                   renderSideBySide: false,

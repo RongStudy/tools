@@ -13,7 +13,7 @@ import DOMPurify from 'dompurify'
 import 'katex/dist/katex.min.css'
 import 'highlight.js/styles/github-dark.css'
 import katexCss from 'katex/dist/katex.min.css?inline'
-import hljsThemeCss from 'highlight.js/styles/github-dark.css?inline'
+import hljsThemeCss from 'highlight.js/styles/github.css?inline'
 
 const escapeHtml = (value: string) =>
   value
@@ -133,7 +133,8 @@ export const markdownExportBaseStyles = (layout: MarkdownLayout): string => `
 .markdown-export-body{margin:0;background:#ffffff;color:#1f2328;font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
 .markdown-export-main{max-width:${layout === 'centered' ? '52rem' : 'none'};margin:${layout === 'centered' ? '0 auto' : '0'};padding:2rem 1.5rem;}
 .markdown-export-main h1,.markdown-export-main h2,.markdown-export-main h3{line-height:1.3;border-bottom:1px solid #d8dee4;padding-bottom:.3em;}
-.markdown-export-main pre{background:#0d1117;color:#e6edf3;padding:1rem;border-radius:8px;overflow:auto;}
+.markdown-export-main pre{background:#eef1f5;color:#24292e;padding:1rem;border-radius:8px;overflow:auto;}
+.markdown-export-main pre code.hljs{background:transparent;padding:0;}
 .markdown-export-main code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
 .markdown-export-main table{border-collapse:collapse;}
 .markdown-export-main th,.markdown-export-main td{border:1px solid #d8dee4;padding:.4rem .7rem;}

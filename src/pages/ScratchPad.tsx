@@ -9,6 +9,7 @@ import ToolLayout from '../components/ToolLayout'
 import SaveFileDialog, { type SaveFileRequest } from '../components/SaveFileDialog'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useToast } from '../components/toastContext'
+import { useAppTheme } from '../themeContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage } from '../utils/expiringStorage'
 import './ScratchPad.css'
@@ -196,6 +197,7 @@ const readScratchPadDraft = (): ScratchPadDraft => {
 const editorLoading = <div className="monaco-loading">编辑器加载中</div>
 
 const ScratchPad = () => {
+  const { monacoTheme } = useAppTheme()
   const [initialDraft] = useState(readScratchPadDraft)
   const [documents, setDocuments] = useState(initialDraft.documents)
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
@@ -471,7 +473,7 @@ const ScratchPad = () => {
                   value={pane.content}
                   loading={editorLoading}
                   onChange={(value) => updatePane(pane.id, { content: value ?? '' })}
-                  theme="vs-dark"
+                  theme={monacoTheme}
                   options={{
                     ...languageEditorOptions,
                     minimap: { enabled: false },
