@@ -112,13 +112,15 @@
 .dock-item:is(:hover, :focus-visible, .active) .tool-icon-image { opacity: 1; }
 
 :root[data-theme='light'] .dock-icon .tool-icon-image,
-:root[data-theme='light'] .home-tool-icon .tool-icon-image {
+:root[data-theme='light'] .home-tool-icon .tool-icon-image,
+:root[data-theme='light'] .tool-search-result-icon .tool-icon-image {
   filter: brightness(0);
   opacity: .72;
 }
 
 :root[data-theme='light'] .dock-item:is(:hover, :focus-visible, .active) .tool-icon-image,
-:root[data-theme='light'] .home-tool-card:is(:hover, :focus-visible) .tool-icon-image {
+:root[data-theme='light'] .home-tool-card:is(:hover, :focus-visible) .tool-icon-image,
+:root[data-theme='light'] .tool-search-result:is(:hover, :focus-visible, .selected) .tool-search-result-icon .tool-icon-image {
   opacity: .9;
 }
 

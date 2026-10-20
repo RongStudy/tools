@@ -81,7 +81,7 @@ const ToolSearchDialog = ({ tools, onClose, onSelect }: ToolSearchDialogProps) =
         <div className="tool-search-results" id={resultsId}>
           {filteredTools.map((tool, index) => (
             <button ref={(element) => { resultRefs.current[index] = element }} key={tool.path} type="button" className={`tool-search-result${index === selectedIndex ? ' selected' : ''}`} onFocus={() => setSelectedIndex(index)} onPointerEnter={() => setSelectedIndex(index)} onClick={() => openTool(tool)}>
-              <span className="tool-search-result-icon"><ToolIcon name={tool.icon} /></span>
+              <span className="tool-search-result-icon"><ToolIcon name={tool.icon} src={tool.iconSrc} /></span>
               <span className="tool-search-result-copy"><span>{tool.navTitle}</span><small>{tool.description}</small></span>
               <span className="tool-search-result-enter" aria-hidden="true">↵</span>
             </button>
