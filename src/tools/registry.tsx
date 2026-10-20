@@ -10,6 +10,7 @@ import codecIcon from '../assets/tool-icons/codec.png'
 import diagramIcon from '../assets/tool-icons/diagram.png'
 import clockIcon from '../assets/tool-icons/clock.png'
 import noteIcon from '../assets/tool-icons/note.png'
+import lottieIcon from '../assets/tool-icons/lottie.png'
 
 const toolIcons: Record<ToolIconName, string | undefined> = {
   home: homeIcon,
@@ -21,6 +22,7 @@ const toolIcons: Record<ToolIconName, string | undefined> = {
   clock: clockIcon,
   note: noteIcon,
   search: undefined,
+  animation: lottieIcon,
 }
 
 const JsonFormatter = lazy(() => import('../pages/JsonFormatter'))
@@ -30,6 +32,7 @@ const UrlCodec = lazy(() => import('../pages/UrlCodec'))
 const MermaidRenderer = lazy(() => import('../pages/MermaidRenderer'))
 const RegexTester = lazy(() => import('../pages/RegexTester'))
 const ScratchPad = lazy(() => import('../pages/ScratchPad'))
+const LottiePlayer = lazy(() => import('../pages/LottiePlayer'))
 
 export type ToolDefinition = {
   path: string
@@ -117,6 +120,15 @@ const toolDefinitions: ToolDefinition[] = [
     category: '编码处理',
     icon: 'note',
     component: ScratchPad,
+  },
+  {
+    path: toolPaths.lottie,
+    title: 'Lottie 动画播放器',
+    navTitle: 'Lottie 动画',
+    description: '加载 URL 或 JSON 并预览 Lottie 动画',
+    category: '多媒体工具',
+    icon: 'animation',
+    component: LottiePlayer,
   },
 ]
 

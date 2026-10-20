@@ -20,6 +20,7 @@
     "highlight.js": "^11.12.0",
     "jsonc-parser": "^3.3.1",
     "katex": "0.18.10",
+    "lottie-web": "^5.13.0",
     "marked": "^16.4.2",
     "marked-katex-extension": "^5.1.13",
     "mermaid": "^11.17.2",

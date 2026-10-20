@@ -7,6 +7,7 @@ import codecIcon from '../assets/tool-icons/codec.png'
 import clockIcon from '../assets/tool-icons/clock.png'
 import diagramIcon from '../assets/tool-icons/diagram.png'
 import noteIcon from '../assets/tool-icons/note.png'
+import lottieIcon from '../assets/tool-icons/lottie.png'
 import './Home.css'
 
 const toolLinks = [
@@ -17,6 +18,7 @@ const toolLinks = [
   { path: '/timestamp', title: '时间戳转换', description: '把数字还原为具体时间', meta: '秒 · 毫秒 · 日期时间', icon: clockIcon, preview: 'timestamp' },
   { path: '/mermaid', title: 'Mermaid / Markdown', description: '把文字变成图表和文档', meta: '流程图 · 文档 · 公式', icon: diagramIcon, preview: 'diagram' },
   { path: '/scratch-pad', title: '临时文本', description: '随手记录，继续你的思路', meta: '多标签 · 分栏 · 自动识别', icon: noteIcon, preview: 'note' },
+  { path: '/lottie', title: 'Lottie 动画', description: '加载 JSON，预览动画效果', meta: 'URL · JSON · 播放控制', icon: lottieIcon, preview: 'lottie' },
 ]
 
 const ToolPreview = ({ type }: { type: string }) => {
@@ -33,6 +35,8 @@ const ToolPreview = ({ type }: { type: string }) => {
       return <div className="home-preview-conversion"><code>1700000000000 <small>ms</small></code><span className="home-conversion-arrow">↓ <small>UTC</small></span><code>2023-11-14 22:13:20</code></div>
     case 'diagram':
       return <div className="home-preview-diagram"><span>开始</span><i>⟶</i><span className="home-diagram-process">处理</span><i>⟶</i><span>完成</span></div>
+    case 'lottie':
+      return <div className="home-preview-lottie"><span className="home-lottie-ring"><i>▶</i></span><span className="home-lottie-bars"><b /><b /><b /></span><small>JSON → animation</small></div>
     default:
       return <div className="home-preview-code home-preview-note"><span className="home-preview-line"><i>1</i><b># 今日笔记</b></span><span className="home-preview-line"><i>2</i>整理接口参数</span><span className="home-preview-line"><i>3</i><span>记录调试思路<span className="home-note-caret" /></span></span></div>
   }
@@ -61,7 +65,7 @@ const Home = () => (
         </Link>
       ))}
     </div>
-    <footer className="home-footer"><span>格式化、对比、记录，一处完成。</span><span>7 个工具 · 随时开始</span></footer>
+    <footer className="home-footer"><span>格式化、对比、记录，一处完成。</span><span>8 个工具 · 随时开始</span></footer>
   </section>
 )
 

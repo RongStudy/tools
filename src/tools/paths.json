@@ -6,5 +6,6 @@
   "urlCodec": "/url-codec",
   "mermaid": "/mermaid",
   "timestamp": "/timestamp",
-  "scratchPad": "/scratch-pad"
+  "scratchPad": "/scratch-pad",
+  "lottie": "/lottie"
 }

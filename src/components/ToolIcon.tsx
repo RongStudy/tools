@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import searchIcon from '../assets/tool-icons/search.png'
 
-export type ToolIconName = 'home' | 'json' | 'diff' | 'regex' | 'codec' | 'diagram' | 'clock' | 'note' | 'search'
+export type ToolIconName = 'home' | 'json' | 'diff' | 'regex' | 'codec' | 'diagram' | 'clock' | 'note' | 'search' | 'animation'
 
 const shapes: Record<ToolIconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h5v-6h4v6h5V9" /></>,
@@ -12,6 +12,7 @@ const shapes: Record<ToolIconName, ReactNode> = {
   diagram: <><rect x="9" y="3" width="6" height="5" rx="1" /><rect x="2" y="16" width="7" height="5" rx="1" /><rect x="15" y="16" width="7" height="5" rx="1" /><path d="M12 8v4H5.5v4M12 12h6.5v4" /></>,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   note: <><path d="M14 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10Z" /><path d="M14 3v7h7M7 14h10M7 17h7" /></>,
+  animation: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="m10 8 5 4-5 4z" /></>,
   search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
 }
 

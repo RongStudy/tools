@@ -19,7 +19,7 @@ const isCachedToolPath = (path: string) => CACHED_TOOL_PATHS.includes(path)
 const ToolRoutes = () => {
   const location = useLocation()
   const activePath = location.pathname.replace(/\/+$/, '') || '/'
-  const needsMonaco = [...CACHED_TOOL_PATHS, '/mermaid'].includes(activePath)
+  const needsMonaco = [...CACHED_TOOL_PATHS, '/mermaid', '/lottie'].includes(activePath)
   const [monacoReady, setMonacoReady] = useState(false)
   const [monacoError, setMonacoError] = useState(false)
   const [initializationAttempt, setInitializationAttempt] = useState(0)
@@ -54,7 +54,7 @@ const ToolRoutes = () => {
     ))
   }, [activePath])
 
-  if (!monacoReady && [...CACHED_TOOL_PATHS, '/mermaid'].includes(activePath)) {
+  if (!monacoReady && needsMonaco) {
     return monacoError ? (
       <div className="tool-route-loading" role="alert">
         编辑器加载失败 <button className="btn-small" onClick={retryMonaco}>重试</button>

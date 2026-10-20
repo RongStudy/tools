@@ -17,6 +17,7 @@ vi.mock('./tools/registry', () => ({ tools: [
   { path: '/', component: () => <div>home page</div> },
   { path: '/json', component: () => <div>json page</div> },
   { path: '/timestamp', component: () => <div>timestamp page</div> },
+  { path: '/lottie', component: () => <div>lottie page</div> },
 ] }))
 beforeEach(() => { setupMonaco.mockReset(); setupMonaco.mockResolvedValue(undefined); routerState.path = '/' })
 afterEach(() => vi.unstubAllGlobals())
@@ -36,6 +37,13 @@ describe('route based Monaco initialization', () => {
     expect(screen.getByText('json page')).toBeInTheDocument()
     expect(setupMonaco).toHaveBeenCalledTimes(1)
   })
+  it('initializes Monaco when directly opening the Lottie page', async () => {
+    routerState.path = '/lottie'
+    render(<App />)
+    await screen.findByText('lottie page')
+    expect(setupMonaco).toHaveBeenCalledOnce()
+  })
+
   it('keeps editor pages gated after a loading failure and allows retry', async () => {
     setupMonaco.mockRejectedValueOnce(new Error('network failure'))
     render(<App />)
