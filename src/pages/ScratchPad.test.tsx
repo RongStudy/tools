@@ -47,6 +47,19 @@ const mockDownloads = () => {
 }
 
 describe('ScratchPad', () => {
+  it('自动将包含 JSON 参数的 curl 识别为 Shell，仍允许手动选择语言', () => {
+    vi.useFakeTimers()
+    renderScratchPad()
+    const command = 'curl https://example.com --data \'{"type": "object", "description": "as value"}\''
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: command } })
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByLabelText('scratch-editor-shell')).toHaveValue(command)
+    expect(screen.getByRole('option', { name: '自动 · Shell' })).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox', { name: '栏 1 语言' }), { target: { value: 'typescript' } })
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByLabelText('scratch-editor-typescript')).toHaveValue(command)
+  })
+
   it('自动模式持续识别各栏，手动选择固定语言，重挂载后保留模式', () => {
     vi.useFakeTimers()
     const { unmount } = renderScratchPad()

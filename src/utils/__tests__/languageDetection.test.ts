@@ -80,6 +80,27 @@ describe('detectLanguageFromFileName', () => {
 })
 
 describe('detectLanguageFromContent', () => {
+  it.each([
+    'curl',
+    'curl https://example.com',
+    'curl https://example.com --data \'{"type": "object", "description": "as value"}\'',
+    '  curl -X POST https://example.com -H \'Content-Type: application/json\' --data \'{"type": "object"}\'',
+    [
+      'curl --location https://example.com \\',
+      '  --header \'Content-Type: application/json\' \\',
+      '  --data-raw \'{"type": "object", "interface": "string", "query": "SELECT * FROM users"}\'',
+    ].join('\n'),
+    '# Request example\n\n  curl https://example.com',
+    '#!/bin/bash\ncurl https://example.com --data \'{"type": "object"}\'',
+  ])('recognizes curl commands as Shell regardless of request contents: %s', (command) => {
+    expect(detectLanguageFromContent(command)).toBe('shell')
+  })
+
+  it('keeps code containing curl text in its programming language', () => {
+    expect(detectLanguageFromContent('const curl = "https://example.com";')).toBe('javascript')
+    expect(detectLanguageFromContent('const command: string = `\ncurl https://example.com\n`;')).toBe('typescript')
+  })
+
   it('distinguishes short JS/TS declarations from Go and ordinary prose', () => {
     expect(detectLanguageFromContent('const value = 1;')).toBe('javascript')
     expect(detectLanguageFromContent('const value: number = 1;')).toBe('typescript')

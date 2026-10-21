@@ -12,6 +12,7 @@ import { useToast } from '../components/toastContext'
 import { useAppTheme } from '../themeContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage } from '../utils/expiringStorage'
+import { formatCurl, isCurlCommand } from '../utils/curlFormatter'
 import './ScratchPad.css'
 import '../styles/common.css'
 
@@ -294,6 +295,24 @@ const ScratchPad = () => {
     }
   }
 
+  const formatPaneCurl = (pane: ScratchPane) => {
+    const editor = paneBindings[pane.id]?.editor
+    const model = editor?.getModel()
+    if (!editor || !model || model.isDisposed() || model.uri.toString() !== modelPath('scratch', activeDocument.id, pane.id)) return
+    try {
+      const content = editor.getValue()
+      const formatted = formatCurl(content)
+      if (formatted === content) { showToast('已是格式化后的内容', 'info'); return }
+      editor.pushUndoStop()
+      editor.executeEdits('format-curl', [{ range: model.getFullModelRange(), text: formatted, forceMoveMarkers: true }])
+      editor.pushUndoStop()
+      editor.focus()
+      showToast('格式化成功')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '格式化失败，已保留原文', 'error')
+    }
+  }
+
   const selectPane = (paneId: string) => {
     setSelectedPaneIds((current) => current[activeDocument.id] === paneId
       ? current
@@ -443,12 +462,19 @@ const ScratchPad = () => {
                 >
                   复制
                 </button>
-                <EditorLanguageTools
+                {isCurlCommand(pane.content) ? <button
+                  type="button"
+                  onClick={() => formatPaneCurl(pane)}
+                  className="btn-small"
+                  disabled={!paneBindings[pane.id]}
+                  aria-label={`栏 ${index + 1}格式化 curl`}
+                  title="格式化 curl，保留参数内容和顺序"
+                >格式化</button> : <EditorLanguageTools
                   binding={paneBindings[pane.id]}
                   language={detectedLanguages[`${activeDocument.id}/${pane.id}`]}
                   path={modelPath('scratch', activeDocument.id, pane.id)}
                   label={`栏 ${index + 1}`}
-                />
+                />}
                 {panes.length > 1 && (
                   <button
                     onClick={() => removePane(pane.id)}

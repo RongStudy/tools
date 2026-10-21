@@ -165,6 +165,10 @@ export function detectLanguageFromContent(code: string, fallbackLanguage: string
   const trimmedCode = code.slice(0, 20_000).trim().split('\n').slice(0, 50).join('\n')
   const codeLines = trimmedCode.split('\n')
   const codeLower = trimmedCode.toLowerCase()
+
+  // A curl command is Shell; its headers and payload may contain other languages' keywords.
+  const firstCommandLine = codeLines.find(line => line.trim() && !line.trimStart().startsWith('#'))
+  if (/^\s*curl(?:\s|$)/.test(firstCommandLine ?? '')) return 'shell'
   
   // 使用评分机制，每个语言累积分数
   const scores: Record<string, number> = {}
