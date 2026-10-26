@@ -1,4 +1,8 @@
-export const TWO_DAYS_IN_MS = 2 * 24 * 60 * 60 * 1000
+const DAY_IN_MS = 24 * 60 * 60 * 1000
+export const TWO_DAYS_IN_MS = 2 * DAY_IN_MS
+export const DEFAULT_DRAFT_RETENTION_DAYS = 2
+export const MAX_DRAFT_RETENTION_DAYS = 365
+const DRAFT_RETENTION_KEY = 'dev-tools:draft-retention-days'
 
 type ExpiringStoragePayload<T> = {
   value: T
@@ -12,6 +16,31 @@ const getLocalStorage = (): Storage | null => {
     return window.localStorage
   } catch {
     return null
+  }
+}
+
+const isValidRetentionDays = (days: number) => (
+  Number.isInteger(days) && days >= 1 && days <= MAX_DRAFT_RETENTION_DAYS
+)
+
+export const getDraftRetentionDays = (): number => {
+  try {
+    const days = Number(getLocalStorage()?.getItem(DRAFT_RETENTION_KEY))
+    return isValidRetentionDays(days) ? days : DEFAULT_DRAFT_RETENTION_DAYS
+  } catch {
+    return DEFAULT_DRAFT_RETENTION_DAYS
+  }
+}
+
+export const setDraftRetentionDays = (days: number): boolean => {
+  if (!isValidRetentionDays(days)) return false
+  const storage = getLocalStorage()
+  if (!storage) return false
+  try {
+    storage.setItem(DRAFT_RETENTION_KEY, String(days))
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -39,7 +68,7 @@ export const readExpiringStorage = <T>(key: string): T | null => {
 export const writeExpiringStorage = <T>(
   key: string,
   value: T,
-  ttlMs = TWO_DAYS_IN_MS
+  ttlMs = getDraftRetentionDays() * DAY_IN_MS
 ) => {
   const storage = getLocalStorage()
   if (!storage) return false

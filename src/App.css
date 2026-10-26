@@ -64,6 +64,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  scrollbar-gutter: stable both-edges;
   scrollbar-color: var(--color-border-strong) transparent;
 }
 
@@ -146,7 +147,7 @@
   background: var(--color-primary-hover);
 }
 
-.dock-item:focus-visible, .dock-search:focus-visible, .dock-theme-toggle:focus-visible, .tool-search-close:focus-visible, .tool-search-result:focus-visible {
+.dock-item:focus-visible, .dock-search:focus-visible, .tool-search-close:focus-visible, .tool-search-result:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
 }
@@ -174,25 +175,6 @@
   background: var(--color-surface);
   cursor: pointer;
 }
-
-.dock-theme-toggle {
-  display: grid;
-  place-items: center;
-  gap: 2px;
-  flex: 0 0 40px;
-  width: 40px;
-  min-height: 40px;
-  border: 1px solid var(--color-border);
-  border-radius: 11px;
-  color: var(--color-muted);
-  background: var(--color-surface);
-  cursor: pointer;
-  font: 500 10px/1 var(--font-text);
-}
-
-.dock-theme-toggle > span:first-child { font-size: 18px; line-height: 1; }
-.dock-theme-toggle:hover { color: var(--color-text); background: var(--color-surface-raised); border-color: var(--color-border-strong); }
-.dock-theme-label { display: none; }
 
 .dock-search:hover { color: var(--color-text); background: var(--color-surface-raised); }
 
@@ -289,7 +271,7 @@
   .app-shell { min-height: 100vh; height: auto; grid-template-columns: minmax(0, 1fr); overflow: visible; }
   .app-sidebar { position: sticky; top: 0; height: auto; min-width: 0; flex-direction: row; gap: 8px; padding: 8px 12px; border-right: none; border-bottom: 1px solid var(--color-border); }
   .app-brand-mark { width: 32px; height: 32px; font-size: 14px; }
-  .tool-dock { flex-direction: row; min-width: 0; width: auto; padding: 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .tool-dock { flex-direction: row; min-width: 0; width: auto; padding: 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scrollbar-gutter: auto; }
   .dock-item { flex: 0 0 auto; width: auto; min-width: 60px; min-height: 62px; padding: 4px 8px; flex-direction: column; gap: 5px; }
   .dock-icon { width: 32px; height: 32px; border-radius: 8px; transform: none; }
   .tool-icon-svg { width: 20px; height: 20px; }
@@ -298,8 +280,7 @@
   .dock-home { margin-bottom: 0; margin-right: 8px; }
   .dock-home::after { right: -4px; bottom: 10px; width: 1px; height: 40px; }
   .dock-item.active::before { left: calc(50% - 8px); bottom: 0; width: 16px; height: 2px; }
-  .dock-search, .dock-theme-toggle { flex: 0 0 40px; }
-  .dock-theme-toggle { min-height: 40px; }
+  .dock-search { flex: 0 0 40px; }
   .dock-tooltip { display: none; }
   .app-main { grid-column: auto; min-height: calc(100vh - 90px); padding: 16px; overflow: visible; }
   .tool-route { min-height: 0; }

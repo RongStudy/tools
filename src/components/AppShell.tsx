@@ -5,9 +5,9 @@ import type { ToolDefinition } from '../tools/registry'
 import { useDockMagnification } from '../hooks/useDockMagnification'
 import ToolIcon from './ToolIcon'
 import ToolSearchDialog from './ToolSearchDialog'
+import SettingsDialog from './SettingsDialog'
 import forgeIcon from '../assets/tool-icons/forge.png'
 import { ThemeProvider } from '../theme'
-import { useAppTheme } from '../themeContext'
 
 type AppShellProps = {
   tools: ToolDefinition[]
@@ -22,8 +22,8 @@ type Tooltip = {
 }
 
 const AppShellContent = ({ tools, children }: AppShellProps) => {
-  const { theme, toggleTheme } = useAppTheme()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [tooltip, setTooltip] = useState<Tooltip | null>(null)
   const tooltipId = useId()
   const { navRef, onPointerMove, onPointerLeave, reset } = useDockMagnification()
@@ -38,6 +38,7 @@ const AppShellContent = ({ tools, children }: AppShellProps) => {
         event.stopPropagation()
         setTooltip(null)
         reset()
+        setIsSettingsOpen(false)
         setIsSearchOpen((open) => !open)
       } else if (event.key === 'Escape') {
         setTooltip(null)
@@ -66,6 +67,7 @@ const AppShellContent = ({ tools, children }: AppShellProps) => {
   const openSearch = () => {
     reset()
     setTooltip(null)
+    setIsSettingsOpen(false)
     setIsSearchOpen(true)
   }
 
@@ -91,23 +93,17 @@ const AppShellContent = ({ tools, children }: AppShellProps) => {
             </NavLink>
           ))}
         </nav>
-        <button
-          type="button"
-          className="dock-theme-toggle"
-          aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
-          title={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
-          onClick={toggleTheme}
-        >
-          <span aria-hidden="true">{theme === 'dark' ? '☼' : '☾'}</span>
-          <span className="dock-theme-label">{theme === 'dark' ? '浅色' : '深色'}</span>
-        </button>
         <button type="button" className="dock-search" aria-label="搜索工具" aria-haspopup="dialog" aria-expanded={isSearchOpen} aria-describedby={tooltip?.key === 'search' ? tooltipId : undefined} onClick={openSearch} onPointerEnter={(event) => { if (event.pointerType !== 'touch') showTooltip(event.currentTarget, 'search', '搜索工具 · ⌘K / Ctrl+K') }} onPointerLeave={() => setTooltip(null)} onFocus={(event) => showTooltip(event.currentTarget, 'search', '搜索工具 · ⌘K / Ctrl+K')} onBlur={() => setTooltip(null)}>
           <ToolIcon name="search" />
+        </button>
+        <button type="button" className="dock-search" aria-label="设置" title="设置" aria-haspopup="dialog" aria-expanded={isSettingsOpen} onClick={() => { reset(); setTooltip(null); setIsSearchOpen(false); setIsSettingsOpen(true) }}>
+          <ToolIcon name="settings" />
         </button>
       </aside>
       <main className="app-main">{children}</main>
       {tooltip && !isSearchOpen && createPortal(<div id={tooltipId} className="dock-tooltip" role="tooltip" style={{ left: tooltip.left, top: tooltip.top }}>{tooltip.label}</div>, document.body)}
       {isSearchOpen && <ToolSearchDialog tools={tools} onClose={() => setIsSearchOpen(false)} onSelect={selectTool} />}
+      {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} />}
     </div>
   )
 }

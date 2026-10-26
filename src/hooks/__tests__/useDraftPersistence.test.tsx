@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDraftPersistence } from '../useDraftPersistence'
-import { readExpiringStorage } from '../../utils/expiringStorage'
+import { readExpiringStorage, setDraftRetentionDays } from '../../utils/expiringStorage'
 
 const { showToast } = vi.hoisted(() => ({ showToast: vi.fn() }))
 vi.mock('../../components/toastContext', () => ({ useToast: () => ({ showToast }) }))
@@ -10,6 +10,14 @@ beforeEach(() => { vi.useFakeTimers(); localStorage.clear(); showToast.mockClear
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe('draft persistence', () => {
+  it('uses the latest retention setting when a pending draft is automatically saved', () => {
+    const { unmount } = renderHook(() => useDraftPersistence('draft', 'content'))
+    setDraftRetentionDays(30)
+    act(() => { vi.advanceTimersByTime(600) })
+    expect(JSON.parse(localStorage.getItem('draft')!).expiresAt).toBe(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    unmount()
+  })
+
   it('coalesces rapid edits and writes the latest value after idle', () => {
     const { rerender, unmount } = renderHook(({ value }) => useDraftPersistence('draft', value), { initialProps: { value: 'first' } })
     rerender({ value: 'second' })
@@ -35,8 +43,9 @@ describe('draft persistence', () => {
     expect(readExpiringStorage('draft')).toBe('last')
   })
   it('reports quota failure once and retries the unsaved latest draft', () => {
-    // jsdom Storage 的实例属性由 Proxy 管理，在原型上拦截才能模拟写入失败。
-    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Full', 'QuotaExceededError') })
+    // Native jsdom Storage uses a Proxy; the test fallback stores methods on the instance.
+    const storageTarget = Object.hasOwn(localStorage, 'setItem') ? localStorage : Storage.prototype
+    const setItem = vi.spyOn(storageTarget, 'setItem').mockImplementation(() => { throw new DOMException('Full', 'QuotaExceededError') })
     const { rerender, unmount } = renderHook(({ value }) => useDraftPersistence('draft', value), { initialProps: { value: 'first' } })
     act(() => { vi.advanceTimersByTime(600) })
     rerender({ value: 'second' })

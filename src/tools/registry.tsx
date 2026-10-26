@@ -22,6 +22,7 @@ const toolIcons: Record<ToolIconName, string | undefined> = {
   clock: clockIcon,
   note: noteIcon,
   search: undefined,
+  settings: undefined,
   animation: lottieIcon,
 }
 

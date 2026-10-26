@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export type ToolIconName = 'home' | 'json' | 'diff' | 'regex' | 'codec' | 'diagram' | 'clock' | 'note' | 'search' | 'animation'
+export type ToolIconName = 'home' | 'json' | 'diff' | 'regex' | 'codec' | 'diagram' | 'clock' | 'note' | 'search' | 'animation' | 'settings'
 
 const shapes: Record<ToolIconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h5v-6h4v6h5V9" /></>,
@@ -13,6 +13,7 @@ const shapes: Record<ToolIconName, ReactNode> = {
   note: <><path d="M14 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10Z" /><path d="M14 3v7h7M7 14h10M7 17h7" /></>,
   animation: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="m10 8 5 4-5 4z" /></>,
   search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
+  settings: <><path d="M4 7h16M4 17h16" /><rect x="8" y="4" width="4" height="6" rx="1" /><rect x="14" y="14" width="4" height="6" rx="1" /></>,
 }
 
 type ToolIconProps = {

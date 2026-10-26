@@ -174,7 +174,7 @@ Keep white text on filled primary buttons. Use darker semantic colors for text o
 
 Theme behavior:
 
-- Default to dark on first use. Place a labeled theme toggle in the persistent Dock and remember the user's choice locally.
+- Default to dark on first use. Place labeled light/dark theme controls in the Settings dialog and remember the user's choice locally. Theme changes take effect immediately without saving draft settings.
 - Switch the shell, tool panels, dialogs, previews, scrollbars, and embedded editors together. Monaco uses `vs-dark` in dark mode and `vs` in light mode.
 - Mermaid diagrams and Markdown code highlighting must follow the selected theme. Standalone Markdown exports use a self-contained light document style.
 - Preserve layout and editor state during theme changes. Theme switching must not remount editors or discard drafts.
@@ -209,11 +209,11 @@ Dock:
 - Each link has a stable 64px-tall slot, up to 76px wide (fitting beside the scrollbar in short windows), and a 40px icon surface.
 - Fine-pointer movement uses distance along the vertical rail to magnify nearby icon surfaces up to 1.45×, with spring smoothing and at most 6px of vertical displacement; link slots remain fixed. Leaving the rail springs back to rest.
 - Active tools use a lavender icon surface and a separate side indicator in both themes.
-- A theme toggle remains reachable beside search on desktop and in the horizontal launcher on smaller screens.
+- A Settings button remains reachable beside search on desktop and in the horizontal launcher on smaller screens. Separate appearance and draft retention into labeled sections in the Settings dialog.
 - Image-based tool icons must remain legible on both surface ladders; use a dark presentation in light mode while keeping the brand mark legible on its filled background.
 - Hover and keyboard focus show a tool-name tooltip outside the scrolling rail.
 - Search opens a modal tool switcher; Cmd/Ctrl+K opens it from anywhere.
-- Short desktop windows scroll the tool list while brand and search remain reachable.
+- Short desktop windows scroll the tool list while brand, search, and Settings remain reachable. Reserve scrollbar space symmetrically so tool icons stay centered with the fixed controls whether scrolling is needed or not.
 - At widths up to 900px, use a horizontal scrolling launcher with visible short labels.
 - Touch pointers and reduced-motion preferences disable magnification.
 
