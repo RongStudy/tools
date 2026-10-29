@@ -2,70 +2,38 @@
 
 面向日常工程操作的开发工作台，提供格式化、代码对比、编解码、时间转换和图表渲染等功能。
 
+## 在线使用
+
+直接访问 **[https://rongstudy.github.io/tools](https://rongstudy.github.io/tools)** 即可使用，无需安装或启动本地服务。
+
+建议使用电脑浏览器。当前暂不支持手机使用；平板需要至少 901px 的页面宽度，否则会提示切换横屏或使用电脑。
+
 ## 功能特性
 
-### 1. JSON 格式化工具
-- ✅ JSON 格式化（美化）
-- ✅ JSON 压缩
-- ✅ JSON 转义
-- ✅ 多层嵌套转义 JSON 的自动解转义
-- ✅ 实时预览和错误提示
-- ✅ 可自定义缩进（2空格/4空格/无缩进）
-- ✅ 代码复制功能
+| 工具 | 主要功能 |
+| --- | --- |
+| JSON 格式化 | 格式化、压缩、转义、多层解转义、缩进设置、JSON Schema 校验、多文档标签、复制与自定义文件名导出 |
+| 代码对比 | 分栏与统一视图、文件加载、语言检测、忽略空格、识别移动、多标签与全屏对比 |
+| 临时文本 | 多文档标签、每个文档最多 3 栏、语言检测与语法高亮、字号调整、curl 格式化、复制与保存本栏 |
+| 时间戳转换 | 当前时间戳、秒与毫秒切换、时间戳与日期互转、常用时区选择（默认 Asia/Shanghai） |
+| 编解码 | 参数值与完整 URL 编解码、Base64、Unicode 编解码、MD5 与 SHA-256 摘要 |
+| 正则表达式 | 实时匹配、标志设置、捕获组、替换、文本分割与常用模板 |
+| Mermaid / Markdown | 自动识别格式、实时渲染、GFM 与 LaTeX 公式、Markdown 内嵌 Mermaid、图表缩放与拖拽、全屏预览、图表及 Markdown HTML 导出 |
+| Lottie 动画 | 通过 URL 或 JSON 播放、加载后回显 JSON、本地示例、暂停与重播、循环及速度控制 |
 
-### 2. 代码对比工具
-- ✅ 分栏视图对比代码差异
-- ✅ 统一视图显示差异（使用 Monaco DiffEditor）
-- ✅ 从文件加载代码
-- ✅ 代码复制功能
-- ✅ 自动语言检测（基于文件扩展名）
-- ✅ 支持多种编程语言（JavaScript、TypeScript、Python、Java、C++、Go、Rust 等）
-- ✅ 多标签页支持，可同时打开多个对比任务
-- ✅ Tab 内全屏模式，支持 ESC 键退出
+### 导航与设置
 
-### 3. 临时文本编辑器
-- ✅ 多栏编辑，最多支持 3 个编辑栏同时显示
-- ✅ 支持多种编程语言语法高亮
-- ✅ 多标签页管理，可创建多个临时文本
-- ✅ 字符计数显示
-- ✅ 一键复制、清空功能
-- ✅ 草稿自动保存（默认 2 天，可在工具栏的“设置 → 草稿保存”中设置 1–365 天；仅保存在当前浏览器本地，不会上传到云端）
+- 使用左侧工具栏切换工具，或按 `Cmd+K` / `Ctrl+K` 搜索工具。
+- 点击工具栏底部的“设置”，分别管理“外观主题”和“草稿保存”。
+- **外观主题**：支持深色与浅色，切换立即生效并自动记住，编辑器与预览同步切换主题。
+- **草稿保存**：默认保存 **2 天**，可设置 **1–365 天**。点击“保存草稿设置”后，从下一次自动保存起使用新时长，每次保存重新计时；过期草稿在下次读取时清除。
+- 自动草稿覆盖 JSON 格式化、代码对比、临时文本和 Mermaid / Markdown；其他工具不保证恢复输入内容。
 
-### 4. 时间戳转换工具
-- ✅ 动态显示当前时间戳
-- ✅ 支持秒级和毫秒级时间戳切换
-- ✅ 支持时间戳转日期时间
-- ✅ 支持日期时间转时间戳
-- ✅ 支持常用时区选择，默认 Asia/Shanghai
+### 本地保存说明
 
-### 5. URL 编解码工具
-- ✅ URL 编码（encodeURIComponent）
-- ✅ URL 解码（decodeURIComponent）
-- ✅ Unicode 编解码支持
-- ✅ 实时编解码预览
-- ✅ 一键复制功能
+**自动草稿仅保存在当前浏览器本地，不会上传到云端。** 设置同样保存在本地；更换设备、浏览器或访问来源不会同步草稿，清除浏览器网站数据会删除本地草稿。需要长期留存的内容可导出文件备份。
 
-### 6. 正则表达式测试工具
-- ✅ 实时正则匹配测试
-- ✅ 支持全局匹配、忽略大小写、多行模式等标志
-- ✅ 高亮显示匹配结果
-- ✅ 显示匹配组信息
-- ✅ 常用正则表达式模板
-
-### 7. Mermaid 渲染工具
-- ✅ Mermaid 代码实时渲染
-- ✅ 语法错误提示
-- ✅ SVG、PNG 图表导出
-- ✅ 50%–200% 缩放控制
-- ✅ Tab 内全屏预览，支持 ESC 键退出
-- ✅ 拖拽移动图表
-- ✅ 草稿自动保留
-
-### 8. 哈希计算工具
-- ✅ MD5 哈希计算
-- ✅ SHA-256 哈希计算
-- ✅ 实时计算
-- ✅ 一键复制结果
+Lottie 的 URL 加载会向用户指定的地址请求动画资源，远程地址需要允许跨域访问（CORS）。这与自动草稿的本地保存相互独立。
 
 ## 技术栈
 
@@ -110,8 +78,22 @@ npm run build:chrome   # Chrome 扩展产物，输出到 dist/chrome
 ### 预览生产构建
 
 ```bash
-npm run preview
+npm run build:web
+npm run preview -- --outDir dist/web
 ```
+
+打开终端提示地址下的 `/tools/` 路径。
+
+### 验证改动
+
+```bash
+npm run lint
+npm test
+npm run build:web
+npm run build:chrome
+```
+
+推送到 `main` 后，GitHub Actions 会构建 Web 版本并部署到上述在线地址，同时构建 Chrome 扩展压缩包。
 
 ## 构建目标
 
@@ -122,7 +104,7 @@ npm run preview
 | Vite mode | `web` | `chrome` |
 | `base` | `/tools/` | `./` |
 | 路由 | `BrowserRouter`（`src/platform/web.tsx`） | `HashRouter`（`src/platform/chrome.tsx`） |
-| Monaco | `@monaco-editor/react` 的 CDN loader（`src/monaco/web.ts`） | 打进扩展包的本地 Monaco 与语言 Worker（`src/monaco/chrome.ts`） |
+| Monaco | 本地打包的 Monaco ESM 与语言 Worker | 本地打包的 Monaco ESM 与语言 Worker |
 | 扩展文件 | 不输出 | 输出 `manifest.json`、`background.js`、`icon.png` |
 | 输出目录 | `dist/web` | `dist/chrome` |
 
@@ -130,7 +112,7 @@ npm run preview
 
 Web 构建会根据 `src/tools/paths.json` 为每个工具生成 `<工具路径>/index.html`，确保 GitHub Pages 上直接访问或刷新子页面也能加载。工具注册表共用这份路径清单，新增工具时需在清单中登记路径。
 
-Chrome target 的体积明显大于 Web target，差异来自本地 Monaco 本体、语言模块和各类 Worker。
+两个 target 通过 `src/monaco/setup.ts` 按需加载同一套本地 Monaco 运行时（`src/monaco/runtime.ts`），均不依赖 Monaco CDN。
 
 ## Chrome 扩展
 
@@ -171,10 +153,13 @@ tool/
 │   │   ├── UrlCodec.css
 │   │   ├── RegexTester.tsx       # 正则表达式测试工具
 │   │   ├── RegexTester.css
-│   │   ├── MermaidRenderer.tsx   # Mermaid 渲染工具
-│   │   └── MermaidRenderer.css
+│   │   ├── MermaidRenderer.tsx   # Mermaid / Markdown 渲染
+│   │   ├── MermaidRenderer.css
+│   │   ├── LottiePlayer.tsx      # Lottie 动画播放器
+│   │   └── LottiePlayer.css
 │   ├── components/
 │   │   ├── AppShell.tsx          # 应用壳层与工具导航
+│   │   ├── SettingsDialog.tsx    # 外观主题与草稿保存设置
 │   │   ├── ToolLayout.tsx        # 工具页通用布局
 │   │   └── Toast.tsx             # Toast 通知组件
 │   ├── hooks/
@@ -183,11 +168,14 @@ tool/
 │   │   ├── types.ts              # 平台模块契约
 │   │   ├── web.tsx               # BrowserRouter + /tools basename
 │   │   └── chrome.tsx            # HashRouter
-│   ├── monaco/                   # Monaco 初始化，按 target 二选一
+│   ├── monaco/                   # 平台入口与共用本地 Monaco 运行时
 │   │   ├── types.ts              # 平台模块契约
-│   │   ├── web.ts                # CDN loader
-│   │   └── chrome.ts             # 本地 Monaco + 语言 Worker
+│   │   ├── web.ts                # Web 初始化入口
+│   │   ├── chrome.ts             # Chrome 初始化入口
+│   │   ├── setup.ts              # 按需初始化与失败重试
+│   │   └── runtime.ts            # 共用本地 Monaco + 语言 Worker
 │   ├── tools/
+│   │   ├── paths.json            # 共用路径与 Web 静态入口清单
 │   │   └── registry.tsx          # 工具页注册表
 │   ├── types/
 │   │   ├── css.d.ts              # CSS 导入类型声明
@@ -215,7 +203,7 @@ tool/
 ## 新增工具页
 
 1. 在 `src/pages/` 下创建页面组件和页面样式。
-2. 在 `src/tools/registry.tsx` 中新增一条工具配置，填写 `path`、`title`、`navTitle`、`description`、`category` 和 `component`。
+2. 在 `src/tools/paths.json` 中登记路径，再在 `src/tools/registry.tsx` 中新增工具配置，填写 `path`、`title`、`navTitle`、`description`、`category` 和 `component`。
 3. 页面内优先使用 `ToolLayout`、`editor-panel`、`panel-header`、`panel-actions`、`btn` 等已有布局和样式类，保持工具页交互一致。
 
 ## 使用说明
@@ -235,6 +223,7 @@ tool/
 ### 代码对比工具
 
 #### 分栏视图模式
+
 1. 在左侧编辑器中输入原始代码
 2. 在右侧编辑器中输入修改后的代码
 3. 可以点击"加载文件"按钮从文件系统加载代码
@@ -243,11 +232,13 @@ tool/
 6. 点击"全屏"按钮进入 Tab 内全屏模式，按 ESC 键退出
 
 #### 统一视图模式
+
 1. 切换到"统一视图"模式
-2. 使用 Monaco Editor 的内置 DiffEditor 查看代码差异
+2. 查看逐行差异文本；新增行以 `+` 标记，删除行以 `-` 标记
 3. 差异会以高亮方式显示，方便识别修改内容
 
 #### 多标签页管理
+
 1. 点击"新建对比"创建新的对比标签页
 2. 每个标签页独立保存对比内容
 3. 点击标签右侧的关闭按钮删除对应标签页
@@ -261,7 +252,9 @@ tool/
 5. 点击"复制"快速复制当前栏内容
 6. 草稿自动保存，默认 2 天内重新打开仍可恢复；可在“设置 → 草稿保存”中调整时长，从下一次自动保存起生效，每次保存重新计时。草稿仅保存在当前浏览器本地，不会上传到云端；清除网站数据会删除草稿。
 
-### Mermaid 渲染工具
+### Mermaid / Markdown 渲染
+
+支持自动识别内容，也可手动选择 Mermaid 或 Markdown 模式。Markdown 支持 GFM、LaTeX 数学公式和内嵌 Mermaid 图表，可导出 HTML。Mermaid 模式使用方式：
 
 1. 在编辑器中输入 Mermaid 图表代码
 2. 预览区会实时渲染 SVG 图表
@@ -270,6 +263,13 @@ tool/
 5. 支持拖拽移动图表位置
 6. 点击"导出 SVG"或"导出 PNG"下载图表
 7. 语法错误会在预览区显示详细错误信息
+
+### Lottie 动画播放器
+
+1. 选择内置示例，或粘贴动画 JSON 后点击“播放 JSON”。
+2. 也可输入 HTTP(S) 动画 URL，点击“加载并播放”；成功读取后会在编辑器中回显 JSON。
+3. 使用预览区控件暂停、重播、设置循环或调整速度。
+4. 若远程地址不允许跨域读取，可将 JSON 直接粘贴到编辑器中播放。
 
 ## 浏览器支持
 
