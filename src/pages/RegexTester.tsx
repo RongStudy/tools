@@ -306,7 +306,7 @@ const RegexTester = () => {
     <ToolLayout
       className="regex-tester"
       title="正则表达式"
-      description="测试匹配与捕获组，预览替换和分割结果"
+      // description="测试匹配与捕获组，预览替换和分割结果"
       actions={actions}
     >
       <section className="regex-builder" aria-label="正则表达式配置">

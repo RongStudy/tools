@@ -365,7 +365,7 @@ const ScratchPad = () => {
     <ToolLayout
       className={`scratch-pad ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="临时文本输入"
-      description="随手记录或粘贴文本，支持多标签、分栏、字号缩放和全屏编辑"
+      // description="随手记录或粘贴文本，支持多标签、分栏、字号缩放和全屏编辑"
       actions={toolbar}
       hideHeader={isFullscreen}
     >

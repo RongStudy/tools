@@ -7,7 +7,7 @@ import type { ToolDefinition } from '../tools/registry'
 
 const tools: ToolDefinition[] = [
   { path: '/', title: '首页', navTitle: '首页', description: '工具总览', category: '总览', icon: 'home', component: () => null, isTool: false },
-  { path: '/json', title: 'JSON格式化工具', navTitle: 'JSON格式化', description: '格式化、压缩 JSON', category: '编码处理', icon: 'json', component: () => null },
+  { path: '/json', title: 'JSON格式化', navTitle: 'JSON格式化', description: '格式化、压缩 JSON', category: '编码处理', icon: 'json', component: () => null },
   { path: '/code-diff', title: '代码对比', navTitle: '代码对比', description: '对比两段文本', category: '编码处理', icon: 'diff', component: () => null },
   { path: '/url-codec', title: '编解码', navTitle: '编解码', description: 'URL、Base64 编解码', category: '编码处理', icon: 'codec', iconSrc: '/icons/codec.svg', component: () => null },
 ]

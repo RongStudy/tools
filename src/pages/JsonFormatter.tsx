@@ -264,8 +264,8 @@ const JsonFormatter = () => {
   return (
     <ToolLayout
       className={`json-formatter ${isFullscreen ? 'fullscreen-mode' : ''}`}
-      title="JSON格式化工具"
-      description="格式化、压缩、转义和解转义 JSON 内容"
+      title="JSON格式化"
+      // description="格式化、压缩、转义和解转义 JSON 内容"
       actions={toolbar}
       status={status}
       hideHeader={isFullscreen}

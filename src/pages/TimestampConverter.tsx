@@ -114,7 +114,7 @@ const TimestampConverter = () => {
     <ToolLayout
       className="timestamp-converter"
       title="时间戳转换"
-      description="查看当前时间戳，并在时间戳和日期时间之间转换"
+      // description="查看当前时间戳，并在时间戳和日期时间之间转换"
       status={error ? <div className="timestamp-error">{error}</div> : null}
     >
       <section className="timestamp-current-card">

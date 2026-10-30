@@ -12,12 +12,12 @@ import './Home.css'
 
 const toolLinks = [
   { path: '/json', title: 'JSON 格式化', description: '让数据结构一目了然', meta: '格式化 · 压缩 · 转义', icon: jsonIcon, preview: 'json' },
+  { path: '/scratch-pad', title: '临时文本', description: '随手记录，继续你的思路', meta: '多标签 · 分栏 · 自动识别', icon: noteIcon, preview: 'note' },
   { path: '/code-diff', title: '代码对比', description: '快速定位每一处改动', meta: '分栏对比 · 统一视图', icon: diffIcon, preview: 'diff' },
-  { path: '/regex', title: '正则表达式', description: '验证匹配，查看捕获结果', meta: '匹配 · 替换 · 分割', icon: regexIcon, preview: 'regex' },
   { path: '/url-codec', title: '编解码', description: '在文本与编码之间转换', meta: 'URL · Base64 · Unicode', icon: codecIcon, preview: 'codec' },
   { path: '/timestamp', title: '时间戳转换', description: '把数字还原为具体时间', meta: '秒 · 毫秒 · 日期时间', icon: clockIcon, preview: 'timestamp' },
   { path: '/mermaid', title: 'Mermaid / Markdown', description: '把文字变成图表和文档', meta: '流程图 · 文档 · 公式', icon: diagramIcon, preview: 'diagram' },
-  { path: '/scratch-pad', title: '临时文本', description: '随手记录，继续你的思路', meta: '多标签 · 分栏 · 自动识别', icon: noteIcon, preview: 'note' },
+  { path: '/regex', title: '正则表达式', description: '验证匹配，查看捕获结果', meta: '匹配 · 替换 · 分割', icon: regexIcon, preview: 'regex' },
   { path: '/lottie', title: 'Lottie 动画', description: '加载 JSON，预览动画效果', meta: 'URL · JSON · 播放控制', icon: lottieIcon, preview: 'lottie' },
 ]
 
@@ -48,7 +48,7 @@ const Home = () => (
       <div className="home-copy">
         <p className="home-kicker">FORGE <span>/ WORKSPACE</span></p>
         <h2 id="home-title">开发工作台</h2>
-        <p className="home-description">常用工具，就在手边。</p>
+        {/* <p className="home-description">常用工具，就在手边。</p> */}
       </div>
       <div className="home-shortcut"><span>快速切换工具</span><kbd>⌘ / Ctrl</kbd><kbd>K</kbd></div>
     </header>

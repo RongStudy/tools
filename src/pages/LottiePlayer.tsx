@@ -181,7 +181,11 @@ const LottiePlayer = () => {
   const canControl = status === 'playing' || status === 'paused'
 
   return (
-    <ToolLayout className="lottie-player" title="Lottie 动画" description="加载动画链接或编辑 JSON，预览播放效果">
+    <ToolLayout
+      className="lottie-player"
+      title="Lottie 动画"
+      // description="加载动画链接或编辑 JSON，预览播放效果"
+    >
       <div className="lottie-source">
         <form className="lottie-url-form" onSubmit={(event) => { event.preventDefault(); void loadUrl() }}>
           <label htmlFor="lottie-url">动画 URL</label>

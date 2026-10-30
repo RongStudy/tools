@@ -192,7 +192,7 @@ const UrlCodec = () => {
     <ToolLayout
       className="url-codec"
       title="编解码"
-      description="处理 URL、Base64、Unicode 编解码，以及文本的 MD5、SHA-256 摘要"
+      // description="处理 URL、Base64、Unicode 编解码，以及文本的 MD5、SHA-256 摘要"
       actions={toolbar}
       status={error ? <div className="url-codec-error">{error}</div> : null}
     >

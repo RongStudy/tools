@@ -462,7 +462,7 @@ const MermaidRenderer = () => {
     <ToolLayout
       className={`mermaid-renderer ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="Mermaid / Markdown 渲染"
-      description="自动识别 Mermaid 或 Markdown 内容并实时渲染，支持 GFM 与 LaTeX 数学公式"
+      // description="自动识别 Mermaid 或 Markdown 内容并实时渲染，支持 GFM 与 LaTeX 数学公式"
       actions={toolbar}
       hideHeader={isFullscreen}
     >

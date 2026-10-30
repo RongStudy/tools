@@ -543,7 +543,7 @@ const CodeDiff = () => {
     <ToolLayout
       className={`code-diff ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="代码对比"
-      description="对比两段代码或文件内容，支持分栏和统一视图"
+      // description="对比两段代码或文件内容，支持分栏和统一视图"
       actions={toolbar}
       hideHeader={isFullscreen}
     >
