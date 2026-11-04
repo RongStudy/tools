@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import ScratchPad from './ScratchPad'
 import { ToastProvider } from '../components/Toast'
+import { deferred, memoryLocalFile } from '../test/localFileMock'
 
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, onChange, language }: {
@@ -47,6 +48,81 @@ const mockDownloads = () => {
 }
 
 describe('ScratchPad', () => {
+  it('默认关闭写回，不支持时无法启用', () => {
+    renderScratchPad()
+    expect(screen.getByRole('checkbox', { name: '写回原文件' })).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: '写回原文件' })).toBeDisabled()
+  })
+
+  it('启用写回后将编辑内容保存到所选文件，并阻止覆盖外部修改', async () => {
+    const disk = memoryLocalFile('note.txt', '原文')
+    vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
+    renderScratchPad()
+    fireEvent.click(screen.getByRole('checkbox', { name: '写回原文件' }))
+    fireEvent.click(screen.getByRole('button', { name: '加载文件' }))
+    await screen.findByRole('tab', { name: 'note.txt' })
+    expect(screen.getByRole('button', { name: '保存到原文件' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '修改内容' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存到原文件' }))
+    await waitFor(() => expect(screen.getByLabelText('保存到原文件状态')).toHaveTextContent('已保存'))
+    expect(disk.text).toBe('修改内容')
+    disk.setDisk('外部修改')
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '又改了' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存到原文件' }))
+    expect(await screen.findByText('文件已在外部修改，请重新加载后再保存')).toBeInTheDocument()
+    expect(disk.write).toHaveBeenCalledTimes(1)
+    expect(disk.abort).toHaveBeenCalledTimes(1)
+    expect(screen.getByLabelText('保存到原文件状态')).toHaveTextContent('未保存')
+  })
+
+  it('保存期间继续编辑，完成后仍显示未保存，后续保存提交最新内容', async () => {
+    const disk = memoryLocalFile('note.txt', '原文')
+    const commit = deferred<void>()
+    disk.close.mockImplementationOnce(async () => { await commit.promise; disk.setDisk('第一次修改') })
+    vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
+    renderScratchPad()
+    fireEvent.click(screen.getByRole('checkbox', { name: '写回原文件' }))
+    fireEvent.click(screen.getByRole('button', { name: '加载文件' }))
+    await screen.findByRole('tab', { name: 'note.txt' })
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '第一次修改' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存到原文件' }))
+    expect(screen.getByLabelText('保存到原文件状态')).toHaveTextContent('保存中')
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '继续修改' } })
+    await waitFor(() => expect(disk.close).toHaveBeenCalledOnce())
+    await act(async () => { commit.resolve(); await commit.promise })
+    expect(screen.getByLabelText('保存到原文件状态')).toHaveTextContent('未保存')
+    expect(disk.text).toBe('第一次修改')
+    fireEvent.click(screen.getByRole('button', { name: '保存到原文件' }))
+    await waitFor(() => expect(screen.getByLabelText('保存到原文件状态')).toHaveTextContent('已保存'))
+    expect(disk.text).toBe('继续修改')
+  })
+
+  it('加载本地文件为独立文本，保留已有内容和草稿', async () => {
+    const { unmount } = renderScratchPad()
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '原有内容' } })
+    const file = new File([''], 'note.txt', { type: 'text/plain' })
+    Object.defineProperty(file, 'text', { value: () => Promise.resolve('文件内容\n') })
+    fireEvent.change(screen.getByLabelText('选择本地文件'), { target: { files: [file] } })
+    expect(await screen.findByRole('tab', { name: 'note.txt' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('scratch-editor-plaintext')).toHaveValue('文件内容\n')
+    fireEvent.click(screen.getByRole('tab', { name: '文本 1' }))
+    expect(screen.getByLabelText('scratch-editor-plaintext')).toHaveValue('原有内容')
+    unmount()
+    renderScratchPad()
+    fireEvent.click(screen.getByRole('tab', { name: 'note.txt' }))
+    expect(screen.getByLabelText('scratch-editor-plaintext')).toHaveValue('文件内容\n')
+  })
+
+  it('读取文件失败时保留当前文本并提示', async () => {
+    renderScratchPad()
+    fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '原有内容' } })
+    const file = new File([''], 'bad.txt')
+    Object.defineProperty(file, 'text', { value: () => Promise.reject(new Error('read failed')) })
+    fireEvent.change(screen.getByLabelText('选择本地文件'), { target: { files: [file] } })
+    expect(await screen.findByText('加载文件失败，请重试')).toBeInTheDocument()
+    expect(screen.getByLabelText('scratch-editor-plaintext')).toHaveValue('原有内容')
+  })
+
   it('自动将包含 JSON 参数的 curl 识别为 Shell，仍允许手动选择语言', () => {
     vi.useFakeTimers()
     renderScratchPad()

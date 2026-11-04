@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import CodeDiff from './CodeDiff'
 import { ToastProvider } from '../components/Toast'
@@ -70,6 +70,7 @@ function renderCodeDiff() {
 beforeEach(() => {
   localStorage.clear()
 })
+afterEach(() => vi.unstubAllGlobals())
 
 describe('CodeDiff', () => {
   it('自动模式反复识别左右内容，不覆盖手动模式并保留纯文本选择', async () => {

@@ -106,6 +106,7 @@
 
 .panel-header {
   display: flex;
+  flex-shrink: 0;
   justify-content: space-between;
   align-items: center;
   min-height: 3.5rem;
@@ -136,6 +137,94 @@
   align-items: center;
   min-height: 2rem;
   line-height: 1.2;
+}
+
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-switch input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.toggle-switch input[type="checkbox"]:focus-visible + .toggle-slider {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.toggle-slider {
+  position: relative;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 20px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--color-muted);
+  border-radius: 50%;
+  transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider::after {
+  background: #ffffff;
+  transform: translateX(16px);
+}
+
+.toggle-label,
+.panel-header .toggle-label {
+  font: 500 0.9rem/1.2 var(--font-text);
+  color: var(--color-muted);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.toggle-switch:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.panel-actions .toggle-switch {
+  min-height: 2rem;
+  margin-right: 0.25rem;
+}
+
+.local-file-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.local-file-status {
+  min-width: 3em;
+  color: var(--color-muted);
+  font: 500 0.78rem/1.2 var(--font-text);
+  white-space: nowrap;
 }
 
 .monaco-loading {

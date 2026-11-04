@@ -1,7 +1,7 @@
 import EditorLanguageTools, { type EditorLanguageBinding } from '../components/EditorLanguageTools'
 import { languageEditorOptions } from '../monaco/languageCapabilities'
 import { useDraftPersistence } from '../hooks/useDraftPersistence'
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import { diffLines, diffTrimmedLines } from 'diff'
 import ToolLayout from '../components/ToolLayout'
@@ -13,6 +13,9 @@ import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage } from '../utils/expiringStorage'
+import { openWritableFile, supportsFileWriteback, type OpenLocalFile } from '../utils/localFile'
+import { useLocalFiles } from '../hooks/useLocalFiles'
+import LocalFileSave from '../components/LocalFileSave'
 import type { MonacoDiffEditor } from '../types/monaco'
 import './CodeDiff.css'
 import '../styles/common.css'
@@ -163,6 +166,14 @@ const CodeDiff = () => {
     modifiedCode: activeDocument.modifiedCode,
   }))
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [writeback, setWriteback] = useState(false)
+  const localFiles = useLocalFiles()
+  const selectedDocumentRef = useRef(activeDocumentId)
+  const pendingLoads = useRef(new Map<string, symbol>())
+  useEffect(() => {
+    const requests = pendingLoads.current
+    return () => requests.clear()
+  }, [])
   const [languageBindings, setLanguageBindings] = useState<{ original: EditorLanguageBinding; modified: EditorLanguageBinding }>()
   const {
     handleEditorMount,
@@ -185,32 +196,56 @@ const CodeDiff = () => {
     )))
   }, [activeDocumentId])
 
-  // 处理文件选择
+  const applyLoadedFile = (documentId: string, type: 'original' | 'modified', request: symbol, name: string, content: string, opened?: OpenLocalFile) => {
+    const key = `${documentId}/${type}`
+    if (pendingLoads.current.get(key) !== request) return
+    pendingLoads.current.delete(key)
+    if (opened) localFiles.bind(key, opened)
+    else localFiles.remove(key)
+    const updates = type === 'original'
+      ? { originalCode: content, originalFileName: name }
+      : { modifiedCode: content, modifiedFileName: name }
+    setDocuments((current) => current.map((document) => document.id === documentId ? { ...document, ...updates } : document))
+    if (selectedDocumentRef.current === documentId) {
+      setEditorContent((current) => type === 'original' ? { ...current, originalCode: content } : { ...current, modifiedCode: content })
+    }
+    showToast(`文件加载成功: ${name}`)
+  }
+
+  // 每侧只接受最近一次读取；切换标签时仅更新发起读取的文档。
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>,
     type: 'original' | 'modified'
   ) => {
     const file = event.target.files?.[0]
+    event.target.value = ''
     if (!file) return
-
-    const fileName = file.name
-
+    const documentId = activeDocumentId
+    const key = `${documentId}/${type}`
+    const request = Symbol()
+    pendingLoads.current.set(key, request)
     try {
       const text = await file.text()
-
-      if (type === 'original') {
-        updateActiveDocument({ originalCode: text, originalFileName: fileName })
-        setEditorContent((currentContent) => ({ ...currentContent, originalCode: text }))
-      } else {
-        updateActiveDocument({ modifiedCode: text, modifiedFileName: fileName })
-        setEditorContent((currentContent) => ({ ...currentContent, modifiedCode: text }))
-      }
-
-      showToast(`文件加载成功: ${fileName}`)
+      applyLoadedFile(documentId, type, request, file.name, text)
     } catch (error) {
-      showToast(`读取文件失败: ${error instanceof Error ? error.message : String(error)}`, 'error')
+      if (pendingLoads.current.get(key) === request) localFiles.reportLoadError(error)
     } finally {
-      event.target.value = ''
+      if (pendingLoads.current.get(key) === request) pendingLoads.current.delete(key)
+    }
+  }
+
+  const chooseWritableFile = async (type: 'original' | 'modified') => {
+    const documentId = activeDocumentId
+    const key = `${documentId}/${type}`
+    const request = Symbol()
+    pendingLoads.current.set(key, request)
+    try {
+      const opened = await openWritableFile()
+      applyLoadedFile(documentId, type, request, opened.name, opened.content, opened)
+    } catch (error) {
+      if (pendingLoads.current.get(key) === request) localFiles.reportLoadError(error)
+    } finally {
+      if (pendingLoads.current.get(key) === request) pendingLoads.current.delete(key)
     }
   }
 
@@ -253,6 +288,9 @@ const CodeDiff = () => {
 
   // 清空代码
   const clearCode = () => {
+    pendingLoads.current.delete(`${activeDocumentId}/original`)
+    pendingLoads.current.delete(`${activeDocumentId}/modified`)
+    localFiles.remove(`${activeDocumentId}/original`, `${activeDocumentId}/modified`)
     updateActiveDocument({
       originalCode: '',
       modifiedCode: '',
@@ -268,6 +306,9 @@ const CodeDiff = () => {
 
   // 交换代码
   const swapCode = () => {
+    pendingLoads.current.delete(`${activeDocumentId}/original`)
+    pendingLoads.current.delete(`${activeDocumentId}/modified`)
+    localFiles.swap(`${activeDocumentId}/original`, `${activeDocumentId}/modified`)
     const tempCode = originalCode
     const tempFileName = originalFileName
     updateActiveDocument({
@@ -292,6 +333,7 @@ const CodeDiff = () => {
   }, [originalCode, modifiedCode])
 
   const selectDocument = (document: CodeDiffDocument) => {
+    selectedDocumentRef.current = document.id
     setEditorContent({
       originalCode: document.originalCode,
       modifiedCode: document.modifiedCode,
@@ -306,6 +348,9 @@ const CodeDiff = () => {
   }
 
   const closeDocument = (documentId: string) => {
+    pendingLoads.current.delete(`${documentId}/original`)
+    pendingLoads.current.delete(`${documentId}/modified`)
+    localFiles.remove(`${documentId}/original`, `${documentId}/modified`)
     const currentIndex = documents.findIndex((document) => document.id === documentId)
     const nextDocument = documents[currentIndex + 1] ?? documents[currentIndex - 1]
     setDocuments((currentDocuments) => currentDocuments.filter((document) => document.id !== documentId))
@@ -314,12 +359,14 @@ const CodeDiff = () => {
 
   // 编辑器内容变化回调
   const handleOriginalChange = useCallback((value: string) => {
+    pendingLoads.current.delete(`${activeDocumentId}/original`)
     updateActiveDocument({ originalCode: value })
-  }, [updateActiveDocument])
+  }, [activeDocumentId, updateActiveDocument])
 
   const handleModifiedChange = useCallback((value: string) => {
+    pendingLoads.current.delete(`${activeDocumentId}/modified`)
     updateActiveDocument({ modifiedCode: value })
-  }, [updateActiveDocument])
+  }, [activeDocumentId, updateActiveDocument])
 
   useEffect(() => {
     setEditorCallbacks({
@@ -380,6 +427,15 @@ const CodeDiff = () => {
   // 公共面板操作按钮
   const renderPanelActions = (isUnified: boolean) => (
     <>
+      <label className="toggle-switch" title={supportsFileWriteback() ? '开启后加载文件可保存回原文件' : '当前浏览器不支持保存到原文件'}>
+        <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
+        <span className="toggle-slider" />
+        <span className="toggle-label">写回原文件</span>
+      </label>
+      {writeback ? <>
+        <button type="button" className="btn-small" onClick={() => chooseWritableFile('original')}>加载原始文件</button>
+        <button type="button" className="btn-small" onClick={() => chooseWritableFile('modified')}>加载修改文件</button>
+      </> : <>
       <label className="file-input-label">
         加载原始文件
         <input
@@ -400,6 +456,14 @@ const CodeDiff = () => {
           style={{ display: 'none' }}
         />
       </label>
+      </>}
+      {writeback && (['original', 'modified'] as const).map((side) => {
+        const key = `${activeDocumentId}/${side}`
+        return <LocalFileSave key={side} file={localFiles.files[key]} content={side === 'original' ? originalCode : modifiedCode}
+          label={side === 'original' ? '保存原始文件' : '保存修改文件'} disabled={localFiles.savingFile !== null}
+          saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[key]}
+          onSave={() => localFiles.save(key, side === 'original' ? originalCode : modifiedCode)} />
+      })}
       {(originalCode || modifiedCode) ? (
         <>
           <button onClick={navigateToPreviousDiff} className="btn-small btn-nav" title="上一个差异">↑ 上一个</button>

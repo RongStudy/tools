@@ -1,6 +1,6 @@
 import { useDetectedLanguages } from '../hooks/useDetectedLanguages'
 import { useDraftPersistence } from '../hooks/useDraftPersistence'
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef, type ChangeEvent } from 'react'
 import Editor from '@monaco-editor/react'
 import EditorLanguageTools, { type EditorLanguageBinding } from '../components/EditorLanguageTools'
 import { languageEditorOptions } from '../monaco/languageCapabilities'
@@ -13,6 +13,9 @@ import { useAppTheme } from '../themeContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage } from '../utils/expiringStorage'
 import { formatCurl, isCurlCommand } from '../utils/curlFormatter'
+import { openWritableFile, supportsFileWriteback, type OpenLocalFile } from '../utils/localFile'
+import { useLocalFiles } from '../hooks/useLocalFiles'
+import LocalFileSave from '../components/LocalFileSave'
 import './ScratchPad.css'
 import '../styles/common.css'
 
@@ -207,6 +210,14 @@ const ScratchPad = () => {
   const [selectedPaneIds, setSelectedPaneIds] = useState<Record<string, string>>({})
   const [saveRequest, setSaveRequest] = useState<SaveFileRequest | null>(null)
   const [paneBindings, setPaneBindings] = useState<Record<string, EditorLanguageBinding>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [writeback, setWriteback] = useState(false)
+  const localFiles = useLocalFiles()
+  const pendingLoads = useRef(new Set<symbol>())
+  useEffect(() => {
+    const requests = pendingLoads.current
+    return () => requests.clear()
+  }, [])
   const paneIdsKey = documents.flatMap((document) => document.panes.map((pane) => pane.id)).join('\n')
   useEffect(() => {
     const liveIds = new Set(paneIdsKey.split('\n'))
@@ -249,6 +260,8 @@ const ScratchPad = () => {
   }
 
   const removePane = (paneId: string) => {
+    if (panes.length <= 1) return
+    localFiles.remove(paneId)
     updateActiveDocument((document) => {
       if (document.panes.length <= 1) return document
       return { ...document, panes: document.panes.filter((pane) => pane.id !== paneId) }
@@ -268,6 +281,44 @@ const ScratchPad = () => {
     setActiveDocumentId(document.id)
   }
 
+  const addFileDocument = (name: string, content: string, opened?: OpenLocalFile) => {
+    const pane = createPane(content)
+    const document: ScratchDocument = {
+      id: `scratch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name,
+      panes: [pane],
+    }
+    if (opened) localFiles.bind(pane.id, opened)
+    setDocuments((currentDocuments) => [...currentDocuments, document])
+    setActiveDocumentId(document.id)
+  }
+
+  const loadFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    const request = Symbol()
+    pendingLoads.current.add(request)
+    try {
+      const content = await file.text()
+      if (pendingLoads.current.has(request)) addFileDocument(file.name, content)
+    } catch (error) {
+      localFiles.reportLoadError(error)
+    } finally { pendingLoads.current.delete(request) }
+  }
+
+  const chooseFile = async () => {
+    if (!writeback) { fileInputRef.current?.click(); return }
+    const request = Symbol()
+    pendingLoads.current.add(request)
+    try {
+      const opened = await openWritableFile()
+      if (pendingLoads.current.has(request)) addFileDocument(opened.name, opened.content, opened)
+    } catch (error) {
+      localFiles.reportLoadError(error)
+    } finally { pendingLoads.current.delete(request) }
+  }
+
   const closeDocument = (documentId: string) => {
     if (documents.length === 1) {
       clearAllPanes()
@@ -275,6 +326,7 @@ const ScratchPad = () => {
     }
 
     const currentIndex = documents.findIndex((document) => document.id === documentId)
+    localFiles.remove(...documents[currentIndex].panes.map((pane) => pane.id))
     const nextActiveDocument = documents[currentIndex + 1] ?? documents[currentIndex - 1]
     setDocuments((currentDocuments) => currentDocuments.filter((document) => document.id !== documentId))
     if (documentId === activeDocumentId) {
@@ -406,6 +458,18 @@ const ScratchPad = () => {
         <div className="panel-header">
           <span>输入</span>
           <div className="panel-actions">
+            <input ref={fileInputRef} type="file" hidden aria-label="选择本地文件" onChange={loadFile} />
+            <label className="toggle-switch" title={supportsFileWriteback() ? '开启后加载文件可保存回原文件' : '当前浏览器不支持保存到原文件'}>
+              <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
+              <span className="toggle-slider" />
+              <span className="toggle-label">写回原文件</span>
+            </label>
+            <button type="button" onClick={chooseFile} className="btn-small" title="加载本地文件">
+              加载文件
+            </button>
+            {writeback && <LocalFileSave file={localFiles.files[selectedPane.id]} content={selectedPane.content} label="保存到原文件"
+              saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[selectedPane.id]} disabled={localFiles.savingFile !== null}
+              onSave={() => localFiles.save(selectedPane.id, selectedPane.content)} />}
             <button
               type="button"
               onClick={saveSelectedPane}
