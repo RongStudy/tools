@@ -5,6 +5,8 @@ node_modules/
 dist/
 dist-ssr/
 build/
+go/internal/web/static/site/*
+!go/internal/web/static/site/.gitkeep
 
 # TypeScript incremental build info
 *.tsbuildinfo

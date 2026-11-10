@@ -73,6 +73,7 @@ npm run dev:chrome   # Chrome target，使用 hash 路由与本地 Monaco
 npm run build          # 等价于 build:web
 npm run build:web      # Web 产物，输出到 dist/web，部署到 GitHub Pages 的 /tools/ 子路径
 npm run build:chrome   # Chrome 扩展产物，输出到 dist/chrome
+npm run build:go       # 前端内嵌到 5 种平台的独立 Go 可执行文件，输出到 dist/bin
 ```
 
 ### 预览生产构建
@@ -94,6 +95,22 @@ npm run build:chrome
 ```
 
 推送到 `main` 后，GitHub Actions 会构建 Web 版本并部署到上述在线地址，同时构建 Chrome 扩展压缩包。
+
+### Go 独立程序
+
+`npm run build:go` 会先构建 Web target，再使用 Go 1.26 将静态文件嵌入单个可执行文件。运行后在终端显示本地地址，浏览器访问该地址即可使用；默认仅监听本机：
+
+```bash
+./dist/bin/forge-darwin-arm64
+./dist/bin/forge-darwin-amd64
+./dist/bin/forge-windows-amd64.exe
+./dist/bin/forge-windows-arm64.exe
+./dist/bin/forge-linux-amd64
+```
+
+可用 `-addr 127.0.0.1:9090` 修改监听地址。只构建单一目标时，可使用 `npm run build:go -- --target linux/amd64`；支持目标为 `darwin/arm64`、`darwin/amd64`、`windows/amd64`、`windows/arm64` 和 `linux/amd64`。该构建需要 Node.js 24 和 Go 1.26；运行生成文件不需要 Node.js、Go 或外置前端目录。
+
+推送到 `main` 后，GitHub Actions 除部署 Pages 与打包 Chrome 扩展外，也会编译上述五种 Go 可执行文件，并将它们作为 `forge-go-binaries` workflow artifact 提供下载。前端资源嵌入文件为忽略的构建产物，不会混入源码提交。
 
 ## 构建目标
 

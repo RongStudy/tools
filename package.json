@@ -7,6 +7,7 @@
     "dev:chrome": "vite --mode chrome",
     "build": "npm run build:web",
     "build:web": "tsc && vite build --mode web",
+    "build:go": "node scripts/build-go.mjs",
     "build:chrome": "tsc && vite build --mode chrome",
     "preview": "vite preview",
     "lint": "eslint src vite.config.ts --report-unused-disable-directives --max-warnings 0",
