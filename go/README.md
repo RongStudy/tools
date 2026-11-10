@@ -46,4 +46,4 @@ go test -race ./...
 
 HTTP 单元测试使用内存文件系统，首次构建前也可执行。直接 `go run ./cmd/forge` 前必须执行一次根目录的 `npm run build:go` 来准备资源；前端更新后也应重新执行该命令。
 
-GitHub Pages 所在的 `deploy.yml` 新增独立 `go-binaries` job，构建后上传 `forge-go-binaries` artifact，不改变 Pages 或 Chrome job 的产物和发布路径。产物未经平台签名，macOS 和 Windows 的分发签名不在此构建流程中。
+GitHub Pages 所在的 `deploy.yml` 通过独立 `go-binaries` job 构建，再按平台分别上传 `forge-darwin-arm64`、`forge-darwin-amd64`、`forge-windows-amd64`、`forge-windows-arm64` 和 `forge-linux-amd64` 五个 artifact。Actions 页面按平台显示五行，每个下载 ZIP 仅包含对应的可执行文件。Pages 和 Chrome job 的产物与发布路径保持原样。产物未经平台签名，macOS 和 Windows 的分发签名不在此构建流程中。

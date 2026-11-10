@@ -110,7 +110,7 @@ npm run build:chrome
 
 可用 `-addr 127.0.0.1:9090` 修改监听地址。只构建单一目标时，可使用 `npm run build:go -- --target linux/amd64`；支持目标为 `darwin/arm64`、`darwin/amd64`、`windows/amd64`、`windows/arm64` 和 `linux/amd64`。该构建需要 Node.js 24 和 Go 1.26；运行生成文件不需要 Node.js、Go 或外置前端目录。
 
-推送到 `main` 后，GitHub Actions 除部署 Pages 与打包 Chrome 扩展外，也会编译上述五种 Go 可执行文件，并将它们作为 `forge-go-binaries` workflow artifact 提供下载。前端资源嵌入文件为忽略的构建产物，不会混入源码提交。
+推送到 `main` 后，GitHub Actions 除部署 Pages 与打包 Chrome 扩展外，也会编译上述五种 Go 可执行文件，并分别上传为 `forge-darwin-arm64`、`forge-darwin-amd64`、`forge-windows-amd64`、`forge-windows-arm64` 和 `forge-linux-amd64` 五个 workflow artifact。Actions 页面按平台显示五行，每项下载为只包含对应可执行文件的 ZIP。前端资源嵌入文件为忽略的构建产物，不会混入源码提交。
 
 ## 构建目标
 

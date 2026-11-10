@@ -102,9 +102,37 @@ jobs:
           go vet ./...
           go test -race ./...
 
-      - name: 5. 上传五种平台的可执行文件
+      - name: 5. 上传 macOS ARM64 可执行文件
         uses: actions/upload-artifact@v7
         with:
-          name: forge-go-binaries
-          path: dist/bin/*
+          name: forge-darwin-arm64
+          path: dist/bin/forge-darwin-arm64
+          if-no-files-found: error
+
+      - name: 6. 上传 macOS x64 可执行文件
+        uses: actions/upload-artifact@v7
+        with:
+          name: forge-darwin-amd64
+          path: dist/bin/forge-darwin-amd64
+          if-no-files-found: error
+
+      - name: 7. 上传 Windows x64 可执行文件
+        uses: actions/upload-artifact@v7
+        with:
+          name: forge-windows-amd64
+          path: dist/bin/forge-windows-amd64.exe
+          if-no-files-found: error
+
+      - name: 8. 上传 Windows ARM64 可执行文件
+        uses: actions/upload-artifact@v7
+        with:
+          name: forge-windows-arm64
+          path: dist/bin/forge-windows-arm64.exe
+          if-no-files-found: error
+
+      - name: 9. 上传 Linux x64 可执行文件
+        uses: actions/upload-artifact@v7
+        with:
+          name: forge-linux-amd64
+          path: dist/bin/forge-linux-amd64
           if-no-files-found: error
