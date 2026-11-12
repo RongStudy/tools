@@ -13,7 +13,7 @@
   left: 50%;
   width: 2px;
   border-radius: 2px;
-  background: var(--color-border-strong);
+  background: var(--color-border);
   content: '';
   transform: translateX(-50%);
   transition: background-color 120ms ease, width 120ms ease;
@@ -26,14 +26,22 @@
   width: 4px;
   height: 2.5rem;
   border-radius: 2px;
-  background: var(--color-subtle);
+  background: var(--color-border-strong);
   transform: translate(-50%, -50%);
 }
 
 .split-pane-divider:hover::before,
+.split-pane-divider:active::before,
+.split-pane-divider.is-dragging::before,
 .split-pane-divider:focus-visible::before {
   width: 3px;
-  background: var(--color-primary-hover);
+  background: var(--color-primary);
+}
+
+.split-pane-divider:is(:hover, :active, :focus-visible, .is-dragging) span { background: var(--color-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .split-pane-divider::before { transition: none; }
 }
 
 .split-pane-divider:focus-visible {

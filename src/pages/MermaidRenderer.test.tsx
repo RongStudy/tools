@@ -99,6 +99,78 @@ describe('MermaidRenderer', () => {
     expect(screen.getByRole('status')).toHaveTextContent('已渲染')
   })
 
+  it('加载本地 Markdown 时移除 BOM 并从强制 Mermaid 模式恢复自动识别', async () => {
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    fireEvent.click(screen.getByRole('button', { name: 'Mermaid' }))
+    const file = new File(['\uFEFF# 本地文档\n\n正文'], '说明.md')
+    fireEvent.change(screen.getByLabelText('选择 Markdown 或 Mermaid 文件'), { target: { files: [file] } })
+    expect(await screen.findByTestId('markdown-preview')).toHaveTextContent('本地文档')
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 本地文档\n\n正文')
+    expect(screen.getByRole('button', { name: '自动' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTitle('说明.md')).toBeInTheDocument()
+  })
+
+  it('拖入 Mermaid 文件时高亮面板并加载图表', async () => {
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    const panel = screen.getByLabelText('内容编辑器').closest('.editor-panel')!
+    const source = 'sequenceDiagram\n A->>B: 本地图表'
+    const dataTransfer = { types: ['Files'], files: [new File([source], '时序.mmd')], dropEffect: 'none' }
+    fireEvent.dragOver(panel, { dataTransfer })
+    expect(panel).toHaveClass('is-file-dragging')
+    fireEvent.drop(panel, { dataTransfer })
+    expect(panel).not.toHaveClass('is-file-dragging')
+    await waitFor(() => expect(screen.getByLabelText('内容编辑器')).toHaveValue(source))
+    await waitFor(() => expect(mermaidRenderMock).toHaveBeenLastCalledWith(expect.any(String), source))
+  })
+
+  it('读取失败、二进制或不支持的文件不会替换已有内容', async () => {
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    const fileInput = screen.getByLabelText('选择 Markdown 或 Mermaid 文件')
+    const failed = Object.assign(new File([], '失败.md'), { text: vi.fn().mockRejectedValue(new Error('read failed')) })
+    fireEvent.change(fileInput, { target: { files: [failed] } })
+    await screen.findByText('读取文件失败：失败.md')
+    fireEvent.change(fileInput, { target: { files: [new File(['a\0b'], '二进制.txt')] } })
+    await screen.findByText('读取文件失败：二进制.txt')
+    fireEvent.change(fileInput, { target: { files: [new File(['image'], '图片.png')] } })
+    await screen.findByText('请选择 Markdown、Mermaid 或文本文件')
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue(DEFAULT_MERMAID_CODE)
+  })
+
+  it('慢读取不会覆盖较晚加载的文件或手动编辑', async () => {
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    let finishRead!: (source: string) => void
+    const read = () => new Promise<string>((resolve) => { finishRead = resolve })
+    const slow = Object.assign(new File([], '慢文件.md'), { text: read })
+    const fileInput = screen.getByLabelText('选择 Markdown 或 Mermaid 文件')
+    fireEvent.change(fileInput, { target: { files: [slow] } })
+    fireEvent.change(fileInput, { target: { files: [new File(['# 最新文件'], '最新.md')] } })
+    await waitFor(() => expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 最新文件'))
+    await act(async () => { finishRead('# 旧文件') })
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 最新文件')
+    fireEvent.change(fileInput, { target: { files: [slow] } })
+    fireEvent.change(screen.getByLabelText('内容编辑器'), { target: { value: '# 手动编辑' } })
+    await act(async () => { finishRead('# 旧文件') })
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 手动编辑')
+  })
+
+  it('允许再次加载相同文件，且不会清除同内容的解析错误', async () => {
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    mermaidRenderMock.mockRejectedValue(new Error('Parse error on line 1'))
+    const file = new File(['flowchart ???'], '错误.mermaid')
+    const fileInput = screen.getByLabelText('选择 Markdown 或 Mermaid 文件')
+    fireEvent.change(fileInput, { target: { files: [file] } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Parse error on line 1')
+    fireEvent.change(fileInput, { target: { files: [file] } })
+    await waitFor(() => expect(screen.getAllByText('已加载 错误.mermaid')).toHaveLength(2))
+    expect(fileInput).toHaveValue('')
+    expect(screen.getByRole('alert')).toHaveTextContent('Parse error on line 1')
+  })
+
   it('修改代码后会实时重新渲染', async () => {
     render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })

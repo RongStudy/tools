@@ -184,8 +184,9 @@
 .regex-status {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  min-height: 2.2rem;
+  height: 32px;
+  overflow: auto;
+  white-space: nowrap;
   gap: 0.55rem 1rem;
   padding: 0.45rem 1rem;
   border-top: 1px solid var(--color-border);
@@ -193,6 +194,8 @@
   color: var(--color-muted);
   font: 0.75rem/1.35 var(--font-text);
 }
+
+.regex-status > * { flex-shrink: 0; }
 
 .regex-status .valid {
   color: var(--color-success-hover);
@@ -207,7 +210,7 @@
   grid-template-columns: minmax(20rem, 0.85fr) minmax(24rem, 1.15fr);
   gap: 0.9rem;
   flex: 1;
-  min-height: 0;
+  min-height: 20rem;
 }
 
 .regex-input-panel,

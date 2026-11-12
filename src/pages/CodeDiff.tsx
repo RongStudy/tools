@@ -1,3 +1,5 @@
+import EditorStatusBar from '../components/EditorStatusBar'
+import DocumentTab from '../components/DocumentTab'
 import EditorLanguageTools, { type EditorLanguageBinding } from '../components/EditorLanguageTools'
 import { languageEditorOptions } from '../monaco/languageCapabilities'
 import { useDraftPersistence } from '../hooks/useDraftPersistence'
@@ -607,36 +609,23 @@ const CodeDiff = () => {
     <ToolLayout
       className={`code-diff ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="代码对比"
-      // description="对比两段代码或文件内容，支持分栏和统一视图"
+      description="对比文本或本地文件，查看差异。"
       actions={toolbar}
       hideHeader={isFullscreen}
     >
       {!isFullscreen && (
         <div className="code-diff-tabs" role="tablist" aria-label="代码对比文档">
-          <div className="code-diff-tab-list">
+          <div className="code-diff-tab-list document-tab-list">
             {documents.map((document) => (
-              <div className="code-diff-tab" key={document.id}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={document.id === activeDocumentId}
-                  className={`code-diff-tab-button ${document.id === activeDocumentId ? 'is-active' : ''}`}
-                  onClick={() => selectDocument(document)}
-                >
-                  {document.name}
-                </button>
-                {documents.length > 1 && (
-                  <button
-                    type="button"
-                    className="code-diff-tab-close"
-                    aria-label={`关闭 ${document.name}`}
-                    title={`关闭 ${document.name}`}
-                    onClick={() => closeDocument(document.id)}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
+              <DocumentTab
+                key={document.id}
+                prefix="code-diff"
+                name={document.name}
+                selected={document.id === activeDocumentId}
+                onSelect={() => selectDocument(document)}
+                onRename={(name) => setDocuments((current) => current.map((item) => item.id === document.id ? { ...item, name } : item))}
+                onClose={documents.length > 1 ? () => closeDocument(document.id) : undefined}
+              />
             ))}
           </div>
           <button
@@ -660,27 +649,33 @@ const CodeDiff = () => {
                 {renderPanelActions(false)}
               </div>
             </div>
-            <DiffEditor
-              key={`${activeDocument.id}-split`}
-              height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
-              originalLanguage={originalLanguage}
-              modifiedLanguage={modifiedLanguage}
-              original={editorContent.originalCode}
-              modified={editorContent.modifiedCode}
-              loading={editorLoading}
-              originalModelPath={modelPath('diff', activeDocument.id, 'original')}
-              modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
-              keepCurrentOriginalModel
-              keepCurrentModifiedModel
-              theme={monacoTheme}
-              options={{
-                ...commonEditorOptions,
-                renderSideBySide: true,
-                enableSplitViewResizing: true,
-                splitViewDefaultRatio: 0.5,
-              }}
-              onMount={createEditorMountHandler()}
-            />
+            <div className="diff-editor-body">
+              <DiffEditor
+                key={`${activeDocument.id}-split`}
+                height="100%"
+                originalLanguage={originalLanguage}
+                modifiedLanguage={modifiedLanguage}
+                original={editorContent.originalCode}
+                modified={editorContent.modifiedCode}
+                loading={editorLoading}
+                originalModelPath={modelPath('diff', activeDocument.id, 'original')}
+                modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
+                keepCurrentOriginalModel
+                keepCurrentModifiedModel
+                theme={monacoTheme}
+                options={{
+                  ...commonEditorOptions,
+                  renderSideBySide: true,
+                  enableSplitViewResizing: true,
+                  splitViewDefaultRatio: 0.5,
+                }}
+                onMount={createEditorMountHandler()}
+              />
+            </div>
+            <div className="diff-status-bars">
+              <EditorStatusBar text={originalCode} label="原始代码">原始</EditorStatusBar>
+              <EditorStatusBar text={modifiedCode} label="修改代码">修改</EditorStatusBar>
+            </div>
           </div>
         </div>
       ) : (
@@ -695,33 +690,39 @@ const CodeDiff = () => {
                 {renderPanelActions(true)}
               </div>
             </div>
-            {originalCode || modifiedCode ? (
-              <DiffEditor
-                key={`${activeDocument.id}-unified`}
-                height={isFullscreen ? 'calc(100vh - 60px)' : '100%'}
-                originalLanguage={originalLanguage}
-                modifiedLanguage={modifiedLanguage}
-                original={editorContent.originalCode}
-                modified={editorContent.modifiedCode}
-                loading={editorLoading}
-                originalModelPath={modelPath('diff', activeDocument.id, 'original')}
-                modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
-                keepCurrentOriginalModel
-                keepCurrentModifiedModel
-                theme={monacoTheme}
-                options={{
-                  ...commonEditorOptions,
-                  renderSideBySide: false,
-                  enableSplitViewResizing: false,
-                }}
-                onMount={createEditorMountHandler()}
-              />
-            ) : (
-              <div className="empty-state">
-                <p>请在分栏视图中输入代码，或加载文件进行对比</p>
-                <p className="hint">切换到"分栏视图"可以分别编辑原始代码和修改后的代码</p>
-              </div>
-            )}
+            <div className="diff-editor-body">
+              {originalCode || modifiedCode ? (
+                <DiffEditor
+                  key={`${activeDocument.id}-unified`}
+                  height="100%"
+                  originalLanguage={originalLanguage}
+                  modifiedLanguage={modifiedLanguage}
+                  original={editorContent.originalCode}
+                  modified={editorContent.modifiedCode}
+                  loading={editorLoading}
+                  originalModelPath={modelPath('diff', activeDocument.id, 'original')}
+                  modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
+                  keepCurrentOriginalModel
+                  keepCurrentModifiedModel
+                  theme={monacoTheme}
+                  options={{
+                    ...commonEditorOptions,
+                    renderSideBySide: false,
+                    enableSplitViewResizing: false,
+                  }}
+                  onMount={createEditorMountHandler()}
+                />
+              ) : (
+                <div className="empty-state">
+                  <p>请在分栏视图中输入代码，或加载文件进行对比</p>
+                  <p className="hint">切换到"分栏视图"可以分别编辑原始代码和修改后的代码</p>
+                </div>
+              )}
+            </div>
+            <div className="diff-status-bars">
+              <EditorStatusBar text={originalCode} label="原始代码">原始</EditorStatusBar>
+              <EditorStatusBar text={modifiedCode} label="修改代码">修改</EditorStatusBar>
+            </div>
           </div>
         </div>
       )}

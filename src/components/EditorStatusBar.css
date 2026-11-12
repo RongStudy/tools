@@ -1,0 +1,28 @@
+.editor-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 28px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font: 400 12px/1.4 var(--font-mono);
+  white-space: nowrap;
+}
+.editor-status-metrics { flex-shrink: 0; }
+.editor-status-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: auto;
+  font-family: var(--font-text);
+}
+.editor-status-message > * { flex-shrink: 0; }
+.editor-status-message.has-error { color: var(--color-danger); }
+.editor-status-message .btn-small { min-height: 24px; padding-block: 2px; }

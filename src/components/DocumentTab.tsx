@@ -1,0 +1,91 @@
+import { useEffect, useRef, useState } from 'react'
+import './DocumentTab.css'
+
+type DocumentTabProps = {
+  name: string
+  selected: boolean
+  prefix: string
+  onSelect: () => void
+  onRename: (name: string) => void
+  onClose?: () => void
+}
+
+export default function DocumentTab({ name, selected, prefix, onSelect, onRename, onClose }: DocumentTabProps) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(name)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const finishedRef = useRef(true)
+  const restoreFocusRef = useRef(false)
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select()
+    else if (restoreFocusRef.current) {
+      restoreFocusRef.current = false
+      buttonRef.current?.focus()
+    }
+  }, [editing])
+
+  const beginRename = () => {
+    onSelect()
+    setDraft(name)
+    finishedRef.current = false
+    setEditing(true)
+  }
+
+  const finishRename = (save: boolean, restoreFocus = false) => {
+    if (finishedRef.current) return
+    finishedRef.current = true
+    restoreFocusRef.current = restoreFocus
+    setEditing(false)
+    if (save && draft.trim()) onRename(draft.trim())
+  }
+
+  return (
+    <div className={`${prefix}-tab document-tab${selected ? ' is-active' : ''}`}>
+      <div className="document-tab-name">
+        <button
+          ref={buttonRef}
+          type="button"
+          role="tab"
+          aria-selected={selected}
+          aria-hidden={editing || undefined}
+          tabIndex={editing ? -1 : 0}
+          className={`${prefix}-tab-button document-tab-button${selected ? ' is-active' : ''}`}
+          style={editing ? { visibility: 'hidden' } : undefined}
+          title={`${name} · 双击或按 F2 重命名`}
+          onClick={onSelect}
+          onDoubleClick={beginRename}
+          onKeyDown={(event) => {
+            if (event.key === 'F2') { event.preventDefault(); beginRename() }
+          }}
+        >{name}</button>
+        {editing && <input
+          ref={inputRef}
+          autoFocus
+          className="document-tab-rename"
+          aria-label={`重命名 ${name}`}
+          value={draft}
+          maxLength={80}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={() => finishRename(true)}
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return
+            if (event.key === 'Enter' || event.key === 'Escape') {
+              event.preventDefault()
+              event.stopPropagation()
+              finishRename(event.key === 'Enter', true)
+            }
+          }}
+        />}
+      </div>
+      {onClose && <button
+        type="button"
+        className={`${prefix}-tab-close document-tab-close`}
+        aria-label={`关闭 ${name}`}
+        title={`关闭 ${name}`}
+        onClick={onClose}
+      >×</button>}
+    </div>
+  )
+}

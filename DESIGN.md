@@ -1,8 +1,7 @@
 ---
 version: beta
 name: Developer Tools Workbench
-description: "A dense, keyboard-friendly workspace for everyday developer utilities, with coordinated dark and light themes. The interface prioritizes readable editors, stable panels, fast scanning, and low-distraction controls over marketing polish."
-
+description: "A dense, keyboard-friendly workspace for everyday developer utilities, with coordinated dark and light themes. Prioritizes readable editors, stable panels, fast scanning, and low-distraction controls over marketing polish."
 colors:
   bg: "#010102"
   surface: "#0f1011"
@@ -11,7 +10,7 @@ colors:
   surface-deep: "#191a1b"
   text: "#f7f8f8"
   muted: "#8a8f98"
-  subtle: "#62666d"
+  subtle: "#737880"
   border: "#23252a"
   border-strong: "#34343a"
   border-tertiary: "#3e3e44"
@@ -25,10 +24,10 @@ colors:
   danger-soft: "rgba(248, 113, 113, 0.12)"
   success: "#27a644"
   success-hover: "#31c655"
+  success-soft: "rgba(39, 166, 68, 0.12)"
   info: "#7a7fad"
   info-hover: "#8e94c4"
   focus: "rgba(94, 105, 209, 0.5)"
-
 light-colors:
   bg: "#f6f7f9"
   surface: "#ffffff"
@@ -37,7 +36,7 @@ light-colors:
   surface-deep: "#eef1f5"
   text: "#20232b"
   muted: "#5d6572"
-  subtle: "#7d8694"
+  subtle: "#767f8d"
   border: "#e1e5eb"
   border-strong: "#cbd2dc"
   border-tertiary: "#b9c1cc"
@@ -47,10 +46,14 @@ light-colors:
   primary-border: "rgba(79, 91, 195, 0.34)"
   primary-muted: "#3f4a91"
   danger: "#c83b4b"
+  danger-hover: "#a82c3b"
+  danger-soft: "rgba(200, 59, 75, 0.1)"
   success: "#218642"
+  success-hover: "#196b34"
+  success-soft: "rgba(33, 134, 66, 0.1)"
   info: "#5d65a4"
+  info-hover: "#4b528c"
   focus: "rgba(79, 91, 195, 0.38)"
-
 typography:
   display:
     fontFamily: "SF Pro Display, Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
@@ -62,26 +65,28 @@ typography:
     fontSize: "23px to 28px"
     fontWeight: 600
     lineHeight: 1.2
+  panel-title:
+    fontSize: "14px to 16px"
+    fontWeight: 600
+    lineHeight: 1.35
   body:
     fontSize: "14px to 16px"
     fontWeight: 400
     lineHeight: 1.5
+  control:
+    fontSize: "13px to 14px"
+    fontWeight: 500
+    lineHeight: 1.35
   caption:
     fontSize: "12px to 13px"
     fontWeight: 400
     lineHeight: 1.4
-  button:
-    fontSize: "14px"
-    fontWeight: 500
-    lineHeight: 1.2
-
 radii:
   compact: "6px"
   control: "8px"
   card: "12px"
   panel: "16px"
   full: "9999px"
-
 spacing:
   xxs: "4px"
   xs: "8px"
@@ -91,345 +96,116 @@ spacing:
   xl: "32px"
 ---
 
-# Design Intent
-
-This project is a developer utility workbench, not a marketing site. Design decisions should make repeated tool use faster, calmer, and more legible.
-
-The product should feel like a precise desktop tool: compact, stable, and functional in either theme. Decoration is acceptable only when it reinforces orientation, state, or the specific utility being used.
-
-# Principles
-
-1. Tool first
-   The active editor, input, output, preview, or result area is always the visual priority.
-
-2. Stable layout
-   Buttons, tabs, editor panels, status messages, and split views must not shift when content changes.
-
-3. Dense but breathable
-   Use compact controls and short labels, while keeping enough spacing for scanning and touch targets.
-
-4. Low chroma
-   Lavender is the primary action and focus color. Red, green, and info colors are reserved for semantic states.
-
-5. No marketing components
-   Do not introduce pricing cards, testimonials, logo grids, oversized CTA banners, or decorative product mockups.
-
-6. Existing patterns first
-   New pages should reuse the existing shell, layout, panel, button, and toast patterns before adding new visual systems.
-
-# Color System
-
-Dark is the default and uses a near-black canvas with a small surface ladder. Light uses a cool neutral gray canvas with white working surfaces; it should not read as blue, beige, or an all-white sheet. Both themes should stay quiet and legible during long editor sessions.
-
-Primary surfaces:
-
-| Token | Value | Use |
-| --- | --- | --- |
-| `--color-bg` | `#010102` | App canvas, sidebar background, fullscreen background |
-| `--color-surface` | `#0f1011` | Panels, secondary buttons, inputs |
-| `--color-surface-muted` | `#141516` | Panel headers, active nav rows, hover fills |
-| `--color-surface-raised` | `#18191a` | Hovered compact controls, subtle lifted areas |
-| `--color-surface-deep` | `#191a1b` | Rare deepest nested surfaces |
-
-Text and borders:
-
-| Token | Value | Use |
-| --- | --- | --- |
-| `--color-text` | `#f7f8f8` | Primary text |
-| `--color-muted` | `#8a8f98` | Descriptions, secondary labels, empty states |
-| `--color-subtle` | `#62666d` | Disabled text, tertiary labels |
-| `--color-border` | `#23252a` | Default borders and dividers |
-| `--color-border-strong` | `#34343a` | Hover borders and emphasized separation |
-| `--color-border-tertiary` | `#3e3e44` | Nested or fullscreen separators |
-
-Accent and state:
-
-| Token | Value | Use |
-| --- | --- | --- |
-| `--color-primary` | `#5e6ad2` | Primary action, active icon, strong selected state |
-| `--color-primary-hover` | `#828fff` | Primary hover, small accent text |
-| `--color-primary-soft` | `rgba(94, 106, 210, 0.14)` | Soft selected backgrounds |
-| `--color-primary-border` | `rgba(94, 106, 210, 0.46)` | Active borders |
-| `--color-focus` | `rgba(94, 105, 209, 0.5)` | Focus outlines |
-| `--color-danger` | `#f87171` | Destructive actions and errors |
-| `--color-success` | `#27a644` | Successful completion or valid states |
-| `--color-info` | `#7a7fad` | Neutral informational accents |
-
-Use semantic colors sparingly. Do not use red, green, or info colors as page decoration.
-
-Light theme surface ladder:
-
-| Token | Value | Use |
-| --- | --- | --- |
-| `--color-bg` | `#f6f7f9` | App canvas and Dock |
-| `--color-surface` | `#ffffff` | Editors, panels, controls |
-| `--color-surface-muted` | `#f1f3f6` | Panel headers and subtle fills |
-| `--color-surface-raised` | `#e9edf2` | Hovered controls |
-| `--color-text` | `#20232b` | Primary text |
-| `--color-muted` | `#5d6572` | Secondary text |
-| `--color-border` | `#e1e5eb` | Borders and dividers |
-| `--color-primary` | `#4f5bc3` | Primary action |
-
-Keep white text on filled primary buttons. Use darker semantic colors for text on light surfaces. Use borders and subtle surface differences for separation; shadows, if any, remain barely perceptible.
-
-Theme behavior:
-
-- Default to dark on first use. Place labeled light/dark theme controls in the Settings dialog and remember the user's choice locally. Theme changes take effect immediately without saving draft settings.
-- Switch the shell, tool panels, dialogs, previews, scrollbars, and embedded editors together. Monaco uses `vs-dark` in dark mode and `vs` in light mode.
-- Mermaid diagrams and Markdown code highlighting must follow the selected theme. Standalone Markdown exports use a self-contained light document style.
-- Preserve layout and editor state during theme changes. Theme switching must not remount editors or discard drafts.
-
-# Typography
-
-Use the existing font variables:
-
-- Display: `--font-display`
-- UI text: `--font-text`
-- Code: `--font-mono`
-
-Guidelines:
-
-- Page titles: 23-28px, 600 weight, line-height 1.2.
-- Panel titles: 14-16px, 600 weight.
-- Body and control text: 14-16px, line-height 1.4-1.5.
-- Captions and nav descriptions: 12-13px, muted.
-- Code and timestamp values use the mono stack.
-- Avoid negative letter spacing below 16px.
-- Keep Chinese labels short and direct. Prefer familiar product terms over decorative copy.
-
-# App Shell
-
-The app uses a persistent icon Dock on the left and a full-height main workspace.
-
-Dock:
-
-- Fixed desktop width: 84px. Hovering never expands the rail or resizes the workspace.
-- The brand mark is a compact square; home and search have separate navigation controls.
-- Tools use replaceable SVG/image icons configured in the tool registry.
-- Each link has a stable 64px-tall slot, up to 76px wide (fitting beside the scrollbar in short windows), and a 40px icon surface.
-- Fine-pointer movement uses distance along the vertical rail to magnify nearby icon surfaces up to 1.45×, with spring smoothing and at most 6px of vertical displacement; link slots remain fixed. Leaving the rail springs back to rest.
-- Active tools use a lavender icon surface and a separate side indicator in both themes.
-- A Settings button remains reachable beside search on desktop and in the horizontal launcher on smaller screens. Separate appearance and draft retention into labeled sections in the Settings dialog.
-- Image-based tool icons must remain legible on both surface ladders; use a dark presentation in light mode while keeping the brand mark legible on its filled background.
-- Hover and keyboard focus show a tool-name tooltip outside the scrolling rail.
-- Search opens a modal tool switcher; Cmd/Ctrl+K opens it from anywhere.
-- Short desktop windows scroll the tool list while brand, search, and Settings remain reachable. Reserve scrollbar space symmetrically so tool icons stay centered with the fixed controls whether scrolling is needed or not.
-- At widths up to 900px, use a horizontal scrolling launcher with visible short labels.
-- Touch pointers and reduced-motion preferences disable magnification.
-
-Main workspace:
-
-- Height: 100vh.
-- Padding: 24px on desktop, 16px on tablet, 12px on small screens.
-- Keep page overflow contained. Editors and panels should scroll internally when needed.
-- Avoid page-level scrolling for primary tool flows unless the tool naturally needs a document-like layout.
-
-# Home
-
-The home page is a tool launcher, not a landing page.
-
-Rules:
-
-- Show available tools immediately.
-- Tool cards should be compact, scannable, and clearly clickable.
-- The current canvas animation style is acceptable because it is subtle and product-relevant.
-- Motion must respect `prefers-reduced-motion`.
-- Do not add marketing sections, large CTAs, customer logos, testimonials, or pricing blocks.
-
-# Tool Pages
-
-Every tool page should use `ToolLayout` unless it has a specific interaction model that requires a custom shell.
-
-Tool header:
-
-- Use one clear title and one short description.
-- Place page-level actions on the right on desktop.
-- Let actions wrap below the title on narrow screens.
-- Do not use hero-scale type inside tool pages.
-
-Tool body:
-
-- Put the core interaction above secondary settings.
-- Prefer side-by-side layouts for input/output workflows on desktop.
-- Collapse side-by-side panels to stacked panels on narrow screens.
-- Preserve editor height while loading, validating, or showing errors.
-
-# Panels
-
-Editor panels are the primary component family.
-
-Editor panel:
-
-- Background: `--color-surface`.
-- Border: 1px solid `--color-border`.
-- Radius: 16px.
-- Header background: `--color-surface-muted`.
-- Header minimum height: 56px.
-- Body fills available height.
-- Use an inset top highlight only in the dark theme when it improves separation.
-
-Panel headers:
-
-- Left side names the content.
-- Right side contains actions.
-- Actions wrap instead of overflowing.
-- Use short button labels.
-- Do not put a card inside another card.
-
-Non-editor panels:
-
-- Use the same surface ladder and border logic.
-- Radius should usually be 12px or 16px.
-- Avoid decorative shadow; dark-surface separation comes from borders and background steps.
-
-# Editors
-
-Monaco editor surfaces should feel integrated with the app.
-
-Rules:
-
-- Use dark editor themes by default and switch Monaco to its light theme with the app.
-- Loading states must preserve final editor dimensions.
-- Fullscreen mode removes radius and fills the viewport.
-- Split editors collapse to stacked panels on smaller screens.
-- Do not resize panels when validation messages appear.
-- Code uses `--font-mono`.
-- Long code, URLs, or timestamps may scroll horizontally inside editor surfaces.
-
-# Controls
-
-Buttons:
-
-| Class | Use | Treatment |
-| --- | --- | --- |
-| `.btn-primary` | Main affirmative action | Lavender fill, white text |
-| `.btn-secondary` | Normal action | Theme surface, border, theme text |
-| `.btn-danger` | Destructive action | Soft red fill, red text |
-| `.btn-small` | Panel toolbar actions | 32px minimum height |
-| `.btn-fullscreen` | Editor focus mode | Soft lavender treatment |
-
-Button rules:
-
-- Normal buttons should be at least 40px tall.
-- Small toolbar buttons should be at least 32px tall.
-- Use 8px radius for normal controls and 6px for compact controls.
-- Disabled buttons must remain legible and clearly inactive.
-- Prefer concise labels: "复制", "格式化", "压缩", "交换", "全屏".
-
-Inputs and selects:
-
-- Background: `--color-surface`.
-- Border: `--color-border`.
-- Radius: 8px.
-- Focus: 2px `--color-focus` outline with 1px offset.
-- Minimum height: 38px desktop, 44px for touch-heavy contexts.
-- Place labels close to their controls.
-
-Segmented controls:
-
-- Use for view modes, unit modes, and mutually exclusive options.
-- Selected state must be visible without relying only on color.
-- Keep options short and avoid wrapping inside each segment.
-
-# Feedback
-
-Toast:
-
-- Appears without shifting layout.
-- Uses semantic color only for state.
-- Text should be short and action-oriented.
-- Prefer "已复制", "格式化成功", "JSON 无效" over long explanations.
-
-Errors:
-
-- Show near the relevant input, editor, or panel.
-- Preserve panel dimensions.
-- Use `--color-danger` and concise recovery text.
-- Do not rely only on red; include text.
-
-Success:
-
-- Use green only for completed actions or valid states.
-- Avoid decorative green accents elsewhere.
-
-Empty states:
-
-- Use muted text.
-- Keep them useful: say what is missing and what the user can do next.
-
-# Responsive Behavior
-
-Desktop:
-
-- Sidebar plus main workspace.
-- Multi-panel tools can use side-by-side layouts.
-- Tool actions align to the right when space allows.
-
-Tablet:
-
-- Keep the sidebar if it remains usable.
-- Tool headers may stack title and actions.
-- Two-column editor layouts may remain if each panel is still readable.
-
-Mobile:
-
-- Prefer single-column panels.
-- Avoid horizontal page scrolling except inside code editors.
-- Controls must keep readable labels and practical touch targets.
-- Tool card grids become one column.
-- Panel actions wrap to the next line.
+# Design Intent & Principles
+
+This project is a high-precision developer utility workbench, not a marketing website. Every UI decision must optimize for repeated utility usage, visual stability, and legibility.
+
+1. **Tool First**: The active editor, input, output, or preview area is always the primary visual focus.
+2. **Zero Layout Shift**: Buttons, tabs, panels, status bars, and split views must maintain exact dimensions when content, loading states, or validation errors change.
+3. **Dense & Breathable**: Use compact controls and concise Chinese labels while preserving clear scan paths and touch targets.
+4. **Low Chroma Discipline**: Lavender (`--color-primary`) is the sole brand/focus accent. Semantic colors (`danger`, `success`, `info`) are strictly reserved for functional states.
+5. **Reuse Before Creating**: Always assemble new pages using existing shell, panel, button, and CSS token primitives.
+
+# Color & Theme Tokens
+
+All tokens defined in the YAML frontmatter map directly to CSS custom properties (`--color-*`). Dark mode is the default; light mode uses a cool neutral gray canvas (`#f6f7f9`) with crisp white working surfaces (`#ffffff`).
+
+## Semantic Usage Mapping
+- `--color-bg`: App canvas, sidebar Dock, fullscreen background.
+- `--color-surface`: Editor bodies, panels, inputs, secondary buttons.
+- `--color-surface-muted`: Panel headers, active nav rows, subtle fills, status bars.
+- `--color-surface-raised`: Hovered controls, `<kbd>` badges, lifted interactive elements.
+- `--color-surface-deep`: Rare nested wells (avoid deep nesting).
+- `--color-text` / `--color-muted` / `--color-subtle`: Primary content / descriptions & secondary labels / tertiary hints (use `opacity: 0.5` on top of muted/subtle for `disabled` states).
+- `--color-border` / `--color-border-strong` / `--color-border-tertiary`: Default dividers / hover borders / nested or fullscreen separators.
+
+## Scrollbars & Theme Behavior
+- **Custom Scrollbars**: Style WebKit and standard scrollbars to match the active theme (`transparent` track, `--color-border-strong` thumb, `--color-border-tertiary` on hover, `6px` width/height). Never leave default white OS scrollbars visible in dark mode.
+- **Instant Sync**: Switching themes in the Settings dialog must immediately update the shell, panels, scrollbars, Monaco (`vs-dark` vs `vs`), Mermaid diagrams, and Markdown syntax highlighting without remounting editors or losing draft state.
+- **Exports**: Standalone Markdown/HTML exports must use a self-contained light document style.
+
+# Typography & Copy Rules
+
+- **Font Stacks**: `--font-display` for headings, `--font-text` for UI, `--font-mono` for code, JSON, regex, hashes, and timestamps.
+- **Spacing**: Never apply negative `letter-spacing` to text smaller than `16px`.
+- **Chinese UI Copy**: Keep labels concise, direct, and idiomatic (e.g., `"复制"`, `"格式化"`, `"压缩"`, `"清空"`, `"交换"`, `"全屏"`, `"填入示例"`). Avoid conversational filler or marketing slogans.
+
+# App Shell & Navigation
+
+The shell consists of a persistent left icon Dock and a `100vh` contained workspace.
+
+## Left Dock (Desktop `> 900px`)
+- **Fixed Width**: `84px`. Hovering never expands the rail or shifts the workspace.
+- **Slots**: Brand mark at top; Search (`Cmd/Ctrl+K`) and Settings pinned and reachable even when short viewports scroll the tool list. Reserve symmetrical scrollbar space so icons stay vertically aligned.
+- **Magnification**: Each tool link sits in a fixed `64px × 76px` slot with a `40px` icon surface. Fine-pointer movement magnifies nearby icon surfaces up to `1.45×` (max `6px` vertical displacement) with spring physics. Disable magnification on touch devices or when `prefers-reduced-motion: reduce` is active.
+- **Tooltips**: Render tool-name tooltips outside the scrolling rail. Offset tooltips horizontally past the maximum `1.45×` magnified icon boundary so they never overlap hovered icons.
+- **Active State**: Lavender icon surface + distinct side indicator pill in both themes. Ensure SVG/image tool icons adapt cleanly to light surfaces.
+
+## Mobile/Tablet Launcher (`<= 900px`)
+- Collapse the vertical Dock into a horizontally scrolling top launcher bar displaying icons with short visible text labels and the Settings trigger.
+
+## Main Workspace
+- **Padding**: `24px` desktop, `16px` tablet, `12px` mobile.
+- **Overflow**: Contain overflow at the shell level (`100vh`); panels and editors scroll internally. Only allow document-level page scrolling if a tool explicitly requires a long-form document flow.
+
+# Layout & Component Specifications
+
+## Home Page
+- Render a scannable, compact grid of clickable tool cards immediately (1 column on mobile).
+- Subtle, motion-safe canvas background animation is permitted; hero banners, pricing, testimonials, and promotional CTAs are strictly forbidden.
+
+## Tool Pages (`ToolLayout`)
+- **Header**: Single page title + one-line concise description on the left; page-level actions on the right (wrapping cleanly below title on narrow screens).
+- **Body**: Place primary input/output workspaces above secondary configuration options. Use side-by-side split views on desktop, collapsing to stacked panels on mobile/tablet.
+
+## Editor Panels (`.editor-panel`)
+- **Structure**: `1px solid var(--color-border)`, `16px` radius, `--color-surface` background. In dark mode, apply a subtle `1px` inset top highlight (`rgba(255,255,255,0.04)`) for crisp separation.
+- **Header (`.panel-header`)**: Minimum `56px` height, `--color-surface-muted` background. Content title on the left; `.panel-actions` on the right (wrapping cleanly without overflow).
+- **Body**: Must use `min-height: 0` and flex/grid growth to fill remaining space cleanly.
+- **Drag-and-Drop State**: For tools supporting file drops (text, JSON, images, etc.), highlight the target panel with `border-color: var(--color-primary)` and a `var(--color-primary-soft)` overlay during `dragover`.
+- **Fullscreen Mode**: Removes border-radius, locks to `100vw × 100vh` (`z-index` above shell), and exits via button or `Esc`.
+
+## Controls & Keyboard Hints
+- **Buttons**:
+  - `.btn-primary`: Lavender fill (`--color-primary`), `#ffffff` text.
+  - `.btn-secondary`: `--color-surface` fill, `1px solid var(--color-border)`, `--color-text`.
+  - `.btn-danger`: `--color-danger-soft` fill, `--color-danger` text.
+  - `.btn-fullscreen`: `--color-primary-soft` fill, `--color-primary-hover` (dark) / `--color-primary` (light) text.
+  - **Sizing**: Standard buttons `min-height: 40px`, `8px` radius. Toolbar buttons (`.btn-small`) `min-height: 32px`, `6px` radius.
+- **Inputs & Selects**: `--color-surface`, `1px solid var(--color-border)`, `8px` radius, `min-height: 38px` (`44px` on touch viewports). Focus ring: `2px solid var(--color-focus)` with `1px` offset.
+- **Segmented Controls**: Use for mutually exclusive modes. Active segment must show clear contrast via surface step + border/weight, not color alone. Keep option labels single-line.
+- **Keyboard Shortcuts (`<kbd>`)**: Style inline shortcut hints with `--font-mono`, `11px–12px`, `padding: 2px 6px`, `4px` radius, `--color-surface-raised` background, and `1px solid var(--color-border-strong)`.
+
+# Feedback, Validation & Empty States
+
+- **Non-Shifting Validation & Errors**: Never inject error banners above or below editors if doing so changes editor height. Either:
+  1. Reserve a fixed-height (`28px`–`32px`) bottom panel status bar that displays metadata (line count, byte size, status) by default and swaps in-place to `--color-danger` text + recovery hint on error, **or**
+  2. Render a dismissible/auto-updating overlay pill anchored inside the bottom edge of the editor viewport.
+- **Toasts (`Toast`)**: Fixed position, zero layout shift, short action-confirmed copy (`"已复制"`, `"格式化成功"`, `"解析失败"`).
+- **Empty States**: Use `--color-muted` text explaining what input is expected, paired with a `.btn-secondary.btn-small` action (e.g., `"填入示例"` or `"粘贴剪贴板"`) when helpful.
 
 # Accessibility
 
-- All interactive controls need visible focus states.
-- Color must not be the only state indicator.
-- Buttons need accessible names through text, `aria-label`, or `title`.
-- Motion must respect `prefers-reduced-motion`.
-- Text must not overlap or truncate critical information.
-- Use `aria-label` for navigation and grouped tool launchers.
-- Preserve keyboard access for search, navigation, editor actions, and fullscreen exits.
+- Every interactive control must have a visible `:focus-visible` outline and an accessible name (visible text, `aria-label`, or `title`).
+- Never communicate state (valid/invalid/active) through color alone; pair with icons, borders, or text.
+- Respect `@media (prefers-reduced-motion: reduce)` across all transitions, Dock magnification, and canvas animations.
 
-# Implementation Notes
+# Implementation Checklist & Guardrails
 
-Prefer these existing classes and components before adding new patterns:
-
-- `AppShell`
-- `ToolLayout`
-- `Toast`
-- `.editor-panel`
-- `.panel-header`
-- `.panel-actions`
-- `.btn`
-- `.btn-primary`
-- `.btn-secondary`
-- `.btn-danger`
-- `.btn-small`
-- `.btn-fullscreen`
+## Required Architecture
+Reuse these existing primitives before writing custom CSS:
+`AppShell`, `ToolLayout`, `Toast`, `.editor-panel`, `.panel-header`, `.panel-actions`, `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.btn-small`, `.btn-fullscreen`.
 
 When adding a new tool:
+1. Register metadata and icon in `src/tools/registry.tsx`.
+2. Wrap the page in `ToolLayout`.
+3. Build primary workflows with `.editor-panel` or flat `--color-surface` form panels (`12px`–`16px` radius).
+4. Ensure flex/grid children hosting Monaco or scrollable code blocks set `min-height: 0` and `min-width: 0`.
+5. Verify both Dark and Light themes, plus desktop (`1280px`) and mobile (`375px`) viewports.
 
-1. Register it in `src/tools/registry.tsx`.
-2. Use `ToolLayout` for the page frame.
-3. Use editor panels or compact form panels for the main interaction.
-4. Reuse existing button and panel classes.
-5. Add only the page-specific CSS needed for layout or unique states.
-6. Test desktop and narrow viewport behavior.
-
-# Do
-
-- Keep the active tool's working surface visually dominant.
-- Reuse the existing semantic tokens and panel structure in both themes.
-- Use compact, direct Chinese UI labels.
-- Preserve heights while async states, errors, or copied states appear.
-- Use Monaco-friendly layouts with `min-height: 0` and contained overflow.
-- Let the design feel like a calm engineering console.
-
-# Don't
-
-- Do not create marketing-page sections.
-- Do not use decorative gradients, oversized hero typography, or floating promo cards.
-- Do not introduce unrelated color palettes per tool.
-- Do not nest cards inside cards.
-- Do not let long labels overflow buttons or nav rows.
-- Do not add shadows as the main depth mechanism.
-- Do not make lavender a large background fill.
+## Strict Prohibitions (Don't)
+- **DO NOT** nest cards/panels inside other bordered cards.
+- **DO NOT** use heavy drop shadows as the primary depth mechanism; rely on surface steps and `1px` borders.
+- **DO NOT** use large lavender background fills, decorative gradients, or custom per-tool color palettes.
+- **DO NOT** allow validation errors, loading spinners, or toast messages to cause layout reflow/shift.
+- **DO NOT** add marketing components (hero banners, feature grids, testimonials, pricing).

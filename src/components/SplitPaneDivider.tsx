@@ -1,5 +1,6 @@
 import {
   useRef,
+  useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
@@ -28,6 +29,7 @@ const SplitPaneDivider = ({
   label = '调整两侧宽度',
 }: SplitPaneDividerProps) => {
   const activePointerIdRef = useRef<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   const updateRatioFromPointer = (clientX: number) => {
     const container = containerRef.current
@@ -44,6 +46,7 @@ const SplitPaneDivider = ({
     if (event.button !== 0) return
 
     activePointerIdRef.current = event.pointerId
+    setIsDragging(true)
     event.currentTarget.setPointerCapture?.(event.pointerId)
     updateRatioFromPointer(event.clientX)
     event.preventDefault()
@@ -60,6 +63,7 @@ const SplitPaneDivider = ({
     if (activePointerIdRef.current !== event.pointerId) return
 
     activePointerIdRef.current = null
+    setIsDragging(false)
     if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
@@ -80,7 +84,7 @@ const SplitPaneDivider = ({
 
   return (
     <div
-      className="split-pane-divider"
+      className={`split-pane-divider${isDragging ? ' is-dragging' : ''}`}
       role="separator"
       aria-label={label}
       aria-orientation="vertical"
@@ -93,6 +97,7 @@ const SplitPaneDivider = ({
       onPointerMove={moveDivider}
       onPointerUp={stopDrag}
       onPointerCancel={stopDrag}
+      onLostPointerCapture={stopDrag}
       onKeyDown={handleKeyDown}
       onDoubleClick={() => onRatioChange(DEFAULT_SPLIT_RATIO)}
     >

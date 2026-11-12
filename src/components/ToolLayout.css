@@ -5,9 +5,12 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
+  /* Keep oversized tool content reachable in short windows. */
+  overflow: auto;
 }
 
 .tool-layout-header {
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: minmax(16rem, 1fr) minmax(0, 2fr);
   gap: 1.5rem;
@@ -37,6 +40,23 @@
   width: 100%;
   min-width: 0;
 }
+
+.tool-layout-status {
+  display: flex;
+  align-items: center;
+  flex: 0 0 32px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  overflow: auto;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font: 400 12px/1.4 var(--font-text);
+  white-space: nowrap;
+}
+
+.tool-layout-status > * { flex-shrink: 0; }
 
 @media (max-width: 1024px) {
   .tool-layout-header {

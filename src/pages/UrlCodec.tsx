@@ -1,3 +1,4 @@
+import EditorStatusBar from '../components/EditorStatusBar'
 import { useRef, useState } from 'react'
 import SplitPaneDivider from '../components/SplitPaneDivider'
 import {
@@ -192,9 +193,8 @@ const UrlCodec = () => {
     <ToolLayout
       className="url-codec"
       title="编解码"
-      // description="处理 URL、Base64、Unicode 编解码，以及文本的 MD5、SHA-256 摘要"
+      description="转换 URL、Base64、Unicode 文本并生成摘要。"
       actions={toolbar}
-      status={error ? <div className="url-codec-error">{error}</div> : null}
     >
       <div
         ref={gridRef}
@@ -215,6 +215,7 @@ const UrlCodec = () => {
             placeholder="输入需要编码、解码或生成摘要的文本..."
             spellCheck={false}
           />
+          <EditorStatusBar text={input} label="编解码输入" />
         </section>
 
         <SplitPaneDivider
@@ -238,6 +239,7 @@ const UrlCodec = () => {
             placeholder="处理结果会显示在这里"
             spellCheck={false}
           />
+          <EditorStatusBar text={output} label="编解码输出" error={error} />
         </section>
       </div>
     </ToolLayout>

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import searchIcon from '../assets/tool-icons/search.png'
 
 export type ToolIconName = 'home' | 'json' | 'diff' | 'regex' | 'codec' | 'diagram' | 'clock' | 'note' | 'search' | 'animation' | 'settings'
 
@@ -13,7 +14,7 @@ const shapes: Record<ToolIconName, ReactNode> = {
   note: <><path d="M14 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10Z" /><path d="M14 3v7h7M7 14h10M7 17h7" /></>,
   animation: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="m10 8 5 4-5 4z" /></>,
   search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
-  settings: <><path d="M4 7h16M4 17h16" /><rect x="8" y="4" width="4" height="6" rx="1" /><rect x="14" y="14" width="4" height="6" rx="1" /></>,
+  settings: <><path d="M10 3.5h4l.6 2.1a7 7 0 0 1 1.5.9l2.1-.6 2 3.5-1.5 1.5a7 7 0 0 1 0 2.2l1.5 1.5-2 3.5-2.1-.6a7 7 0 0 1-1.5.9l-.6 2.1h-4l-.6-2.1a7 7 0 0 1-1.5-.9l-2.1.6-2-3.5 1.5-1.5a7 7 0 0 1 0-2.2L3.8 9.4l2-3.5 2.1.6a7 7 0 0 1 1.5-.9z" /><circle cx="12" cy="12" r="2.5" /></>,
 }
 
 type ToolIconProps = {
@@ -23,9 +24,9 @@ type ToolIconProps = {
 
 // Set iconSrc in the tool registry to replace a placeholder with an imported SVG/PNG.
 const ToolIcon = ({ name = 'note', src }: ToolIconProps) => {
-  const imageSrc = src
+  const imageSrc = src ?? (name === 'search' ? searchIcon : undefined)
   return imageSrc ? (
-    <img className="tool-icon-image" src={imageSrc} alt="" aria-hidden="true" draggable={false} />
+    <img className={`tool-icon-image${name === 'search' ? ' tool-icon-search' : ''}`} src={imageSrc} alt="" aria-hidden="true" draggable={false} />
   ) : (
     <svg className="tool-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {shapes[name]}

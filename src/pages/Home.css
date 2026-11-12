@@ -29,7 +29,7 @@
 .home-description { color: var(--color-muted); font-size: 14px; line-height: 1.5; margin-top: 8px; }
 .home-shortcut { display: flex; align-items: center; gap: 5px; color: var(--color-subtle); font-size: 12px; }
 .home-shortcut > span { margin-right: 7px; }
-.home-shortcut kbd { padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 5px; color: var(--color-muted); font: 11px/1.2 var(--font-mono); background: var(--color-surface); }
+.home-shortcut kbd { padding: 2px 6px; border: 1px solid var(--color-border-strong); border-radius: 4px; color: var(--color-muted); font: 11px/1.4 var(--font-mono); background: var(--color-surface-raised); }
 
 .home-tool-grid {
   display: grid;

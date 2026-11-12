@@ -1,3 +1,6 @@
+import { describeSizeChange, getTextMetrics } from '../utils/textMetrics'
+import EditorStatusBar from '../components/EditorStatusBar'
+import DocumentTab from '../components/DocumentTab'
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import SplitPaneDivider from '../components/SplitPaneDivider'
@@ -249,53 +252,31 @@ const JsonFormatter = () => {
   )
 
   const firstDiagnostic = diagnostics.path === inputPath ? diagnostics.markers[0] : undefined
-  const status = error || firstDiagnostic ? (
-    <div className="error-message">
-      <span className="error-icon">!</span>
-      {error || firstDiagnostic?.message}
-      {firstDiagnostic && <button type="button" className="btn-small" onClick={() => {
-        editorRef.current?.setPosition({ lineNumber: firstDiagnostic.startLineNumber, column: firstDiagnostic.startColumn })
-        editorRef.current?.revealLineInCenter(firstDiagnostic.startLineNumber)
-        editorRef.current?.focus()
-      }}>定位 {firstDiagnostic.startLineNumber}:{firstDiagnostic.startColumn}</button>}
-    </div>
-  ) : null
+  const sizeChange = useMemo(() => input && output
+    ? describeSizeChange(getTextMetrics(input).bytes, getTextMetrics(output).bytes)
+    : '', [input, output])
 
   return (
     <ToolLayout
       className={`json-formatter ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="JSON格式化"
-      // description="格式化、压缩、转义和解转义 JSON 内容"
+      description="格式化、压缩和校验 JSON 内容。"
       actions={toolbar}
-      status={status}
       hideHeader={isFullscreen}
     >
       {!isFullscreen && (
         <div className="json-document-tabs" role="tablist" aria-label="JSON 文档">
-          <div className="json-document-tab-list">
+          <div className="json-document-tab-list document-tab-list">
             {documents.map((document) => (
-              <div className="json-document-tab" key={document.id}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={document.id === activeDocumentId}
-                  className={`json-document-tab-button ${document.id === activeDocumentId ? 'is-active' : ''}`}
-                  onClick={() => setActiveDocumentId(document.id)}
-                >
-                  {document.name}
-                </button>
-                {documents.length > 1 && (
-                  <button
-                    type="button"
-                    className="json-document-tab-close"
-                    aria-label={`关闭 ${document.name}`}
-                    title={`关闭 ${document.name}`}
-                    onClick={() => closeDocument(document.id)}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
+              <DocumentTab
+                key={document.id}
+                prefix="json-document"
+                name={document.name}
+                selected={document.id === activeDocumentId}
+                onSelect={() => setActiveDocumentId(document.id)}
+                onRename={(name) => setDocuments((current) => current.map((item) => item.id === document.id ? { ...item, name } : item))}
+                onClose={documents.length > 1 ? () => closeDocument(document.id) : undefined}
+              />
             ))}
           </div>
           <button type="button" className="btn-small json-document-add" onClick={addDocument}>
@@ -358,6 +339,13 @@ const JsonFormatter = () => {
                 }}
               />
             </div>
+            <EditorStatusBar text={input} label="JSON 输入" error={error || firstDiagnostic?.message}>
+              {firstDiagnostic && <button type="button" className="btn-small" onClick={() => {
+                editorRef.current?.setPosition({ lineNumber: firstDiagnostic.startLineNumber, column: firstDiagnostic.startColumn })
+                editorRef.current?.revealLineInCenter(firstDiagnostic.startLineNumber)
+                editorRef.current?.focus()
+              }}>定位 {firstDiagnostic.startLineNumber}:{firstDiagnostic.startColumn}</button>}
+            </EditorStatusBar>
           </div>
         )}
 
@@ -428,6 +416,7 @@ const JsonFormatter = () => {
               }}
             />
           </div>
+          <EditorStatusBar text={output} label="JSON 输出">{sizeChange}</EditorStatusBar>
         </div>
       </div>
       {saveRequest && <SaveFileDialog {...saveRequest} onClose={() => setSaveRequest(null)} />}

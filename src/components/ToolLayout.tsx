@@ -30,10 +30,14 @@ const ToolLayout = ({
             </div>
             {actions && <div className="tool-layout-actions">{actions}</div>}
           </header>
-          {status}
         </>
       )}
       {children}
+      {!hideHeader && status !== undefined && (
+        <div className="tool-layout-status" aria-live="polite">
+          {status || <span>就绪</span>}
+        </div>
+      )}
     </section>
   )
 }

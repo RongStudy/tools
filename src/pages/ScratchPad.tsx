@@ -1,3 +1,5 @@
+import EditorStatusBar from '../components/EditorStatusBar'
+import DocumentTab from '../components/DocumentTab'
 import { useDetectedLanguages } from '../hooks/useDetectedLanguages'
 import { useDraftPersistence } from '../hooks/useDraftPersistence'
 import { useMemo, useState, useCallback, useEffect, useRef, type ChangeEvent } from 'react'
@@ -417,36 +419,23 @@ const ScratchPad = () => {
     <ToolLayout
       className={`scratch-pad ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="临时文本输入"
-      // description="随手记录或粘贴文本，支持多标签、分栏、字号缩放和全屏编辑"
+      description="编辑、比较或载入本地文本文件。"
       actions={toolbar}
       hideHeader={isFullscreen}
     >
       {!isFullscreen && (
         <div className="scratch-tabs" role="tablist" aria-label="临时文本">
-          <div className="scratch-tab-list">
+          <div className="scratch-tab-list document-tab-list">
             {documents.map((document) => (
-              <div className="scratch-tab" key={document.id}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={document.id === activeDocumentId}
-                  className={`scratch-tab-button ${document.id === activeDocumentId ? 'is-active' : ''}`}
-                  onClick={() => setActiveDocumentId(document.id)}
-                >
-                  {document.name}
-                </button>
-                {documents.length > 1 && (
-                  <button
-                    type="button"
-                    className="scratch-tab-close"
-                    aria-label={`关闭 ${document.name}`}
-                    title={`关闭 ${document.name}`}
-                    onClick={() => closeDocument(document.id)}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
+              <DocumentTab
+                key={document.id}
+                prefix="scratch"
+                name={document.name}
+                selected={document.id === activeDocumentId}
+                onSelect={() => setActiveDocumentId(document.id)}
+                onRename={(name) => setDocuments((current) => current.map((item) => item.id === document.id ? { ...item, name } : item))}
+                onClose={documents.length > 1 ? () => closeDocument(document.id) : undefined}
+              />
             ))}
           </div>
           <button type="button" className="btn-small scratch-tab-add" onClick={addDocument}>
@@ -575,6 +564,7 @@ const ScratchPad = () => {
                   }}
                 />
               </div>
+              <EditorStatusBar text={pane.content} label={`临时文本栏 ${index + 1}`} />
             </div>
           ))}
         </div>

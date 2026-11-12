@@ -36,6 +36,24 @@ afterEach(() => {
 })
 
 describe('JsonFormatter', () => {
+  it('重命名标签后保留内容隔离，重新进入仍恢复名称和当前文档', () => {
+    const { unmount } = renderJsonFormatter()
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"user":1}' } })
+    fireEvent.doubleClick(screen.getByRole('tab', { name: 'JSON 1' }))
+    fireEvent.change(screen.getByRole('textbox', { name: '重命名 JSON 1' }), { target: { value: '用户信息接口' } })
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '重命名 JSON 1' }), { key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"order":2}' } })
+    fireEvent.click(screen.getByRole('tab', { name: '用户信息接口' }))
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"user":1}')
+    unmount()
+    renderJsonFormatter()
+    expect(screen.getByRole('tab', { name: '用户信息接口' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"user":1}')
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
+    expect(screen.getByLabelText('input-editor')).toHaveValue('{"order":2}')
+  })
+
   it('格式化和压缩保留大整数和高精度小数', () => {
     renderJsonFormatter()
     const source = '{"id":9007199254740993,"decimal":0.123456789012345678901}'

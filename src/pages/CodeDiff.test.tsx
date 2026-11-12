@@ -289,7 +289,7 @@ describe('CodeDiff', () => {
 
     fireEvent.click(fullscreenButton)
 
-    const diffPanel = screen.getByTestId('diff-editor').parentElement
+    const diffPanel = screen.getByTestId('diff-editor').closest('.diff-panel')
     expect(diffPanel).toHaveClass('fullscreen-panel')
     expect(fullscreenButton).toHaveTextContent('⤓ 退出全屏')
 
@@ -303,7 +303,7 @@ describe('CodeDiff', () => {
     const fullscreenButton = screen.getByRole('button', { name: /全屏/ })
     fireEvent.click(fullscreenButton)
 
-    const diffPanel = screen.getByTestId('diff-editor').parentElement
+    const diffPanel = screen.getByTestId('diff-editor').closest('.diff-panel')
     expect(diffPanel).toHaveClass('fullscreen-panel')
 
     fireEvent.keyDown(window, { key: 'Escape' })

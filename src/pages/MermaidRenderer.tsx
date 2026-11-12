@@ -1,3 +1,4 @@
+import EditorStatusBar from '../components/EditorStatusBar'
 import { useDraftPersistence } from '../hooks/useDraftPersistence'
 import {
   useCallback,
@@ -5,6 +6,8 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ChangeEvent,
+  type DragEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import Editor from '@monaco-editor/react'
@@ -15,6 +18,7 @@ import {
   usePersistentSplitRatio,
 } from '../hooks/useSplitPane'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useToast } from '../components/toastContext'
 import ToolLayout from '../components/ToolLayout'
 import { useAppTheme, type AppTheme } from '../themeContext'
 import { readExpiringStorage } from '../utils/expiringStorage'
@@ -37,6 +41,7 @@ const RENDER_DELAY_MS = 300
 const MIN_ZOOM = 50
 const MAX_ZOOM = 200
 const ZOOM_STEP = 25
+const SUPPORTED_TEXT_FILE = /\.(?:md|markdown|mmd|mermaid|txt)$/i
 
 type RenderMode = 'auto' | 'mermaid' | 'markdown'
 
@@ -149,11 +154,16 @@ const MermaidRenderer = () => {
   const [isDragging, setIsDragging] = useState(false)
   const [splitRatio, setSplitRatio] = usePersistentSplitRatio(MERMAID_SPLIT_RATIO_KEY)
   const previewDragRef = useRef<PreviewDrag | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileReadSequenceRef = useRef(0)
   const workspaceRef = useRef<HTMLDivElement>(null)
   const renderSequenceRef = useRef(0)
   const markdownMermaidSeqRef = useRef(0)
   const markdownPreviewRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [sourceName, setSourceName] = useState('')
+  const [isFileDragging, setIsFileDragging] = useState(false)
+  const { showToast } = useToast()
   const [editorState, setEditorState] = useState<{
     editor: MonacoEditorNamespace.IStandaloneCodeEditor
     monaco: Parameters<NonNullable<import('@monaco-editor/react').EditorProps['onMount']>>[1]
@@ -240,6 +250,8 @@ const MermaidRenderer = () => {
 
   useDraftPersistence(MERMAID_DRAFT_KEY, code)
 
+  useEffect(() => () => { fileReadSequenceRef.current += 1 }, [])
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void renderContent(code)
@@ -297,21 +309,76 @@ const MermaidRenderer = () => {
     }
   }, [activeFormat, html, theme])
 
+  const changeCode = (value: string) => {
+    fileReadSequenceRef.current += 1
+    if (value !== code) renderSequenceRef.current += 1
+    setSourceName('')
+    setCode(value)
+  }
+
   const resetExample = () => {
-    setCode(mode === 'markdown' || (mode === 'auto' && activeFormat === 'markdown')
+    changeCode(mode === 'markdown' || (mode === 'auto' && activeFormat === 'markdown')
       ? DEFAULT_MARKDOWN_CODE
       : DEFAULT_MERMAID_CODE)
   }
 
   const clearCode = () => {
-    renderSequenceRef.current += 1
-    setCode('')
+    changeCode('')
     setSvg('')
     setHtml('')
     setError('')
     setActiveFormat(null)
     setIsRendering(false)
     setZoom(100)
+  }
+
+  const loadTextFile = async (file: File) => {
+    const sequence = ++fileReadSequenceRef.current
+    if (!SUPPORTED_TEXT_FILE.test(file.name)) {
+      showToast('请选择 Markdown、Mermaid 或文本文件', 'error')
+      return
+    }
+
+    try {
+      const content = await file.text()
+      if (sequence !== fileReadSequenceRef.current) return
+      if (content.includes('\0')) throw new Error('非文本文件')
+      const source = content.replace(/^\uFEFF/, '')
+      if (source !== code || mode !== 'auto') renderSequenceRef.current += 1
+      setMode('auto')
+      setSourceName(file.name)
+      setCode(source)
+      setZoom(100)
+      showToast(`已加载 ${file.name}`)
+    } catch {
+      if (sequence === fileReadSequenceRef.current) showToast(`读取文件失败：${file.name}`, 'error')
+    }
+  }
+
+  const onFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (file) void loadTextFile(file)
+  }
+
+  const onFileDragOver = (event: DragEvent<HTMLElement>) => {
+    if (!event.dataTransfer.types.includes('Files')) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'copy'
+    setIsFileDragging(true)
+  }
+
+  const onFileDragLeave = (event: DragEvent<HTMLElement>) => {
+    if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) {
+      setIsFileDragging(false)
+    }
+  }
+
+  const onFileDrop = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    setIsFileDragging(false)
+    const file = event.dataTransfer.files[0]
+    if (file) void loadTextFile(file)
   }
 
   const zoomOut = () => setZoom((value) => Math.max(MIN_ZOOM, value - ZOOM_STEP))
@@ -444,9 +511,6 @@ const MermaidRenderer = () => {
           </button>
         ))}
       </div>
-      <span className={`mermaid-render-status ${error ? 'error' : ''}`} role="status">
-        {statusText}
-      </span>
       <button
         type="button"
         className="btn btn-primary"
@@ -462,7 +526,7 @@ const MermaidRenderer = () => {
     <ToolLayout
       className={`mermaid-renderer ${isFullscreen ? 'fullscreen-mode' : ''}`}
       title="Mermaid / Markdown 渲染"
-      // description="自动识别 Mermaid 或 Markdown 内容并实时渲染，支持 GFM 与 LaTeX 数学公式"
+      description="编辑、加载并预览 Markdown 文档或 Mermaid 图表。"
       actions={toolbar}
       hideHeader={isFullscreen}
     >
@@ -472,10 +536,28 @@ const MermaidRenderer = () => {
         style={getSplitPaneGridStyle(splitRatio)}
       >
         {!isFullscreen && (
-          <div className="editor-panel mermaid-code-panel">
+          <div
+            className={`editor-panel mermaid-code-panel${isFileDragging ? ' is-file-dragging' : ''}`}
+            onDragOver={onFileDragOver}
+            onDragLeave={onFileDragLeave}
+            onDrop={onFileDrop}
+          >
             <div className="panel-header">
-              <span>内容</span>
+              <span className="mermaid-source-title" title={sourceName || '编辑 Markdown 或 Mermaid 内容'}>
+                内容<small>{sourceName || '可拖入本地文件'}</small>
+              </span>
               <div className="panel-actions">
+                <input
+                  ref={fileInputRef}
+                  hidden
+                  type="file"
+                  accept=".md,.markdown,.mmd,.mermaid,.txt,text/markdown,text/plain"
+                  aria-label="选择 Markdown 或 Mermaid 文件"
+                  onChange={onFileInputChange}
+                />
+                <button type="button" className="btn-small" onClick={() => fileInputRef.current?.click()}>
+                  打开文件
+                </button>
                 <button type="button" className="btn-small" onClick={resetExample}>示例</button>
                 <button type="button" className="btn-small" onClick={clearCode} disabled={!code}>清空</button>
               </div>
@@ -486,7 +568,7 @@ const MermaidRenderer = () => {
                 language={(mode === 'auto' ? detectFormat(code) : mode) === 'mermaid' ? 'mermaid' : 'markdown'}
                 value={code}
                 loading={editorLoading}
-                onChange={(value) => setCode(value ?? '')}
+                onChange={(value) => changeCode(value ?? '')}
                 onMount={(editor, monaco) => {
                   setEditorState({ editor, monaco })
                   editor.addCommand(
@@ -507,6 +589,7 @@ const MermaidRenderer = () => {
                 }}
               />
             </div>
+            <EditorStatusBar text={code} label="内容">{sourceName || 'Markdown / Mermaid'}</EditorStatusBar>
           </div>
         )}
 
@@ -526,65 +609,55 @@ const MermaidRenderer = () => {
           <div className="panel-header">
             <span>预览</span>
             <div className="panel-actions">
-              {activeFormat === 'mermaid' && (
-                <div className="mermaid-zoom-controls" role="group" aria-label="图表缩放">
-                  <button
-                    type="button"
-                    className="btn-small mermaid-zoom-button"
-                    onClick={zoomOut}
-                    disabled={!svg || zoom <= MIN_ZOOM}
-                    aria-label="缩小图表"
-                    title="缩小"
-                  >
-                    −
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-small mermaid-zoom-value"
-                    onClick={() => setZoom(100)}
-                    disabled={!svg || zoom === 100}
-                    aria-label={`重置图表缩放，当前 ${zoom}%`}
-                    title="重置为 100%"
-                  >
-                    {zoom}%
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-small mermaid-zoom-button"
-                    onClick={zoomIn}
-                    disabled={!svg || zoom >= MAX_ZOOM}
-                    aria-label="放大图表"
-                    title="放大"
-                  >
-                    +
-                  </button>
-                </div>
-              )}
-              {activeFormat === 'mermaid' && (
-                <>
+              <div className="mermaid-format-actions">
+                <div className={`mermaid-format-action-group${activeFormat === 'mermaid' ? ' is-visible' : ''}`} aria-hidden={activeFormat !== 'mermaid'}>
+                  <div className="mermaid-zoom-controls" role="group" aria-label="图表缩放">
+                    <button
+                      type="button"
+                      className="btn-small mermaid-zoom-button"
+                      onClick={zoomOut}
+                      disabled={!svg || zoom <= MIN_ZOOM}
+                      aria-label="缩小图表"
+                      title="缩小"
+                    >−</button>
+                    <button
+                      type="button"
+                      className="btn-small mermaid-zoom-value"
+                      onClick={() => setZoom(100)}
+                      disabled={!svg || zoom === 100}
+                      aria-label={`重置图表缩放，当前 ${zoom}%`}
+                      title="重置为 100%"
+                    >{zoom}%</button>
+                    <button
+                      type="button"
+                      className="btn-small mermaid-zoom-button"
+                      onClick={zoomIn}
+                      disabled={!svg || zoom >= MAX_ZOOM}
+                      aria-label="放大图表"
+                      title="放大"
+                    >+</button>
+                  </div>
                   <button type="button" className="btn-small" onClick={downloadSvg} disabled={!svg}>SVG</button>
                   <button type="button" className="btn-small" onClick={downloadPng} disabled={!svg}>PNG</button>
-                </>
-              )}
-              {activeFormat === 'markdown' && (
-                <div className="mermaid-layout-switch" role="group" aria-label="内容布局">
-                  {LAYOUT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`btn-small mode-button ${markdownLayout === option.value ? 'active' : ''}`}
-                      onClick={() => setMarkdownLayout(option.value)}
-                      aria-pressed={markdownLayout === option.value}
-                      title={option.title}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
                 </div>
-              )}
-              {activeFormat === 'markdown' && (
+                <div className={`mermaid-format-action-group${activeFormat === 'markdown' ? ' is-visible' : ''}`} aria-hidden={activeFormat !== 'markdown'}>
+                  <div className="mermaid-layout-switch" role="group" aria-label="内容布局">
+                    {LAYOUT_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`btn-small mode-button ${markdownLayout === option.value ? 'active' : ''}`}
+                        onClick={() => setMarkdownLayout(option.value)}
+                        aria-pressed={markdownLayout === option.value}
+                        title={option.title}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 <button type="button" className="btn-small" onClick={downloadHtml} disabled={!html}>HTML</button>
-              )}
+                </div>
+              </div>
               <button
                 type="button"
                 className="btn-small btn-fullscreen"
@@ -651,6 +724,10 @@ const MermaidRenderer = () => {
                 </div>
               )}
             </div>
+          </div>
+          <div className="editor-status-bar">
+            <span className={error ? 'mermaid-render-status error' : 'mermaid-render-status'} role="status">{statusText}</span>
+            <span title="Cmd/Ctrl + Enter 渲染">⌘ / Ctrl + Enter</span>
           </div>
         </div>
       </div>

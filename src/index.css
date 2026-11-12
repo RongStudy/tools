@@ -12,7 +12,7 @@
   --color-surface-deep: #191a1b;
   --color-text: #f7f8f8;
   --color-muted: #8a8f98;
-  --color-subtle: #62666d;
+  --color-subtle: #737880;
   --color-border: #23252a;
   --color-border-strong: #34343a;
   --color-border-tertiary: #3e3e44;
@@ -26,6 +26,7 @@
   --color-danger-soft: rgba(248, 113, 113, 0.12);
   --color-success: #27a644;
   --color-success-hover: #31c655;
+  --color-success-soft: rgba(39, 166, 68, 0.12);
   --color-info: #7a7fad;
   --color-info-hover: #8e94c4;
   --color-focus: rgba(94, 105, 209, 0.5);
@@ -43,7 +44,7 @@
   --color-surface-deep: #eef1f5;
   --color-text: #20232b;
   --color-muted: #5d6572;
-  --color-subtle: #7d8694;
+  --color-subtle: #767f8d;
   --color-border: #e1e5eb;
   --color-border-strong: #cbd2dc;
   --color-border-tertiary: #b9c1cc;
@@ -53,12 +54,13 @@
   --color-primary-border: rgba(79, 91, 195, 0.34);
   --color-primary-muted: #3f4a91;
   --color-danger: #c83b4b;
-  --color-danger-hover: #a92e3d;
+  --color-danger-hover: #a82c3b;
   --color-danger-soft: rgba(200, 59, 75, 0.1);
   --color-success: #218642;
-  --color-success-hover: #176b34;
+  --color-success-hover: #196b34;
+  --color-success-soft: rgba(33, 134, 66, 0.1);
   --color-info: #5d65a4;
-  --color-info-hover: #4c548d;
+  --color-info-hover: #4b528c;
   --color-focus: rgba(79, 91, 195, 0.38);
   --shadow-panel: 0 1px 2px rgba(31, 40, 55, 0.04);
 }
@@ -74,4 +76,30 @@ body {
 #root {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-tertiary); }
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  background: var(--color-surface-raised);
+  color: var(--color-muted);
+  font: 500 12px/1.4 var(--font-mono);
 }

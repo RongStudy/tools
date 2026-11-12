@@ -1,3 +1,4 @@
+import EditorStatusBar from '../components/EditorStatusBar'
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import lottie from 'lottie-web/build/player/lottie_light'
@@ -184,7 +185,7 @@ const LottiePlayer = () => {
     <ToolLayout
       className="lottie-player"
       title="Lottie 动画"
-      // description="加载动画链接或编辑 JSON，预览播放效果"
+      description="载入动画 JSON 并预览播放效果。"
     >
       <div className="lottie-source">
         <form className="lottie-url-form" onSubmit={(event) => { event.preventDefault(); void loadUrl() }}>
@@ -203,9 +204,6 @@ const LottiePlayer = () => {
             setAnimation({ data: validateLottieData(sample.data), baseUrl: window.location.href, autoplay: true })
           }}>{sample.name}</button>)}
           <small>远程链接需允许跨域访问；加载后自动回显 JSON</small>
-        </div>
-        <div className={`lottie-status${error ? ' error' : ''}`} role={error ? 'alert' : 'status'}>
-          {error || (loading ? '正在加载动画 JSON…' : '修改 JSON 后点击“播放 JSON”更新预览')}
         </div>
       </div>
       <div ref={gridRef} className="lottie-workspace" style={getSplitPaneGridStyle(splitRatio)}>
@@ -227,6 +225,9 @@ const LottiePlayer = () => {
                 wordWrap: 'on', automaticLayout: true, fixedOverflowWidgets: true,
                 scrollBeyondLastLine: false, ariaLabel: 'Lottie JSON', padding: { top: 12 } }} />
           </div>
+          <EditorStatusBar text={json} label="动画 JSON" error={error}>
+            {!error && <span role="status">{loading ? '正在加载动画 JSON…' : '点击“播放 JSON”更新预览'}</span>}
+          </EditorStatusBar>
         </section>
         <SplitPaneDivider containerRef={gridRef} ratio={splitRatio} onRatioChange={setSplitRatio} label="调整 JSON 与预览宽度" />
         <section className="editor-panel lottie-preview-panel">

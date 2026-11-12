@@ -1,3 +1,4 @@
+import EditorStatusBar from '../components/EditorStatusBar'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import ToolLayout from '../components/ToolLayout'
 import { useToast } from '../components/toastContext'
@@ -306,7 +307,7 @@ const RegexTester = () => {
     <ToolLayout
       className="regex-tester"
       title="正则表达式"
-      // description="测试匹配与捕获组，预览替换和分割结果"
+      description="测试匹配、捕获组、替换和文本分割。"
       actions={actions}
     >
       <section className="regex-builder" aria-label="正则表达式配置">
@@ -384,6 +385,7 @@ const RegexTester = () => {
             placeholder="输入需要测试的文本..."
             spellCheck={false}
           />
+          <EditorStatusBar text={text} label="正则测试文本" />
         </section>
 
         <section className="editor-panel regex-result-panel">
@@ -487,6 +489,10 @@ const RegexTester = () => {
               </div>
             )}
           </div>
+          <EditorStatusBar
+            text={activeTab === 'replace' ? result?.replacement ?? '' : activeTab === 'split' ? result?.splitItems.join('\n') ?? '' : matchText}
+            label="正则结果"
+          >{result ? `${result.matches.length} 个匹配 · ${formatDuration(result.durationMs)}` : '等待执行'}</EditorStatusBar>
         </section>
       </div>
     </ToolLayout>

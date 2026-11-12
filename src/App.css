@@ -19,6 +19,7 @@
   --dock-width: 84px;
   position: relative;
   height: 100vh;
+  height: 100dvh;
   display: grid;
   grid-template-columns: var(--dock-width) minmax(0, 1fr);
   background: var(--color-bg);
@@ -28,7 +29,7 @@
 
 .app-sidebar {
   z-index: 10;
-  height: 100vh;
+  height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -109,6 +110,8 @@
 
 .tool-icon-svg { display: block; width: 23px; height: 23px; flex: 0 0 auto; }
 .tool-icon-image { display: block; width: 28px; height: 28px; object-fit: contain; }
+.tool-icon-search { width: 23px; height: 23px; }
+:root[data-theme='light'] .tool-icon-search { filter: brightness(0); }
 .dock-icon .tool-icon-image { opacity: .72; transition: opacity 150ms ease; }
 .dock-item:is(:hover, :focus-visible, .active) .tool-icon-image { opacity: 1; }
 
@@ -268,7 +271,7 @@
 }
 
 @media (max-width: 900px) {
-  .app-shell { min-height: 100vh; height: auto; grid-template-columns: minmax(0, 1fr); overflow: visible; }
+  .app-shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .app-sidebar { position: sticky; top: 0; height: auto; min-width: 0; flex-direction: row; gap: 8px; padding: 8px 12px; border-right: none; border-bottom: 1px solid var(--color-border); }
   .app-brand-mark { width: 32px; height: 32px; font-size: 14px; }
   .tool-dock { flex-direction: row; min-width: 0; width: auto; padding: 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scrollbar-gutter: auto; }
@@ -282,7 +285,7 @@
   .dock-item.active::before { left: calc(50% - 8px); bottom: 0; width: 16px; height: 2px; }
   .dock-search { flex: 0 0 40px; }
   .dock-tooltip { display: none; }
-  .app-main { grid-column: auto; min-height: calc(100vh - 90px); padding: 16px; overflow: visible; }
+  .app-main { grid-column: auto; padding: 16px; }
   .tool-route { min-height: 0; }
 }
 
