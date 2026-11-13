@@ -59,6 +59,7 @@ describe('LottiePlayer', () => {
     expect(players[1].play).toHaveBeenCalledOnce()
     fireEvent.click(screen.getByRole('button', { name: '重播' }))
     expect(players[1].goToAndPlay).toHaveBeenCalledWith(0, true)
+    fireEvent.click(screen.getByRole('button', { name: '播放选项' }))
     fireEvent.click(screen.getByRole('checkbox', { name: '循环' }))
     expect(players[1].setLoop).toHaveBeenLastCalledWith(false)
     fireEvent.change(screen.getByLabelText('播放速度'), { target: { value: '2' } })
@@ -86,6 +87,7 @@ describe('LottiePlayer', () => {
     vi.stubGlobal('fetch', fetchMock)
     renderPlayer()
     for (const name of ['脉冲', '轨道', '加载条']) {
+      fireEvent.click(screen.getByRole('button', { name: '示例动画' }))
       fireEvent.click(screen.getByRole('button', { name }))
       expect(loadAnimation.mock.lastCall?.[0].animationData.layers.length).toBeGreaterThan(0)
     }

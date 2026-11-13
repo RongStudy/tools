@@ -85,6 +85,9 @@
 }
 
 .dock-home { margin-bottom: 12px; }
+.dock-dragging { opacity: .45; }
+.dock-drop-target { outline: 2px dashed var(--color-primary); outline-offset: -4px; background: var(--color-primary-soft); }
+.tool-dock:has(.dock-dragging) .dock-icon { transform: none; }
 
 .dock-home::after {
   content: '';

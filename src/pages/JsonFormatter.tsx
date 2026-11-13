@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import { describeSizeChange, getTextMetrics } from '../utils/textMetrics'
 import EditorStatusBar from '../components/EditorStatusBar'
 import DocumentTab from '../components/DocumentTab'
@@ -9,6 +10,7 @@ import {
 } from '../hooks/useSplitPane'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import ToolLayout from '../components/ToolLayout'
+import ToolOptions from '../components/ToolOptions'
 import SaveFileDialog, { type SaveFileRequest } from '../components/SaveFileDialog'
 import JsonSchemaDialog from '../components/JsonSchemaDialog'
 import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
@@ -52,8 +54,6 @@ const DEFAULT_JSON_FORMATTER_DRAFT: JsonFormatterDraft = {
   indentSize: 2,
 }
 
-const editorLoading = <div className="monaco-loading">编辑器加载中</div>
-
 const readJsonFormatterDraft = (): JsonFormatterDraft => {
   const savedDraft = readExpiringStorage<unknown>(JSON_FORMATTER_DRAFT_KEY)
   if (!savedDraft || typeof savedDraft !== 'object') return DEFAULT_JSON_FORMATTER_DRAFT
@@ -84,6 +84,7 @@ const readJsonFormatterDraft = (): JsonFormatterDraft => {
 }
 
 const JsonFormatter = () => {
+  useLocale()
   const { monacoTheme } = useAppTheme()
   const [initialDraft] = useState(readJsonFormatterDraft)
   const [documents, setDocuments] = useState(initialDraft.documents)
@@ -188,9 +189,9 @@ const JsonFormatter = () => {
   const copyToClipboard = async (text: string) => {
     const success = await writeTextToClipboard(text)
     if (success) {
-      showToast('已复制到剪贴板')
+      showToast(t("已复制到剪贴板"))
     } else {
-      showToast('复制失败', 'error')
+      showToast(t("复制失败"), 'error')
     }
   }
 
@@ -223,8 +224,11 @@ const JsonFormatter = () => {
 
   const toolbar = (
     <div className="toolbar">
+      <button onClick={formatJson} className="btn btn-primary">{t("格式化")}</button>
+      <button onClick={compressJson} className="btn btn-secondary">{t("压缩")}</button>
+      <ToolOptions count={Number(Boolean(activeDocument.schema))} closeOnAction>
       <div className="indent-control">
-        <label htmlFor="json-indent-size">缩进:</label>
+        <label htmlFor="json-indent-size">{t("缩进:")}</label>
         <select
           id="json-indent-size"
           name="jsonIndentSize"
@@ -237,35 +241,33 @@ const JsonFormatter = () => {
             }
           }}
         >
-          <option value={2}>2 空格</option>
-          <option value={4}>4 空格</option>
-          <option value={0}>无缩进</option>
+          <option value={2}>{t("2 空格")}</option>
+          <option value={4}>{t("4 空格")}</option>
+          <option value={0}>{t("无缩进")}</option>
         </select>
       </div>
-      <button onClick={formatJson} className="btn btn-primary">格式化</button>
-      <button onClick={compressJson} className="btn btn-secondary">压缩</button>
-      <button onClick={escapeJson} className="btn btn-secondary">转义</button>
-      <button onClick={unescapeJsonAction} className="btn btn-secondary">解转义</button>
-      <button onClick={() => setShowSchema(true)} className="btn btn-secondary" aria-pressed={Boolean(activeDocument.schema)}>Schema{activeDocument.schema ? ' · 已启用' : ''}</button>
-      <button onClick={clearAll} className="btn btn-danger">清空</button>
+      <button onClick={escapeJson} className="btn btn-secondary">{t("转义")}</button>
+      <button onClick={unescapeJsonAction} className="btn btn-secondary">{t("解转义")}</button>
+      <button onClick={() => setShowSchema(true)} className="btn btn-secondary" aria-pressed={Boolean(activeDocument.schema)}>Schema{activeDocument.schema ? t(" · 已启用") : ''}</button>
+      </ToolOptions>
+      <button onClick={clearAll} className="btn btn-danger">{t("清空")}</button>
     </div>
   )
 
   const firstDiagnostic = diagnostics.path === inputPath ? diagnostics.markers[0] : undefined
-  const sizeChange = useMemo(() => input && output
+  const sizeChange = input && output
     ? describeSizeChange(getTextMetrics(input).bytes, getTextMetrics(output).bytes)
-    : '', [input, output])
+    : ''
 
   return (
     <ToolLayout
       className={`json-formatter ${isFullscreen ? 'fullscreen-mode' : ''}`}
-      title="JSON格式化"
-      description="格式化、压缩和校验 JSON 内容。"
+      title={t("JSON格式化")}
       actions={toolbar}
       hideHeader={isFullscreen}
     >
       {!isFullscreen && (
-        <div className="json-document-tabs" role="tablist" aria-label="JSON 文档">
+        <div className="json-document-tabs document-tabs" role="tablist" aria-label={t("JSON 文档")}>
           <div className="json-document-tab-list document-tab-list">
             {documents.map((document) => (
               <DocumentTab
@@ -279,9 +281,8 @@ const JsonFormatter = () => {
               />
             ))}
           </div>
-          <button type="button" className="btn-small json-document-add" onClick={addDocument}>
-            新建 JSON
-          </button>
+          <button type="button" className="btn-small json-document-add document-tab-add" onClick={addDocument}>
+            {t("新建 JSON")}</button>
         </div>
       )}
       <div
@@ -293,21 +294,20 @@ const JsonFormatter = () => {
         {!isOutputFullscreen && (
           <div className={`editor-panel ${isDualFullscreen ? 'fullscreen-panel' : ''}`}>
             <div className="panel-header">
-              <span>输入</span>
+              <span>{t("输入")}</span>
               <div className="panel-actions">
                 <button
                   onClick={() => copyToClipboard(input)}
                   className="btn-small"
                   disabled={!input}
                 >
-                  复制
-                </button>
+                  {t("复制")}</button>
                 <button
                   onClick={toggleDualFullscreen}
                   className="btn-small btn-fullscreen"
-                  title={isDualFullscreen ? '退出全屏' : '输入输出全屏'}
+                  title={isDualFullscreen ? t("退出全屏") : t("输入输出全屏")}
                 >
-                  {isDualFullscreen ? '⤓ 退出全屏' : '⛶ 全屏'}
+                  {isDualFullscreen ? t("⤓ 退出全屏") : t("⛶ 全屏")}
                 </button>
               </div>
             </div>
@@ -318,7 +318,7 @@ const JsonFormatter = () => {
                 path={inputPath}
                 keepCurrentModel
                 value={input}
-                loading={editorLoading}
+                loading={<div className="monaco-loading">{t("编辑器加载中")}</div>}
                 onChange={(value) => handleInputChange(value)}
                 onValidate={handleValidate}
                 theme={monacoTheme}
@@ -330,7 +330,7 @@ const JsonFormatter = () => {
                   automaticLayout: true,
                   fixedOverflowWidgets: true,
                   scrollBeyondLastLine: false,
-                  ariaLabel: 'JSON 输入',
+                  ariaLabel: t("JSON 输入"),
                 }}
                 onMount={(editor, monaco) => {
                   editorRef.current = editor
@@ -339,12 +339,12 @@ const JsonFormatter = () => {
                 }}
               />
             </div>
-            <EditorStatusBar text={input} label="JSON 输入" error={error || firstDiagnostic?.message}>
+            <EditorStatusBar text={input} label={t("JSON 输入")} error={error || firstDiagnostic?.message}>
               {firstDiagnostic && <button type="button" className="btn-small" onClick={() => {
                 editorRef.current?.setPosition({ lineNumber: firstDiagnostic.startLineNumber, column: firstDiagnostic.startColumn })
                 editorRef.current?.revealLineInCenter(firstDiagnostic.startLineNumber)
                 editorRef.current?.focus()
-              }}>定位 {firstDiagnostic.startLineNumber}:{firstDiagnostic.startColumn}</button>}
+              }}>{t("定位")}{firstDiagnostic.startLineNumber}:{firstDiagnostic.startColumn}</button>}
             </EditorStatusBar>
           </div>
         )}
@@ -354,13 +354,13 @@ const JsonFormatter = () => {
             containerRef={editorContainerRef}
             ratio={splitRatio}
             onRatioChange={(nextRatio) => updateActiveDocument({ splitRatio: nextRatio })}
-            label="调整输入输出宽度"
+            label={t("调整输入输出宽度")}
           />
         )}
 
         <div className={`editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}>
           <div className="panel-header">
-            <span>输出{busyIds.includes(activeDocumentId) && <span role="status"> · 处理中…</span>}</span>
+            <span>{t("输出")}{busyIds.includes(activeDocumentId) && <span role="status"> {t("· 处理中…")}</span>}</span>
             <div className="panel-actions">
               <button
                 type="button"
@@ -368,21 +368,19 @@ const JsonFormatter = () => {
                 disabled={!output}
                 onClick={() => setSaveRequest({ content: output, defaultFilename: `${activeDocument.name}.json`, mimeType: 'application/json;charset=utf-8' })}
               >
-                保存到文件
-              </button>
+                {t("保存到文件")}</button>
               <button
                 onClick={() => copyToClipboard(output)}
                 className="btn-small"
                 disabled={!output}
               >
-                复制
-              </button>
+                {t("复制")}</button>
               <button
                 onClick={toggleOutputFullscreen}
                 className="btn-small btn-fullscreen"
-                title={isFullscreen ? '退出全屏' : '全屏查看'}
+                title={isFullscreen ? t("退出全屏") : t("全屏查看")}
               >
-                {isFullscreen ? '⤓ 退出全屏' : '⛶ 全屏'}
+                {isFullscreen ? t("⤓ 退出全屏") : t("⛶ 全屏")}
               </button>
             </div>
           </div>
@@ -393,7 +391,7 @@ const JsonFormatter = () => {
               path={modelPath('json', activeDocument.id, 'output.json')}
               keepCurrentModel
               value={output}
-              loading={editorLoading}
+              loading={<div className="monaco-loading">{t("编辑器加载中")}</div>}
               theme={monacoTheme}
               options={{
                 minimap: { enabled: !isFullscreen },
@@ -403,7 +401,7 @@ const JsonFormatter = () => {
                 fixedOverflowWidgets: true,
                 scrollBeyondLastLine: false,
                 readOnly: true,
-                ariaLabel: 'JSON 输出',
+                ariaLabel: t("JSON 输出"),
                 guides: {
                   bracketPairs: 'active',
                   bracketPairsHorizontal: 'active',
@@ -416,7 +414,7 @@ const JsonFormatter = () => {
               }}
             />
           </div>
-          <EditorStatusBar text={output} label="JSON 输出">{sizeChange}</EditorStatusBar>
+          <EditorStatusBar text={output} label={t("JSON 输出")}>{sizeChange}</EditorStatusBar>
         </div>
       </div>
       {saveRequest && <SaveFileDialog {...saveRequest} onClose={() => setSaveRequest(null)} />}

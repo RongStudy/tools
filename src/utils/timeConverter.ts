@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 export type TimestampUnit = 'seconds' | 'milliseconds'
 
 export const DEFAULT_TIME_ZONE = 'Asia/Shanghai'
@@ -25,18 +26,18 @@ export function timestampToDateTime(
 ): string {
   const normalizedValue = value.trim()
   if (!normalizedValue) {
-    throw new Error('请输入时间戳')
+    throw new Error(t("请输入时间戳"))
   }
 
   const timestamp = Number(normalizedValue)
   if (!Number.isFinite(timestamp)) {
-    throw new Error('时间戳格式不正确')
+    throw new Error(t("时间戳格式不正确"))
   }
 
   const milliseconds = unit === 'seconds' ? timestamp * 1000 : timestamp
   const date = new Date(milliseconds)
   if (Number.isNaN(date.getTime())) {
-    throw new Error('时间戳超出可转换范围')
+    throw new Error(t("时间戳超出可转换范围"))
   }
 
   return formatDateInTimeZone(date, timeZone)
@@ -88,7 +89,7 @@ function parseDateTimeParts(value: string): DateTimeParts {
   )
 
   if (!match) {
-    throw new Error('日期时间格式应为 YYYY-MM-DD HH:mm:ss')
+    throw new Error(t("日期时间格式应为 YYYY-MM-DD HH:mm:ss"))
   }
 
   const [, year, month, day, hour = '00', minute = '00', second = '00'] = match
@@ -118,7 +119,7 @@ function parseDateTimeParts(value: string): DateTimeParts {
     utcDate.getUTCMinutes() !== parsed.minute ||
     utcDate.getUTCSeconds() !== parsed.second
   ) {
-    throw new Error('日期时间不是有效值')
+    throw new Error(t("日期时间不是有效值"))
   }
 
   return parsed

@@ -102,7 +102,7 @@ This project is a high-precision developer utility workbench, not a marketing we
 
 1. **Tool First**: The active editor, input, output, or preview area is always the primary visual focus.
 2. **Zero Layout Shift**: Buttons, tabs, panels, status bars, and split views must maintain exact dimensions when content, loading states, or validation errors change.
-3. **Dense & Breathable**: Use compact controls and concise Chinese labels while preserving clear scan paths and touch targets.
+3. **Dense & Breathable**: Use compact controls and concise localized labels while preserving clear scan paths and touch targets.
 4. **Low Chroma Discipline**: Lavender (`--color-primary`) is the sole brand/focus accent. Semantic colors (`danger`, `success`, `info`) are strictly reserved for functional states.
 5. **Reuse Before Creating**: Always assemble new pages using existing shell, panel, button, and CSS token primitives.
 
@@ -128,7 +128,7 @@ All tokens defined in the YAML frontmatter map directly to CSS custom properties
 
 - **Font Stacks**: `--font-display` for headings, `--font-text` for UI, `--font-mono` for code, JSON, regex, hashes, and timestamps.
 - **Spacing**: Never apply negative `letter-spacing` to text smaller than `16px`.
-- **Chinese UI Copy**: Keep labels concise, direct, and idiomatic (e.g., `"复制"`, `"格式化"`, `"压缩"`, `"清空"`, `"交换"`, `"全屏"`, `"填入示例"`). Avoid conversational filler or marketing slogans.
+- **Bilingual UI Copy**: Default to English; offer persistent English / 中文 switching in Settings. Keep labels concise, direct, and idiomatic in both languages (e.g., `"复制"`, `"格式化"`, `"压缩"`, `"清空"`, `"交换"`, `"全屏"`, `"填入示例"`). Avoid conversational filler or marketing slogans.
 
 # App Shell & Navigation
 
@@ -140,6 +140,8 @@ The shell consists of a persistent left icon Dock and a `100vh` contained worksp
 - **Magnification**: Each tool link sits in a fixed `64px × 76px` slot with a `40px` icon surface. Fine-pointer movement magnifies nearby icon surfaces up to `1.45×` (max `6px` vertical displacement) with spring physics. Disable magnification on touch devices or when `prefers-reduced-motion: reduce` is active.
 - **Tooltips**: Render tool-name tooltips outside the scrolling rail. Offset tooltips horizontally past the maximum `1.45×` magnified icon boundary so they never overlap hovered icons.
 - **Active State**: Lavender icon surface + distinct side indicator pill in both themes. Ensure SVG/image tool icons adapt cleanly to light surfaces.
+
+Tool icons support drag-to-reorder and Alt + arrow keys. Settings offers named up/down controls and a reset action. Persist tool paths locally; keep Home first and Search/Settings pinned. New tools append to saved orders; removed tools are ignored.
 
 ## Mobile/Tablet Launcher (`<= 900px`)
 - Collapse the vertical Dock into a horizontally scrolling top launcher bar displaying icons with short visible text labels and the Settings trigger.
@@ -155,7 +157,11 @@ The shell consists of a persistent left icon Dock and a `100vh` contained worksp
 - Subtle, motion-safe canvas background animation is permitted; hero banners, pricing, testimonials, and promotional CTAs are strictly forbidden.
 
 ## Tool Pages (`ToolLayout`)
-- **Header**: Single page title + one-line concise description on the left; page-level actions on the right (wrapping cleanly below title on narrow screens).
+- **Header**: Single page title and a compact group of primary actions or mode controls. Keep frequent actions such as Clear, Copy, file writeback and language status visible beside their content. Only advanced or low-frequency settings belong in a named options popover. Avoid a wall of equivalent buttons.
+- **Progressive disclosure**: Use the shared ToolOptions component for advanced configuration, grouped file selection and export variants. Do not hide frequently used actions or create a menu that only contains status text. Show an enabled-settings count where hidden options affect results. Popovers size to their content (200–300px), use 32px flat menu rows with 4px gaps and 6px outer padding, and omit repeated headings and close buttons. Keep form labels and selects aligned; use 44px targets on coarse pointers. Popovers must escape panel clipping, close on Escape/outside click, and restore keyboard focus.
+- **Workflow selection**: Choose one task family first (e.g. URL / Base64 / Unicode / Digest), then show only that family's actions. Keep mode selection separate from document tabs.
+- **Context**: Put copy, file save, export and preview controls beside their corresponding content. Never repeat every action in the page header. Keep core inputs, Run/Format/Render, result copy, and fullscreen discoverable without opening menus.
+- **Density**: Use one compact toolbar row per scope, consistent 8px control gaps, and 40px page / 32px panel actions. Wrap deliberate groups on tablet; do not shrink text or create horizontal toolbar scrolling.
 - **Body**: Place primary input/output workspaces above secondary configuration options. Use side-by-side split views on desktop, collapsing to stacked panels on mobile/tablet.
 
 ## Editor Panels (`.editor-panel`)

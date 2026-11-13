@@ -1,3 +1,5 @@
+import { beforeEach } from 'vitest'
+import { setLocale } from '../i18n'
 import '@testing-library/jest-dom'
 
 const createMemoryStorage = (): Storage => {
@@ -50,3 +52,6 @@ const ensureUsableLocalStorage = () => {
 }
 
 ensureUsableLocalStorage()
+
+// Keep existing Chinese behavior assertions explicit; i18n tests also cover English.
+beforeEach(() => setLocale("zh"))

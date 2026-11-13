@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import { useRef, useEffect, useCallback, useState } from 'react'
 import type { MonacoDiffEditor, MonacoEditor, DiffLineChange } from '../types/monaco'
 
@@ -9,6 +10,7 @@ type DiffSide = 'original' | 'modified'
  * 修复了原实现中的内存泄漏和闭包问题
  */
 export function useDiffEditor(viewStateKey = 'default') {
+  const locale = useLocale()
   const viewStatesRef = useRef(new Map<string, ReturnType<MonacoDiffEditor['saveViewState']>>())
   const diffEditorRef = useRef<MonacoDiffEditor | null>(null)
   const isUnmountingRef = useRef(false)
@@ -36,13 +38,13 @@ export function useDiffEditor(viewStateKey = 'default') {
 
       originalEditor.updateOptions({
         readOnly: false,
-        ariaLabel: '原始代码',
+        ariaLabel: t("原始代码"),
         wordWrap: 'on',
         wrappingIndent: 'same',
       })
       modifiedEditor.updateOptions({
         readOnly: false,
-        ariaLabel: '修改代码',
+        ariaLabel: t("修改代码"),
         wordWrap: 'on',
         wrappingIndent: 'same',
       })
@@ -50,6 +52,10 @@ export function useDiffEditor(viewStateKey = 'default') {
       // 编辑器可能已被销毁，忽略错误
     }
   }, [])
+
+  useEffect(() => {
+    if (diffEditorRef.current) forceEditable(diffEditorRef.current)
+  }, [locale, forceEditable])
 
   /** 同步当前差异数量到 React 状态 */
   const updateDiffCount = useCallback((editor: MonacoDiffEditor) => {

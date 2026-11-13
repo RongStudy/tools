@@ -72,32 +72,48 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
+
+function openOptions(name: string | RegExp) {
+  const trigger = screen.getByRole('button', { name })
+  if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger)
+}
+
 describe('CodeDiff', () => {
+  it('keeps clear, writeback and both language statuses visible', () => {
+    renderCodeDiff()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '清空' })).toBeVisible()
+    expect(screen.getByRole('checkbox', { name: '写回原文件' })).toBeVisible()
+    expect(screen.getByRole('status', { name: '原始代码' })).toHaveTextContent('plaintext')
+    expect(screen.getByRole('status', { name: '修改代码' })).toHaveTextContent('plaintext')
+  })
+
   it('自动模式反复识别左右内容，不覆盖手动模式并保留纯文本选择', async () => {
     const { unmount } = renderCodeDiff()
-    const language = screen.getByRole('combobox', { name: '语言:' })
-    const load = (side: string, text: string) => fireEvent.change(screen.getByLabelText(`加载${side}文件`), {
+    const language = () => { openOptions(/^选项/); return screen.getByRole('combobox', { name: '语言:' }) }
+    const load = (side: string, text: string) => { fireEvent.change(screen.getByLabelText(`加载${side}文件`, { selector: 'input' }), {
       target: { files: [new File([text], 'snippet.txt')] },
-    })
+    }) }
     load('原始', '<?php echo $name;')
     load('修改', 'public class Main {}')
     await waitFor(() => {
       expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-original-language', 'php')
       expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'java')
     })
-    expect(language).toHaveValue('auto')
+    expect(language()).toHaveValue('auto')
     load('原始', 'package main\nfunc main() {}')
     await waitFor(() => expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-original-language', 'go'))
     expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'java')
-    fireEvent.change(language, { target: { value: 'php' } })
+    fireEvent.change(language(), { target: { value: 'php' } })
     load('修改', 'package main\nfunc main() {}')
     await waitFor(() => expect(screen.getByLabelText('modified-code')).toHaveValue('package main\nfunc main() {}'))
     expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'php')
-    fireEvent.change(language, { target: { value: 'auto' } })
+    fireEvent.change(language(), { target: { value: 'auto' } })
     await waitFor(() => expect(screen.getByTestId('diff-editor')).toHaveAttribute('data-modified-language', 'go'))
-    fireEvent.change(language, { target: { value: 'plaintext' } })
+    fireEvent.change(language(), { target: { value: 'plaintext' } })
     unmount()
     renderCodeDiff()
+    openOptions(/^选项/)
     expect(screen.getByRole('combobox', { name: '语言:' })).toHaveValue('plaintext')
   })
 
@@ -107,12 +123,12 @@ describe('CodeDiff', () => {
     const originalText = 'function demo() {\n    return 1;   \n}\n\n'
     const modifiedText = 'function demo() {\n  return 2;\n}\n'
 
-    fireEvent.change(screen.getByLabelText('加载原始文件'), {
+    fireEvent.change(screen.getByLabelText('加载原始文件', { selector: 'input' }), {
       target: {
         files: [new File([originalText], 'original.js', { type: 'text/javascript' })],
       },
     })
-    fireEvent.change(screen.getByLabelText('加载修改文件'), {
+    fireEvent.change(screen.getByLabelText('加载修改文件', { selector: 'input' }), {
       target: {
         files: [new File([modifiedText], 'modified.js', { type: 'text/javascript' })],
       },
@@ -161,6 +177,7 @@ describe('CodeDiff', () => {
 
   it('新文档使用独立模型，差异折叠和移动检测设置随文档恢复', () => {
     renderCodeDiff()
+    openOptions(/^选项/)
     fireEvent.click(screen.getByRole('checkbox', { name: '仅看差异' }))
     fireEvent.click(screen.getByRole('checkbox', { name: '识别移动' }))
     const originalPath = screen.getByTestId('diff-editor').getAttribute('data-original-model-path')
@@ -179,12 +196,12 @@ describe('CodeDiff', () => {
     const originalText = 'const before = 1\n'
     const modifiedText = 'const after = 2\n'
 
-    fireEvent.change(screen.getByLabelText('加载原始文件'), {
+    fireEvent.change(screen.getByLabelText('加载原始文件', { selector: 'input' }), {
       target: {
         files: [new File([originalText], 'before.ts', { type: 'text/typescript' })],
       },
     })
-    fireEvent.change(screen.getByLabelText('加载修改文件'), {
+    fireEvent.change(screen.getByLabelText('加载修改文件', { selector: 'input' }), {
       target: {
         files: [new File([modifiedText], 'after.ts', { type: 'text/typescript' })],
       },
@@ -205,7 +222,7 @@ describe('CodeDiff', () => {
   it('可以新增多个对比标签并保留各自的左右代码', async () => {
     renderCodeDiff()
 
-    fireEvent.change(screen.getByLabelText('加载原始文件'), {
+    fireEvent.change(screen.getByLabelText('加载原始文件', { selector: 'input' }), {
       target: { files: [new File(['const first = 1'], 'first.ts')] },
     })
     await waitFor(() => {
@@ -215,7 +232,7 @@ describe('CodeDiff', () => {
     fireEvent.click(screen.getByRole('button', { name: '新建对比' }))
     expect(screen.getByRole('tab', { name: '对比 2' })).toHaveAttribute('aria-selected', 'true')
 
-    fireEvent.change(screen.getByLabelText('加载修改文件'), {
+    fireEvent.change(screen.getByLabelText('加载修改文件', { selector: 'input' }), {
       target: { files: [new File(['const second = 2'], 'second.ts')] },
     })
     await waitFor(() => {

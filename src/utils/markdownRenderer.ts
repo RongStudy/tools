@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 /**
  * Markdown 渲染模块（纯前端）
  *
@@ -102,7 +103,7 @@ markdown.use({
         }
         return (
           `<div class="mermaid-block" id="${id}">` +
-          '<div class="mermaid-block-loading">正在渲染图表...</div></div>'
+          t("<div class=\"mermaid-block-loading\">正在渲染图表...</div></div>")
         )
       }
 
@@ -144,44 +145,44 @@ export const markdownExportBaseStyles = (layout: MarkdownLayout): string => `
 `
 
 export const DEFAULT_MARKDOWN_CODE = [
-  '# Markdown 渲染示例',
+  '# Markdown Example',
   '',
-  '支持 **粗体**、*斜体*、~~删除线~~、`行内代码` 与 [链接](https://example.com)。',
+  'Supports **bold**, *italic*, ~~strikethrough~~, `inline code` and [links](https://example.com).',
   '',
-  '## 数学公式（LaTeX）',
+  '## Math (LaTeX)',
   '',
-  '行内公式：$E = mc^2$，以及 $\\int_0^1 x^2 \\, dx$。',
+  'Inline math: $E = mc^2$ and $\\int_0^1 x^2 \\, dx$.',
   '',
-  '块级公式：',
+  'Block math:',
   '',
   '$$',
   '\\int_{-\\infty}^{+\\infty} e^{-x^2} dx = \\sqrt{\\pi}',
   '$$',
   '',
-  '## GFM 表格与任务列表',
+  '## GFM Tables and Task Lists',
   '',
-  '| 功能 | 支持 |',
+  '| Feature | Supported |',
   '| --- | --- |',
-  '| GFM 表格 | ✅ |',
-  '| 任务列表 | ✅ |',
+  '| GFM tables | ✅ |',
+  '| Task lists | ✅ |',
   '',
-  '- [x] 已完成事项',
-  '- [ ] 待办事项',
+  '- [x] Completed task',
+  '- [ ] Pending task',
   '',
-  '## 代码高亮',
+  '## Syntax Highlighting',
   '',
   '```ts',
   'const greet = (name: string): string => `Hello, ${name}!`',
   '```',
   '',
-  '## Mermaid 图表（内嵌于 Markdown）',
+  '## Mermaid Diagram (Embedded in Markdown)',
   '',
   '```mermaid',
   'flowchart LR',
-  '  A[开始] --> B{是否完成?}',
-  '  B -->|是| C[结束]',
-  '  B -->|否| A',
+  '  A[Start] --> B{Done?}',
+  '  B -->|Yes| C[End]',
+  '  B -->|No| A',
   '```',
   '',
-  '> 引用块同样支持。',
+  '> Blockquotes are supported too.',
 ].join('\n')

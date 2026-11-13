@@ -35,7 +35,19 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+
+function openOptions(name: string | RegExp) {
+  const trigger = screen.getByRole('button', { name })
+  if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger)
+}
+
 describe('JsonFormatter', () => {
+  it('keeps frequent actions visible without opening options', () => {
+    renderJsonFormatter()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    for (const name of ['格式化', '压缩', '清空']) expect(screen.getByRole('button', { name })).toBeVisible()
+  })
+
   it('重命名标签后保留内容隔离，重新进入仍恢复名称和当前文档', () => {
     const { unmount } = renderJsonFormatter()
     fireEvent.change(screen.getByLabelText('input-editor'), { target: { value: '{"user":1}' } })
@@ -75,6 +87,7 @@ describe('JsonFormatter', () => {
 
   it('Schema 按文档保存，拒绝无效规则并可移除', () => {
     renderJsonFormatter()
+    openOptions(/^选项/)
     fireEvent.click(screen.getByRole('button', { name: 'Schema' }))
     const schema = screen.getByLabelText('当前文档的校验规则')
     fireEvent.change(schema, { target: { value: '[]' } })
@@ -83,14 +96,18 @@ describe('JsonFormatter', () => {
     const source = '{"type":"object","required":["name"]}'
     fireEvent.change(schema, { target: { value: source } })
     fireEvent.click(screen.getByRole('button', { name: '应用' }))
+    openOptions(/^选项/)
     expect(screen.getByRole('button', { name: 'Schema · 已启用' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '新建 JSON' }))
+    openOptions(/^选项/)
     expect(screen.getByRole('button', { name: 'Schema' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('tab', { name: 'JSON 1' }))
+    openOptions(/^选项/)
     fireEvent.click(screen.getByRole('button', { name: 'Schema · 已启用' }))
     expect(screen.getByLabelText('当前文档的校验规则')).toHaveValue(source)
     fireEvent.change(screen.getByLabelText('当前文档的校验规则'), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: '应用' }))
+    openOptions(/^选项/)
     expect(screen.getByRole('button', { name: 'Schema' })).toBeInTheDocument()
   })
   it('保存当前标签的输出，支持自定义文件名及输出全屏', async () => {
@@ -142,6 +159,7 @@ describe('JsonFormatter', () => {
 
     const input = screen.getByLabelText('input-editor')
     const output = screen.getByLabelText('output-editor') as HTMLTextAreaElement
+    openOptions(/^选项/)
     const indentSelect = screen.getByRole('combobox')
 
     fireEvent.change(input, { target: { value: '{"outer":{"inner":1}}' } })

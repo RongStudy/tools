@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import './DocumentTab.css'
 
@@ -11,6 +12,7 @@ type DocumentTabProps = {
 }
 
 export default function DocumentTab({ name, selected, prefix, onSelect, onRename, onClose }: DocumentTabProps) {
+  useLocale()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -53,18 +55,23 @@ export default function DocumentTab({ name, selected, prefix, onSelect, onRename
           tabIndex={editing ? -1 : 0}
           className={`${prefix}-tab-button document-tab-button${selected ? ' is-active' : ''}`}
           style={editing ? { visibility: 'hidden' } : undefined}
-          title={`${name} · 双击或按 F2 重命名`}
+          title={t("{value0} · 双击或按 F2 重命名", { value0: name })}
           onClick={onSelect}
           onDoubleClick={beginRename}
           onKeyDown={(event) => {
             if (event.key === 'F2') { event.preventDefault(); beginRename() }
           }}
-        >{name}</button>
+        >
+          <svg className="document-tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
+            <path d="M3.5 4.5h9m-9 3h9m-9 3h6" />
+          </svg>
+          <span className="document-tab-label">{name}</span>
+        </button>
         {editing && <input
           ref={inputRef}
           autoFocus
           className="document-tab-rename"
-          aria-label={`重命名 ${name}`}
+          aria-label={t("重命名 {value0}", { value0: name })}
           value={draft}
           maxLength={80}
           onChange={(event) => setDraft(event.target.value)}
@@ -82,8 +89,8 @@ export default function DocumentTab({ name, selected, prefix, onSelect, onRename
       {onClose && <button
         type="button"
         className={`${prefix}-tab-close document-tab-close`}
-        aria-label={`关闭 ${name}`}
-        title={`关闭 ${name}`}
+        aria-label={t("关闭 {value0}", { value0: name })}
+        title={t("关闭 {value0}", { value0: name })}
         onClick={onClose}
       >×</button>}
     </div>

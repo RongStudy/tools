@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import {
   useRef,
   useState,
@@ -26,8 +27,9 @@ const SplitPaneDivider = ({
   containerRef,
   ratio,
   onRatioChange,
-  label = '调整两侧宽度',
+  label = t("调整两侧宽度"),
 }: SplitPaneDividerProps) => {
+  useLocale()
   const activePointerIdRef = useRef<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -92,7 +94,7 @@ const SplitPaneDivider = ({
       aria-valuemax={MAX_SPLIT_RATIO}
       aria-valuenow={Math.round(ratio)}
       tabIndex={0}
-      title="拖动调整两侧宽度，双击重置"
+      title={t("拖动调整两侧宽度，双击重置")}
       onPointerDown={startDrag}
       onPointerMove={moveDivider}
       onPointerUp={stopDrag}

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import type { jsonDefaults as JsonDefaults } from 'monaco-editor/languages/features/json/register'
 
 export type JsonSchema = Record<string, unknown> | boolean
@@ -6,7 +7,7 @@ export const parseJsonSchema = (source: string): JsonSchema | undefined => {
   if (!source.trim()) return undefined
   const schema: unknown = JSON.parse(source)
   if (typeof schema !== 'boolean' && (!schema || typeof schema !== 'object' || Array.isArray(schema))) {
-    throw new Error('Schema 必须是 JSON 对象或布尔值')
+    throw new Error(t('Schema 必须是 JSON 对象或布尔值'))
   }
   return schema as JsonSchema
 }

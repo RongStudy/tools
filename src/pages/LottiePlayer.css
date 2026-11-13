@@ -151,3 +151,7 @@
   .lottie-url-form { flex-wrap: wrap; gap: .5rem; }
   .lottie-url-form label { width: 100%; }
 }
+
+.tool-options-content .lottie-samples { flex-direction: column; align-items: stretch; }
+.tool-options-content .lottie-samples small { margin-left: 0; }
+.tool-options-content .lottie-toggle, .tool-options-content .lottie-speed { min-height: 36px; font-size: 13px; justify-content: space-between; }

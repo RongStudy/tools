@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import EditorStatusBar from '../components/EditorStatusBar'
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
@@ -5,6 +6,7 @@ import lottie from 'lottie-web/build/player/lottie_light'
 import type { AnimationItem } from 'lottie-web'
 import SplitPaneDivider from '../components/SplitPaneDivider'
 import ToolLayout from '../components/ToolLayout'
+import ToolOptions from '../components/ToolOptions'
 import { getSplitPaneGridStyle, usePersistentSplitRatio } from '../hooks/useSplitPane'
 import { languageEditorOptions } from '../monaco/languageCapabilities'
 import { useToast } from '../components/toastContext'
@@ -22,11 +24,12 @@ const samples = [
   { name: '加载条', data: bars },
 ]
 const initialData = validateLottieData(pulse)
-const getError = (error: unknown) => error instanceof Error ? error.message : '动画加载失败，请检查 JSON。'
+const getError = (error: unknown) => error instanceof Error ? error.message : t("动画加载失败，请检查 JSON。")
 type AnimationSource = { data: LottieData; baseUrl: string; autoplay: boolean }
 type PlaybackStatus = 'loading' | 'playing' | 'paused' | 'empty' | 'error'
 
 const LottiePlayer = () => {
+  useLocale()
   const { monacoTheme } = useAppTheme()
   const [json, setJson] = useState(() => JSON.stringify(pulse, null, 2))
   const [url, setUrl] = useState('')
@@ -71,13 +74,13 @@ const LottiePlayer = () => {
       player.addEventListener('complete', () => { if (active) setStatus('paused') })
       player.addEventListener('data_failed', () => {
         if (!active) return
-        setError('动画资源加载失败，请检查图片链接及其跨域配置。')
+        setError(t("动画资源加载失败，请检查图片链接及其跨域配置。"))
         setStatus('error')
       })
       player.addEventListener('error', () => {
         if (!active) return
         player?.pause()
-        setError('动画渲染失败，请检查图层和资源数据。')
+        setError(t("动画渲染失败，请检查图层和资源数据。"))
         setStatus('error')
       })
       if (player.isLoaded) ready()
@@ -125,11 +128,11 @@ const LottiePlayer = () => {
       controller.abort()
       requestRef.current = null
       setLoading(false)
-      setError('加载超时，请检查链接或稍后重试。')
+      setError(t("加载超时，请检查链接或稍后重试。"))
     }, 20000)
     try {
       const response = await fetch(parsed.href, { signal: controller.signal, credentials: 'omit' })
-      if (!response.ok) throw new Error(`加载失败：HTTP ${response.status}`)
+      if (!response.ok) throw new Error(t("加载失败：HTTP {value0}", { value0: response.status }))
       const text = await response.text()
       if (controller.signal.aborted || requestRef.current !== controller) return
       const data = parseLottieJson(text)
@@ -141,7 +144,7 @@ const LottiePlayer = () => {
     } catch (cause) {
       if (controller.signal.aborted || requestRef.current !== controller) return
       setError(cause instanceof TypeError
-        ? '无法读取动画链接，请检查网络和 CORS 配置。也可将 JSON 粘贴到左侧播放。'
+        ? t("无法读取动画链接，请检查网络和 CORS 配置。也可将 JSON 粘贴到左侧播放。")
         : getError(cause))
     } finally {
       window.clearTimeout(timeout)
@@ -168,11 +171,11 @@ const LottiePlayer = () => {
   }
   const format = () => {
     try { setJson(JSON.stringify(JSON.parse(json), null, 2)); setError('') }
-    catch { setError('JSON 格式错误，请检查后重新格式化。') }
+    catch { setError(t("JSON 格式错误，请检查后重新格式化。")) }
   }
   const copy = async () => {
     const success = await writeTextToClipboard(json)
-    showToast(success ? '已复制 JSON' : '复制失败', success ? 'success' : 'error')
+    showToast(success ? t("已复制 JSON") : t("复制失败"), success ? 'success' : 'error')
   }
   const togglePlayback = () => {
     if (!playerRef.current) return
@@ -184,71 +187,72 @@ const LottiePlayer = () => {
   return (
     <ToolLayout
       className="lottie-player"
-      title="Lottie 动画"
-      description="载入动画 JSON 并预览播放效果。"
-    >
-      <div className="lottie-source">
-        <form className="lottie-url-form" onSubmit={(event) => { event.preventDefault(); void loadUrl() }}>
-          <label htmlFor="lottie-url">动画 URL</label>
-          <input id="lottie-url" type="text" value={url} onChange={(event) => { cancelRequest(); setUrl(event.target.value) }} placeholder="https://example.com/animation.json" spellCheck={false} />
-          <button type="submit" className="btn btn-primary">{loading ? '重新加载' : '加载并播放'}</button>
-        </form>
-        <div className="lottie-samples" aria-label="示例动画">
-          <span>示例</span>
-          {samples.map((sample) => <button key={sample.name} type="button" className="btn-small" onClick={() => {
+      title={t("Lottie 动画")}
+      actions={<ToolOptions label={t('示例动画')} closeOnAction>
+
+          {samples.map((sample) => <button key={t(sample.name)} type="button" className="btn-small" onClick={() => {
             cancelRequest()
             setUrl('')
             setJson(JSON.stringify(sample.data, null, 2))
             setError('')
             sourceUrlRef.current = window.location.href
             setAnimation({ data: validateLottieData(sample.data), baseUrl: window.location.href, autoplay: true })
-          }}>{sample.name}</button>)}
-          <small>远程链接需允许跨域访问；加载后自动回显 JSON</small>
-        </div>
+          }}>{t(sample.name)}</button>)}
+        </ToolOptions>}
+    >
+      <div className="lottie-source">
+        <form className="lottie-url-form" onSubmit={(event) => { event.preventDefault(); void loadUrl() }}>
+          <label htmlFor="lottie-url">{t("动画 URL")}</label>
+          <input id="lottie-url" type="text" value={url} onChange={(event) => { cancelRequest(); setUrl(event.target.value) }} placeholder="https://example.com/animation.json" spellCheck={false} />
+          <button type="submit" className="btn btn-primary">{loading ? t("重新加载") : t("加载并播放")}</button>
+        </form>
+
       </div>
       <div ref={gridRef} className="lottie-workspace" style={getSplitPaneGridStyle(splitRatio)}>
         <section className="editor-panel lottie-editor-panel">
           <div className="panel-header">
-            <span>动画 JSON</span>
+            <span>{t("动画 JSON")}</span>
             <div className="panel-actions">
-              <button type="button" className="btn-small" onClick={format} disabled={!json}>格式化</button>
-              <button type="button" className="btn-small" onClick={() => void copy()} disabled={!json}>复制</button>
-              <button type="button" className="btn-small" onClick={clear}>清空</button>
-              <button type="button" className="btn-small btn-primary" onClick={playJson} disabled={!json.trim()}>播放 JSON</button>
+              <button type="button" className="btn-small" onClick={format} disabled={!json}>{t("格式化")}</button>
+              <button type="button" className="btn-small" onClick={() => void copy()} disabled={!json}>{t("复制")}</button>
+              <button type="button" className="btn-small" onClick={clear}>{t("清空")}</button>
+              <button type="button" className="btn-small btn-primary" onClick={playJson} disabled={!json.trim()}>{t("播放 JSON")}</button>
             </div>
           </div>
           <div className="lottie-editor">
             <Editor height="100%" language="json" value={json} onChange={changeJson}
-              loading={<div className="monaco-loading">编辑器加载中</div>} theme={monacoTheme}
+              loading={<div className="monaco-loading">{t("编辑器加载中")}</div>} theme={monacoTheme}
               path="inmemory://dev-tools/lottie/animation.json"
               options={{ ...languageEditorOptions, minimap: { enabled: false }, fontSize: 14,
                 wordWrap: 'on', automaticLayout: true, fixedOverflowWidgets: true,
                 scrollBeyondLastLine: false, ariaLabel: 'Lottie JSON', padding: { top: 12 } }} />
           </div>
-          <EditorStatusBar text={json} label="动画 JSON" error={error}>
-            {!error && <span role="status">{loading ? '正在加载动画 JSON…' : '点击“播放 JSON”更新预览'}</span>}
+          <EditorStatusBar text={json} label={t("动画 JSON")} error={error}>
+            {!error && <span role="status">{loading ? t("正在加载动画 JSON…") : t("点击“播放 JSON”更新预览")}</span>}
           </EditorStatusBar>
         </section>
-        <SplitPaneDivider containerRef={gridRef} ratio={splitRatio} onRatioChange={setSplitRatio} label="调整 JSON 与预览宽度" />
+        <SplitPaneDivider containerRef={gridRef} ratio={splitRatio} onRatioChange={setSplitRatio} label={t("调整 JSON 与预览宽度")} />
         <section className="editor-panel lottie-preview-panel">
           <div className="panel-header">
-            <span>动画预览</span>
+            <span>{t("动画预览")}</span>
             <div className="panel-actions">
-              <button type="button" className="btn-small" disabled={!canControl} onClick={togglePlayback}>{status === 'playing' ? '暂停' : '播放'}</button>
-              <button type="button" className="btn-small" disabled={!canControl} onClick={() => { playerRef.current?.goToAndPlay(0, true); setStatus('playing') }}>重播</button>
-              <label className="lottie-toggle"><input type="checkbox" checked={loop} onChange={(event) => setLoop(event.target.checked)} />循环</label>
-              <label className="lottie-speed">速度<select aria-label="播放速度" value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
+              <button type="button" className="btn-small" disabled={!canControl} onClick={togglePlayback}>{status === 'playing' ? t("暂停") : t("播放")}</button>
+              <button type="button" className="btn-small" disabled={!canControl} onClick={() => { playerRef.current?.goToAndPlay(0, true); setStatus('playing') }}>{t("重播")}</button>
+              <ToolOptions label={t('播放选项')} compact>
+              <label className="lottie-toggle"><input type="checkbox" checked={loop} onChange={(event) => setLoop(event.target.checked)} />{t("循环")}</label>
+              <label className="lottie-speed">{t("速度")}<select aria-label={t("播放速度")} value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
                 {[0.5, 1, 1.5, 2].map((value) => <option key={value} value={value}>{value}×</option>)}
               </select></label>
+              </ToolOptions>
             </div>
           </div>
           <div className="lottie-preview-stage">
-            <div ref={previewRef} className="lottie-canvas" aria-label="Lottie 动画预览" role="img" />
-            {(status === 'empty' || status === 'error' || status === 'loading') && <div className="lottie-empty">{status === 'loading' ? '正在准备动画…' : status === 'error' ? '无法渲染此动画，请检查提示' : '输入 JSON 或加载链接以播放'}</div>}
+            <div ref={previewRef} className="lottie-canvas" aria-label={t("Lottie 动画预览")} role="img" />
+            {(status === 'empty' || status === 'error' || status === 'loading') && <div className="lottie-empty">{status === 'loading' ? t("正在准备动画…") : status === 'error' ? t("无法渲染此动画，请检查提示") : t("输入 JSON 或加载链接以播放")}</div>}
           </div>
           <div className="lottie-metadata" aria-live="polite">
-            <span>{status === 'playing' ? '播放中' : status === 'paused' ? '已暂停' : status === 'loading' ? '加载中' : status === 'error' ? '渲染失败' : '等待动画'}</span>
-            {animation && <span>{animation.data.w} × {animation.data.h} · {animation.data.fr} fps · {((animation.data.op - animation.data.ip) / animation.data.fr).toFixed(2)} 秒</span>}
+            <span>{status === 'playing' ? t("播放中") : status === 'paused' ? t("已暂停") : status === 'loading' ? t("加载中") : status === 'error' ? t("渲染失败") : t("等待动画")}</span>
+            {animation && <span>{animation.data.w} × {animation.data.h} · {animation.data.fr} fps · {((animation.data.op - animation.data.ip) / animation.data.fr).toFixed(2)} {t("秒")}</span>}
           </div>
         </section>
       </div>

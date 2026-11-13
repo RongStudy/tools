@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 /**
  * 内嵌 Mermaid 图表块交互增强（纯前端、命令式 DOM 操作）
  *
@@ -134,7 +135,7 @@ const openFullscreen = (svg: SVGSVGElement) => {
   const zoomControls = document.createElement('div')
   zoomControls.className = 'mermaid-zoom-controls'
   zoomControls.setAttribute('role', 'group')
-  zoomControls.setAttribute('aria-label', '图表缩放')
+  zoomControls.setAttribute('aria-label', t("图表缩放"))
 
   const body = document.createElement('div')
   body.className = 'mermaid-block-overlay-body'
@@ -163,11 +164,11 @@ const openFullscreen = (svg: SVGSVGElement) => {
   }
   window.addEventListener('keydown', onKeyDown)
 
-  zoomControls.appendChild(createButton('−', '缩小图表', 'btn-small mermaid-zoom-button', zoomView.zoomOut))
+  zoomControls.appendChild(createButton('−', t("缩小图表"), 'btn-small mermaid-zoom-button', zoomView.zoomOut))
   zoomControls.appendChild(zoomLabel)
-  zoomControls.appendChild(createButton('+', '放大图表', 'btn-small mermaid-zoom-button', zoomView.zoomIn))
+  zoomControls.appendChild(createButton('+', t("放大图表"), 'btn-small mermaid-zoom-button', zoomView.zoomIn))
 
-  const fullscreenButton = createButton('退出全屏', '退出全屏', 'btn-small btn-fullscreen', close)
+  const fullscreenButton = createButton(t("退出全屏"), t("退出全屏"), 'btn-small btn-fullscreen', close)
 
   toolbar.appendChild(zoomControls)
   toolbar.appendChild(fullscreenButton)
@@ -198,7 +199,7 @@ export const enhanceMermaidBlock = (block: HTMLElement): (() => void) => {
   const zoomControls = document.createElement('div')
   zoomControls.className = 'mermaid-zoom-controls'
   zoomControls.setAttribute('role', 'group')
-  zoomControls.setAttribute('aria-label', '图表缩放')
+  zoomControls.setAttribute('aria-label', t("图表缩放"))
 
   const body = document.createElement('div')
   body.className = 'mermaid-block-body'
@@ -216,11 +217,11 @@ export const enhanceMermaidBlock = (block: HTMLElement): (() => void) => {
   })
   const detachDrag = attachDragPan(body)
 
-  zoomControls.appendChild(createButton('−', '缩小图表', 'btn-small mermaid-zoom-button', zoomView.zoomOut))
+  zoomControls.appendChild(createButton('−', t("缩小图表"), 'btn-small mermaid-zoom-button', zoomView.zoomOut))
   zoomControls.appendChild(zoomLabel)
-  zoomControls.appendChild(createButton('+', '放大图表', 'btn-small mermaid-zoom-button', zoomView.zoomIn))
+  zoomControls.appendChild(createButton('+', t("放大图表"), 'btn-small mermaid-zoom-button', zoomView.zoomIn))
 
-  const fullscreenButton = createButton('⛶', '全屏查看', 'btn-small btn-fullscreen', () => openFullscreen(svg))
+  const fullscreenButton = createButton('⛶', t("全屏查看"), 'btn-small btn-fullscreen', () => openFullscreen(svg))
 
   toolbar.appendChild(zoomControls)
   toolbar.appendChild(fullscreenButton)

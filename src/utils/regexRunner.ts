@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { evaluateRegex, type RegexTaskInput, type RegexTaskResult } from './regex'
 
 const DEFAULT_TIMEOUT_MS = 1000
@@ -18,7 +19,7 @@ export const runRegexTask = (
     const worker = new Worker(new URL('../workers/regex.worker.ts', import.meta.url), { type: 'module' })
     const timeout = window.setTimeout(() => {
       worker.terminate()
-      reject(new Error(`执行超过 ${timeoutMs}ms，表达式可能存在灾难性回溯`))
+      reject(new Error(t("执行超过 {value0}ms，表达式可能存在灾难性回溯", { value0: timeoutMs })))
     }, timeoutMs)
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -34,7 +35,7 @@ export const runRegexTask = (
     worker.onerror = (event) => {
       window.clearTimeout(timeout)
       worker.terminate()
-      reject(new Error(event.message || '正则执行失败'))
+      reject(new Error(event.message || t("正则执行失败")))
     }
 
     worker.postMessage(input)

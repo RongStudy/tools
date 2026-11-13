@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import searchIcon from '../assets/tool-icons/search.png'
 
-export type ToolIconName = 'home' | 'json' | 'diff' | 'regex' | 'codec' | 'diagram' | 'clock' | 'note' | 'search' | 'animation' | 'settings'
+export type ToolIconName = 'home' | 'json' | 'diff' | 'regex' | 'codec' | 'diagram' | 'clock' | 'note' | 'search' | 'animation' | 'settings' | 'qr'
 
 const shapes: Record<ToolIconName, ReactNode> = {
+  qr: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M6 6h1v1H6zM17 6h1v1h-1zM6 17h1v1H6zM14 14h3v3h4v4h-4M14 18v3M21 14v1" /></>,
   home: <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h5v-6h4v6h5V9" /></>,
   json: <><path d="M9 4H7a2 2 0 0 0-2 2v3a3 3 0 0 1-2 3 3 3 0 0 1 2 3v3a2 2 0 0 0 2 2h2M15 4h2a2 2 0 0 1 2 2v3a3 3 0 0 0 2 3 3 3 0 0 0-2 3v3a2 2 0 0 1-2 2h-2" /><circle cx="12" cy="9" r=".7" /><circle cx="12" cy="15" r=".7" /></>,
   diff: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M12 4v16M6 9h3M6 15h3M15 12h3M16.5 10.5v3" /></>,

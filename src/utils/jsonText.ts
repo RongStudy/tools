@@ -1,9 +1,10 @@
+import { t } from '../i18n'
 import { createScanner, visit, printParseErrorCode, format, applyEdits } from 'jsonc-parser'
 
 const validate = (text: string) => {
   let error = ''
   visit(text, {
-    onError: (code, offset) => { error ||= `${printParseErrorCode(code)} (位置 ${offset + 1})` },
+    onError: (code, offset) => { error ||= t("{value0} (位置 {value1})", { value0: printParseErrorCode(code), value1: offset + 1 }) },
   }, { disallowComments: true, allowTrailingComma: false })
   if (error) throw new Error(error)
 }

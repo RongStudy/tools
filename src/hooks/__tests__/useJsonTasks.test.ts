@@ -23,6 +23,7 @@ describe('JSON tasks', () => {
     const oldResult = vi.fn(), latest = vi.fn(), second = vi.fn()
     act(() => { result.current.process('a', large, 'format', 2, oldResult, true); vi.advanceTimersByTime(300) })
     const oldWorker = MockWorker.instances[0]
+    expect(oldWorker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ locale: 'zh' }))
     act(() => {
       result.current.process('a', large + ' ', 'compress', 2, latest, true)
       result.current.process('b', large, 'format', 4, second, true)

@@ -1,3 +1,4 @@
+import { t, useLocale } from './i18n'
 import { Suspense, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { PlatformRouter } from '@platform'
@@ -17,6 +18,7 @@ const CACHED_TOOL_PATHS = ['/json', '/code-diff', '/scratch-pad']
 const isCachedToolPath = (path: string) => CACHED_TOOL_PATHS.includes(path)
 
 const ToolRoutes = () => {
+  useLocale()
   const location = useLocation()
   const activePath = location.pathname.replace(/\/+$/, '') || '/'
   const needsMonaco = [...CACHED_TOOL_PATHS, '/mermaid', '/lottie'].includes(activePath)
@@ -57,9 +59,9 @@ const ToolRoutes = () => {
   if (!monacoReady && needsMonaco) {
     return monacoError ? (
       <div className="tool-route-loading" role="alert">
-        编辑器加载失败 <button className="btn-small" onClick={retryMonaco}>重试</button>
+        {t("编辑器加载失败")}<button className="btn-small" onClick={retryMonaco}>{t("重试")}</button>
       </div>
-    ) : <div className="tool-route-loading" role="status">编辑器加载中</div>
+    ) : <div className="tool-route-loading" role="status">{t("编辑器加载中")}</div>
   }
 
   if (!isCachedToolPath(activePath)) {
@@ -93,6 +95,7 @@ const ToolRoutes = () => {
 }
 
 function App() {
+  useLocale()
   useEffect(() => suppressMonacoCancellationErrorLogs(), [])
   const [device] = useState(getDeviceKind)
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
@@ -112,7 +115,7 @@ function App() {
     <ToastProvider>
       <PlatformRouter>
         <AppShell tools={tools}>
-          <Suspense fallback={<div className="tool-route-loading">工具加载中</div>}>
+          <Suspense fallback={<div className="tool-route-loading">{t("工具加载中")}</div>}>
             <ToolRoutes />
           </Suspense>
         </AppShell>

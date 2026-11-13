@@ -31,6 +31,7 @@ afterEach(() => vi.unstubAllGlobals())
 function renderDiff() { return render(<ToastProvider><CodeDiff /></ToastProvider>) }
 function enableWriteback() { fireEvent.click(screen.getByRole('checkbox', { name: '写回原文件' })) }
 
+
 describe('CodeDiff 本地文件', () => {
   it('在后台完成读取仅更新发起操作的标签', async () => {
     const read = deferred<ArrayBuffer>()
@@ -70,8 +71,8 @@ describe('CodeDiff 本地文件', () => {
     renderDiff()
     const slow = new File([], 'slow.txt')
     Object.defineProperty(slow, 'text', { value: () => first.promise })
-    fireEvent.change(screen.getByLabelText('加载原始文件'), { target: { files: [slow] } })
-    fireEvent.change(screen.getByLabelText('加载原始文件'), { target: { files: [new File(['最新结果'], 'latest.txt')] } })
+    fireEvent.change(screen.getByLabelText('加载原始文件', { selector: 'input' }), { target: { files: [slow] } })
+    fireEvent.change(screen.getByLabelText('加载原始文件', { selector: 'input' }), { target: { files: [new File(['最新结果'], 'latest.txt')] } })
     await waitFor(() => expect(screen.getByLabelText('original-code')).toHaveValue('最新结果'))
     await act(async () => { first.resolve('过期结果'); await first.promise })
     expect(screen.getByLabelText('original-code')).toHaveValue('最新结果')

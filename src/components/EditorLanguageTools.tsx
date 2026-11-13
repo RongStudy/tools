@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type * as Monaco from 'monaco-editor'
 import { hasBuiltinDiagnostics, hasBuiltinLanguageService } from '../monaco/languageCapabilities'
@@ -8,6 +9,7 @@ export type EditorLanguageBinding = { editor: Monaco.editor.IStandaloneCodeEdito
 type Props = { binding?: EditorLanguageBinding; language: string; path: string; label: string; caption?: string }
 
 const EditorLanguageTools = ({ binding, language, path, label, caption }: Props) => {
+  useLocale()
   const [markers, setMarkers] = useState<Monaco.editor.IMarker[]>([])
   const [open, setOpen] = useState(false)
   const [formatting, setFormatting] = useState(false)
@@ -73,7 +75,7 @@ const EditorLanguageTools = ({ binding, language, path, label, caption }: Props)
     const editor = currentEditor()
     const action = editor?.getAction(id)
     if (!action?.isSupported()) {
-      showToast('语言服务尚未就绪，请稍后重试', 'info')
+      showToast(t("语言服务尚未就绪，请稍后重试"), 'info')
       return
     }
     editor?.focus()
@@ -81,22 +83,22 @@ const EditorLanguageTools = ({ binding, language, path, label, caption }: Props)
       if (id === 'editor.action.formatDocument') setFormatting(true)
       await action.run()
     } catch {
-      showToast('处理失败，请重试', 'error')
+      showToast(t("处理失败，请重试"), 'error')
     } finally {
       setFormatting(false)
     }
   }
 
   return (
-    <div className="editor-language-tools" ref={root} role="group" aria-label={`${label}语言工具`} onKeyDown={(event) => {
+    <div className="editor-language-tools" ref={root} role="group" aria-label={t("{value0}语言工具", { value0: label })} onKeyDown={(event) => {
       if (event.key === 'Escape' && open) { event.stopPropagation(); setOpen(false) }
     }}>
       {caption && <span className="editor-language-label">{caption}</span>}
-      <button type="button" className="btn-small" aria-label={`${label}补全`} title="显示补全（Ctrl+Space）" disabled={!binding} onClick={() => void runAction('editor.action.triggerSuggest')}>补全</button>
-      <button type="button" className="btn-small" aria-label={`${label}格式化`} title="格式化当前内容（Shift+Alt+F）" disabled={!binding || formatting} onClick={() => void runAction('editor.action.formatDocument')}>格式化</button>
-      {supportsDiagnostics && <button type="button" className={`btn-small${markers.length ? ' has-problems' : ''}`} aria-label={`${label}问题 ${markers.length}`} aria-expanded={open} aria-controls={listId} disabled={!binding} onClick={() => setOpen((value) => !value)}>问题 {markers.length}</button>}
-      {open && supportsDiagnostics && <div className="editor-problems" ref={problemList} style={{ left: problemLeft, right: problemLeft === undefined ? 0 : 'auto' }} role="region" aria-label={`${label}问题列表`} id={listId}>
-        <div className="editor-problems-header"><span>{label} · 问题 {markers.length}</span><button type="button" className="btn-small" aria-label={`关闭${label}问题列表`} onClick={() => setOpen(false)}>关闭</button></div>
+      <button type="button" className="btn-small" aria-label={t("{value0}补全", { value0: label })} title={t("显示补全（Ctrl+Space）")} disabled={!binding} onClick={() => void runAction('editor.action.triggerSuggest')}>{t("补全")}</button>
+      <button type="button" className="btn-small" aria-label={t("{value0}格式化", { value0: label })} title={t("格式化当前内容（Shift+Alt+F）")} disabled={!binding || formatting} onClick={() => void runAction('editor.action.formatDocument')}>{t("格式化")}</button>
+      {supportsDiagnostics && <button type="button" className={`btn-small${markers.length ? ' has-problems' : ''}`} aria-label={t("{value0}问题 {value1}", { value0: label, value1: markers.length })} aria-expanded={open} aria-controls={listId} disabled={!binding} onClick={() => setOpen((value) => !value)}>{t("问题")}{markers.length}</button>}
+      {open && supportsDiagnostics && <div className="editor-problems" ref={problemList} style={{ left: problemLeft, right: problemLeft === undefined ? 0 : 'auto' }} role="region" aria-label={t("{value0}问题列表", { value0: label })} id={listId}>
+        <div className="editor-problems-header"><span>{label} {t("· 问题")}{markers.length}</span><button type="button" className="btn-small" aria-label={t("关闭{value0}问题列表", { value0: label })} onClick={() => setOpen(false)}>{t("关闭")}</button></div>
         {markers.length ? <ul>{markers.map((marker, index) => <li key={index}><button type="button" onClick={() => {
           const editor = currentEditor()
           if (!editor) return
@@ -104,7 +106,7 @@ const EditorLanguageTools = ({ binding, language, path, label, caption }: Props)
           editor.revealLineInCenter(marker.startLineNumber)
           editor.focus()
           setOpen(false)
-        }}><span className={binding && marker.severity === binding.monaco.MarkerSeverity.Error ? 'problem-error' : 'problem-warning'}>{binding && marker.severity === binding.monaco.MarkerSeverity.Error ? '错误' : '警告'} {marker.startLineNumber}:{marker.startColumn}</span><span>{marker.message}</span></button></li>)}</ul> : <p>暂无错误或警告</p>}
+        }}><span className={binding && marker.severity === binding.monaco.MarkerSeverity.Error ? 'problem-error' : 'problem-warning'}>{binding && marker.severity === binding.monaco.MarkerSeverity.Error ? t("错误") : t("警告")} {marker.startLineNumber}:{marker.startColumn}</span><span>{marker.message}</span></button></li>)}</ul> : <p>{t("暂无错误或警告")}</p>}
       </div>}
     </div>
   )

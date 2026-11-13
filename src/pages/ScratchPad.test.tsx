@@ -47,6 +47,12 @@ const mockDownloads = () => {
   return { createObjectURL, revokeObjectURL, filenames }
 }
 
+
+function openOptions(name: string | RegExp) {
+  const trigger = screen.getByRole('button', { name })
+  if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger)
+}
+
 describe('ScratchPad', () => {
   it('默认关闭写回，不支持时无法启用', () => {
     renderScratchPad()
@@ -292,6 +298,7 @@ describe('ScratchPad', () => {
   it('放大和缩小应在字号上下限内调整', () => {
     renderScratchPad()
 
+    openOptions('编辑选项')
     fireEvent.click(screen.getByRole('button', { name: '放大' }))
     expect(screen.getByTitle('当前字号')).toHaveTextContent('15px')
 

@@ -12,6 +12,7 @@ const renderRegexTester = () => render(
 describe('RegexTester', () => {
   it('实时显示默认示例的匹配和命名捕获组', async () => {
     renderRegexTester()
+    expect(screen.getByRole('textbox', { name: '测试文本' })).toHaveValue('Published: 2026-08-11\nNext update: 2026-09-01')
 
     await waitFor(() => expect(screen.getByText('2 个匹配')).toBeInTheDocument())
     expect(screen.getAllByText('year').length).toBeGreaterThan(0)
@@ -39,6 +40,7 @@ describe('RegexTester', () => {
   it('u 与 v 标志互斥', () => {
     renderRegexTester()
 
+    fireEvent.click(screen.getByRole('button', { name: /^Flags/ }))
     const unicode = screen.getByLabelText('u：Unicode 模式')
     const unicodeSets = screen.getByLabelText('v：Unicode 集合模式')
     fireEvent.click(unicode)

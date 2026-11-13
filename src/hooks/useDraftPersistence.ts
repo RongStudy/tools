@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useRef } from 'react'
 import { useToast } from '../components/toastContext'
 import { writeExpiringStorage } from '../utils/expiringStorage'
@@ -25,7 +26,7 @@ export const useDraftPersistence = <T,>(key: string, value: T) => {
       const saved = writeExpiringStorage(key, current.current.value)
       dirty.current = !saved
       if (!saved && !failed.current) {
-        current.current.showToast('草稿保存失败，请导出文件或复制内容备份', 'error')
+        current.current.showToast(t("草稿保存失败，请导出文件或复制内容备份"), 'error')
       }
       failed.current = !saved
     }

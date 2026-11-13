@@ -134,75 +134,6 @@
   font-weight: 500;
 }
 
-.code-diff-tabs {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.code-diff-tab-list {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  overflow-x: auto;
-  padding: 0.15rem;
-}
-
-.code-diff-tab {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-}
-
-.code-diff-tab:focus-within {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
-}
-
-.code-diff-tab-button,
-.code-diff-tab-close {
-  border: 0;
-  background: transparent;
-  color: var(--color-muted);
-  cursor: pointer;
-  font: 500 0.82rem/1.2 var(--font-text);
-}
-
-.code-diff-tab-button {
-  padding: 0.45rem 0.3rem 0.45rem 0.65rem;
-}
-
-.code-diff-tab-button.is-active {
-  color: var(--color-text);
-}
-
-.code-diff-tab:has(.code-diff-tab-button.is-active) {
-  border-color: var(--color-primary-border);
-  background: var(--color-primary-soft);
-}
-
-.code-diff-tab-close {
-  display: grid;
-  place-items: center;
-  width: 1.85rem;
-  height: 1.85rem;
-  color: var(--color-subtle);
-  font-size: 1.1rem;
-}
-
-.code-diff-tab-close:hover {
-  color: var(--color-text);
-}
-
-.code-diff-tab-add {
-  flex: 0 0 auto;
-}
-
 .panel-title {
   display: flex;
   flex-direction: column;
@@ -246,6 +177,29 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.diff-language-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex-shrink: 0; border-bottom: 1px solid var(--color-border); background: var(--color-surface-muted); }
+.diff-side-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 8px 12px; }
+.diff-side-tools + .diff-side-tools { border-left: 1px solid var(--color-border); }
+.diff-side-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; font-size: 13px; }
+.diff-side-identity strong { font-weight: 600; }
+.diff-side-language { color: var(--color-muted); font: 12px var(--font-mono); }
+.diff-side-filename { color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; max-width: 160px; white-space: nowrap; font-size: 12px; }
+.diff-side-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.diff-side-tools .editor-language-tools { flex-wrap: wrap; }
+.code-diff .diff-document-bar { align-items: center; flex-wrap: wrap; padding-right: 8px; }
+.code-diff .diff-document-bar .document-tab-list { align-self: stretch; }
+.diff-workspace-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-left: auto; padding: 4px 0; }
+.diff-workspace-actions .toggle-label { font-size: 12px; white-space: nowrap; }
+.diff-navigation { display: flex; align-items: center; gap: 4px; }
+.diff-navigation .btn-small { min-width: 28px; padding-inline: 6px; }
+.diff-navigation .diff-count { font-size: 12px; padding: 0 2px; }
+.code-diff.fullscreen-mode .diff-document-bar { flex-shrink: 0; padding: 6px 12px; background: var(--color-surface-muted); border-bottom: 1px solid var(--color-border); }
+@media (max-width: 900px) {
+  .diff-side-tools { align-content: flex-start; }
+  .code-diff .diff-document-bar { row-gap: 4px; }
+  .diff-workspace-actions { gap: 8px; }
 }
 
 .diff-status-bars {
@@ -319,16 +273,5 @@
     min-height: 2.75rem;
   }
 
-  .code-diff-tabs {
-    align-items: stretch;
-    flex-direction: column;
-  }
 
-  .code-diff-tab-list {
-    width: 100%;
-  }
-
-  .code-diff-tab-add {
-    align-self: flex-start;
-  }
 }

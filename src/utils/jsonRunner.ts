@@ -1,3 +1,4 @@
+import { getLocale, t } from '../i18n'
 import { transformJson, type JsonOperation } from './jsonText'
 
 export const LARGE_JSON_THRESHOLD = 50_000
@@ -14,14 +15,14 @@ export const runJsonTask = (text: string, operation: JsonOperation, indentSize: 
       worker.terminate()
     }
     const abort = () => { cleanup(); reject(new DOMException('Cancelled', 'AbortError')) }
-    const timeout = setTimeout(() => { cleanup(); reject(new Error('处理超时，请减少内容后重试')) }, 15_000)
+    const timeout = setTimeout(() => { cleanup(); reject(new Error(t("处理超时，请减少内容后重试"))) }, 15_000)
     signal.addEventListener('abort', abort, { once: true })
     worker.onmessage = (event: MessageEvent<{ output?: string; error?: string }>) => {
       cleanup()
       if (event.data.error) reject(new Error(event.data.error))
       else resolve(event.data.output ?? '')
     }
-    worker.onerror = () => { cleanup(); reject(new Error('处理失败，请重试')) }
-    worker.postMessage({ text, operation, indentSize })
+    worker.onerror = () => { cleanup(); reject(new Error(t("处理失败，请重试"))) }
+    worker.postMessage({ text, operation, indentSize, locale: getLocale() })
   })
 }

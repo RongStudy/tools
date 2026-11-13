@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../components/toastContext'
 import { isFilePickerCancelled, localFileErrorMessage, writeLocalFile, type OpenLocalFile } from '../utils/localFile'
@@ -37,7 +38,7 @@ export function useLocalFiles() {
       const saved = await writeLocalFile(opened, content)
       if (!mountedRef.current) return
       setFiles((current) => Object.fromEntries(Object.entries(current).map(([fileKey, file]) => [fileKey, file === opened ? saved : file])))
-      showToast(`已保存 ${opened.name}`)
+      showToast(t("已保存 {value0}", { value0: opened.name }))
     } catch (error) {
       if (mountedRef.current) showToast(localFileErrorMessage(error, 'save'), 'error')
     } finally {

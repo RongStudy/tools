@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { parseJsonSchema } from '../monaco/jsonSchema'
@@ -7,6 +8,7 @@ import './JsonSchemaDialog.css'
 type Props = { value: string; onSave: (schema: string) => void; onClose: () => void }
 
 const JsonSchemaDialog = ({ value, onSave, onClose }: Props) => {
+  useLocale()
   const [source, setSource] = useState(value)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -49,7 +51,7 @@ const JsonSchemaDialog = ({ value, onSave, onClose }: Props) => {
       onSave(source.trim())
       onClose()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Schema 无效')
+      setError(cause instanceof Error ? cause.message : t("Schema 无效"))
     }
   }
 
@@ -57,13 +59,13 @@ const JsonSchemaDialog = ({ value, onSave, onClose }: Props) => {
     <div className="save-file-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <form ref={formRef} className="save-file-dialog json-schema-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={save} onKeyDown={handleKeyDown}>
         <h2 id={titleId}>JSON Schema</h2>
-        <label htmlFor={inputId}>当前文档的校验规则</label>
+        <label htmlFor={inputId}>{t("当前文档的校验规则")}</label>
         <textarea ref={inputRef} id={inputId} value={source} onChange={(event) => { setSource(event.target.value); setError('') }} spellCheck={false} aria-invalid={Boolean(error)} aria-describedby={error ? `${helpId} ${errorId}` : helpId} placeholder={'{\n  "type": "object",\n  "properties": { "name": { "type": "string" } },\n  "required": ["name"]\n}'} />
-        <p id={helpId} className="save-file-help">用于字段补全与校验，仅作用于当前文档。留空可移除规则；外部引用不会自动下载。</p>
+        <p id={helpId} className="save-file-help">{t("用于字段补全与校验，仅作用于当前文档。留空可移除规则；外部引用不会自动下载。")}</p>
         {error && <p id={errorId} className="save-file-error" role="alert">{error}</p>}
         <div className="save-file-actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>取消</button>
-          <button type="submit" className="btn btn-primary">应用</button>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>{t("取消")}</button>
+          <button type="submit" className="btn btn-primary">{t("应用")}</button>
         </div>
       </form>
     </div>,

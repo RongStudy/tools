@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useToast } from './toastContext'
@@ -13,6 +14,7 @@ export type SaveFileRequest = {
 type SaveFileDialogProps = SaveFileRequest & { onClose: () => void }
 
 const SaveFileDialog = ({ content, defaultFilename, mimeType, onClose }: SaveFileDialogProps) => {
+  useLocale()
   const [filename, setFilename] = useState(defaultFilename)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -55,12 +57,12 @@ const SaveFileDialog = ({ content, defaultFilename, mimeType, onClose }: SaveFil
     event.preventDefault()
     const name = filename.trim()
     if (!name || name === '.' || name === '..') {
-      setError('请输入文件名')
+      setError(t("请输入文件名"))
       inputRef.current?.focus()
       return
     }
     if (/[\p{Cc}<>:"/\\|?*]/u.test(name) || /[. ]$/.test(name)) {
-      setError('文件名不能包含路径或特殊字符，也不能以句点结尾')
+      setError(t("文件名不能包含路径或特殊字符，也不能以句点结尾"))
       inputRef.current?.focus()
       return
     }
@@ -78,24 +80,24 @@ const SaveFileDialog = ({ content, defaultFilename, mimeType, onClose }: SaveFil
         // Allow the browser to consume the download before releasing its URL.
         window.setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
-      showToast('已发起文件下载')
+      showToast(t("已发起文件下载"))
       onClose()
     } catch {
-      setError('保存文件失败，请重试')
+      setError(t("保存文件失败，请重试"))
     }
   }
 
   return createPortal(
     <div className="save-file-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <form ref={dialogRef} className="save-file-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={save} onKeyDown={handleKeyDown}>
-        <h2 id={titleId}>保存到文件</h2>
-        <label htmlFor={inputId}>文件名</label>
+        <h2 id={titleId}>{t("保存到文件")}</h2>
+        <label htmlFor={inputId}>{t("文件名")}</label>
         <input ref={inputRef} id={inputId} value={filename} onChange={(event) => { setFilename(event.target.value); setError('') }} aria-invalid={Boolean(error)} aria-describedby={error ? `${helpId} ${errorId}` : helpId} autoComplete="off" />
-        <p id={helpId} className="save-file-help">未填写扩展名时，自动添加 {extension}</p>
+        <p id={helpId} className="save-file-help">{t("未填写扩展名时，自动添加")}{extension}</p>
         {error && <p id={errorId} className="save-file-error" role="alert">{error}</p>}
         <div className="save-file-actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>取消</button>
-          <button type="submit" className="btn btn-primary">保存</button>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>{t("取消")}</button>
+          <button type="submit" className="btn btn-primary">{t("保存")}</button>
         </div>
       </form>
     </div>,

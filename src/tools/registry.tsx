@@ -23,6 +23,7 @@ const toolIcons: Record<ToolIconName, string | undefined> = {
   note: noteIcon,
   search: undefined,
   settings: undefined,
+  qr: undefined,
   animation: lottieIcon,
 }
 
@@ -30,6 +31,7 @@ const JsonFormatter = lazy(() => import('../pages/JsonFormatter'))
 const CodeDiff = lazy(() => import('../pages/CodeDiff'))
 const TimestampConverter = lazy(() => import('../pages/TimestampConverter'))
 const UrlCodec = lazy(() => import('../pages/UrlCodec'))
+const QrCode = lazy(() => import('../pages/QrCode'))
 const MermaidRenderer = lazy(() => import('../pages/MermaidRenderer'))
 const RegexTester = lazy(() => import('../pages/RegexTester'))
 const ScratchPad = lazy(() => import('../pages/ScratchPad'))
@@ -99,6 +101,15 @@ const toolDefinitions: ToolDefinition[] = [
     category: '编码处理',
     icon: 'codec',
     component: UrlCodec,
+  },
+  {
+    path: toolPaths.qrCode,
+    title: '二维码',
+    navTitle: '二维码',
+    description: '',
+    category: '编码处理',
+    icon: 'qr',
+    component: QrCode,
   },
   {
     path: toolPaths.mermaid,

@@ -1,4 +1,5 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { t, useLocale } from '../i18n'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { ToolDefinition } from '../tools/registry'
 import ToolIcon from './ToolIcon'
@@ -10,6 +11,7 @@ type ToolSearchDialogProps = {
 }
 
 const ToolSearchDialog = ({ tools, onClose, onSelect }: ToolSearchDialogProps) => {
+  useLocale()
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -18,10 +20,10 @@ const ToolSearchDialog = ({ tools, onClose, onSelect }: ToolSearchDialogProps) =
   const restoreFocus = useRef(true)
   const titleId = useId()
   const resultsId = useId()
-  const filteredTools = useMemo(() => {
+  const filteredTools = (() => {
     const normalized = query.trim().toLowerCase()
-    return tools.filter((tool) => `${tool.title} ${tool.navTitle} ${tool.description} ${tool.category}`.toLowerCase().includes(normalized))
-  }, [query, tools])
+    return tools.filter((tool) => `${tool.title} ${tool.navTitle} ${tool.description} ${tool.category} ${t(tool.title)} ${t(tool.navTitle)} ${t(tool.description)} ${t(tool.category)}`.toLowerCase().includes(normalized))
+  })()
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -71,24 +73,24 @@ const ToolSearchDialog = ({ tools, onClose, onSelect }: ToolSearchDialogProps) =
     <div className="tool-search-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <div ref={dialogRef} className="tool-search-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} onKeyDown={handleKeyDown}>
         <div className="tool-search-header">
-          <h2 id={titleId}>切换工具</h2>
-          <button type="button" className="tool-search-close" aria-label="关闭工具搜索" onClick={onClose}>×</button>
+          <h2 id={titleId}>{t("切换工具")}</h2>
+          <button type="button" className="tool-search-close" aria-label={t("关闭工具搜索")} onClick={onClose}>×</button>
         </div>
         <label className="tool-search-field">
           <ToolIcon name="search" />
-          <input ref={inputRef} type="search" aria-label="搜索工具" aria-controls={resultsId} value={query} placeholder="输入名称或能力，如 JSON、Base64" onChange={(event) => { setQuery(event.target.value); setSelectedIndex(0) }} />
+          <input ref={inputRef} type="search" aria-label={t("搜索工具")} aria-controls={resultsId} value={query} placeholder={t("输入名称或能力，如 JSON、Base64")} onChange={(event) => { setQuery(event.target.value); setSelectedIndex(0) }} />
         </label>
         <div className="tool-search-results" id={resultsId}>
           {filteredTools.map((tool, index) => (
             <button ref={(element) => { resultRefs.current[index] = element }} key={tool.path} type="button" className={`tool-search-result${index === selectedIndex ? ' selected' : ''}`} onFocus={() => setSelectedIndex(index)} onPointerEnter={() => setSelectedIndex(index)} onClick={() => openTool(tool)}>
               <span className="tool-search-result-icon"><ToolIcon name={tool.icon} src={tool.iconSrc} /></span>
-              <span className="tool-search-result-copy"><span>{tool.navTitle}</span><small>{tool.description}</small></span>
+              <span className="tool-search-result-copy"><span>{t(tool.navTitle)}</span><small>{t(tool.description)}</small></span>
               <span className="tool-search-result-enter" aria-hidden="true">↵</span>
             </button>
           ))}
-          {filteredTools.length === 0 && <p className="tool-search-empty" role="status">没有匹配的工具</p>}
+          {filteredTools.length === 0 && <p className="tool-search-empty" role="status">{t("没有匹配的工具")}</p>}
         </div>
-        <p className="tool-search-help">↑↓ 选择 · Enter 打开 · Esc 关闭</p>
+        <p className="tool-search-help">{t("↑↓ 选择 · Enter 打开 · Esc 关闭")}</p>
       </div>
     </div>,
     document.body,

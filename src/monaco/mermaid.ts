@@ -1,11 +1,12 @@
+import { t } from '../i18n'
 import type * as Monaco from 'monaco-editor/editor'
 
 const snippets = [
-  { label: 'flowchart', detail: '流程图', text: 'flowchart ${1:LR}\n  ${2:A}[${3:开始}] --> ${4:B}[${5:结束}]' },
-  { label: 'sequenceDiagram', detail: '时序图', text: 'sequenceDiagram\n  participant ${1:A}\n  participant ${2:B}\n  $1->>$2: ${3:请求}\n  $2-->>$1: ${4:响应}' },
+  { label: 'flowchart', detail: '流程图', text: 'flowchart ${1:LR}\n  ${2:A}[${3:Start}] --> ${4:B}[${5:End}]' },
+  { label: 'sequenceDiagram', detail: '时序图', text: 'sequenceDiagram\n  participant ${1:A}\n  participant ${2:B}\n  $1->>$2: ${3:Request}\n  $2-->>$1: ${4:Response}' },
   { label: 'classDiagram', detail: '类图', text: 'classDiagram\n  class ${1:Example} {\n    +${2:String} ${3:name}\n    +${4:run}()\n  }' },
   { label: 'stateDiagram-v2', detail: '状态图', text: 'stateDiagram-v2\n  [*] --> ${1:Idle}\n  $1 --> ${2:Done}\n  $2 --> [*]' },
-  { label: 'subgraph', detail: '子图', text: 'subgraph ${1:Group}[${2:分组}]\n  ${3:A --> B}\nend' },
+  { label: 'subgraph', detail: '子图', text: 'subgraph ${1:Group}[${2:Group}]\n  ${3:A --> B}\nend' },
 ]
 
 export const registerMermaidLanguage = (monaco: typeof Monaco) => {
@@ -35,7 +36,7 @@ export const registerMermaidLanguage = (monaco: typeof Monaco) => {
       const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn)
       return {
         suggestions: snippets.map(({ label, detail, text }) => ({
-          label, detail, range,
+          label, detail: t(detail), range,
           kind: monaco.languages.CompletionItemKind.Snippet,
           insertText: text,
           insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,

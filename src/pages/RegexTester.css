@@ -2,11 +2,6 @@
   gap: 0.9rem;
 }
 
-.regex-tester .tool-layout-header {
-  grid-template-columns: minmax(18rem, 1fr) minmax(24rem, auto);
-  gap: 1rem;
-}
-
 .regex-page-actions {
   display: flex;
   justify-content: flex-end;
@@ -702,3 +697,10 @@
     border-right: 0;
   }
 }
+
+.tool-options-content .regex-flags { display: flex; flex-direction: column; align-items: stretch; overflow: visible; padding: 0; gap: 2px; }
+.tool-options-content .regex-flags > label { display: flex; min-height: 30px; padding: 4px 8px; border: 0; border-radius: 4px; }
+.tool-options-content .regex-flags > label span { display: inline; }
+.tool-options-content .regex-flags-label { display: none; }
+.tool-options-content .regex-page-actions { flex-direction: column; }
+.tool-options-content label:has(select) { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }

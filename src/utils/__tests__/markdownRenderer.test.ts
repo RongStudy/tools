@@ -128,6 +128,7 @@ describe('renderMarkdown', () => {
   })
 
   it('默认示例包含各类型内容且可渲染', () => {
+    expect(DEFAULT_MARKDOWN_CODE).not.toMatch(/[\u3400-\u9fff]/u)
     const html = renderMarkdown(DEFAULT_MARKDOWN_CODE)
     expect(html).toContain('<h1')
     expect(html).toContain('<table>')

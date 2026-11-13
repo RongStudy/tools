@@ -143,3 +143,5 @@
   .home-lottie-bars b { animation: none; }
   .home-tool-card:hover, .home-tool-card:is(:hover, :focus-visible) :is(.home-tool-arrow, .home-preview-diagram > i, .home-conversion-arrow) { transform: none; }
 }
+
+.home-tool-qr .home-preview-conversion > svg { width: 54px; height: 54px; }

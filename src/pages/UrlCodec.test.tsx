@@ -35,7 +35,7 @@ describe('UrlCodec', () => {
   it('完整 URL 模式应保留 URL 结构字符', () => {
     renderUrlCodec()
 
-    fireEvent.click(screen.getByRole('button', { name: '完整 URL' }))
+    fireEvent.change(screen.getByRole('combobox', { name: '编码范围' }), { target: { value: 'url' } })
     fireEvent.change(screen.getByLabelText('编解码输入'), {
       target: { value: 'https://example.com/search?q=中文&sort=a b' },
     })
@@ -50,11 +50,13 @@ describe('UrlCodec', () => {
     fireEvent.change(screen.getByLabelText('编解码输入'), {
       target: { value: '中文 & value=1' },
     })
+    fireEvent.click(screen.getByRole('tab', { name: 'Base64' }))
     fireEvent.click(screen.getByRole('button', { name: 'Base64 Encode' }))
 
     expect(screen.getByLabelText('编解码输出')).toHaveValue('5Lit5paHICYgdmFsdWU9MQ==')
 
     fireEvent.click(screen.getByRole('button', { name: '结果转输入' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Base64' }))
     fireEvent.click(screen.getByRole('button', { name: 'Base64 Decode' }))
 
     expect(screen.getByLabelText('编解码输出')).toHaveValue('中文 & value=1')
@@ -66,11 +68,13 @@ describe('UrlCodec', () => {
     fireEvent.change(screen.getByLabelText('编解码输入'), {
       target: { value: '中文 😀' },
     })
+    fireEvent.click(screen.getByRole('tab', { name: 'Unicode' }))
     fireEvent.click(screen.getByRole('button', { name: 'Unicode Encode' }))
 
     expect(screen.getByLabelText('编解码输出')).toHaveValue('\\u4e2d\\u6587\\u0020\\ud83d\\ude00')
 
     fireEvent.click(screen.getByRole('button', { name: '结果转输入' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Unicode' }))
     fireEvent.click(screen.getByRole('button', { name: 'Unicode Decode' }))
 
     expect(screen.getByLabelText('编解码输出')).toHaveValue('中文 😀')
@@ -82,6 +86,7 @@ describe('UrlCodec', () => {
     fireEvent.change(screen.getByLabelText('编解码输入'), {
       target: { value: 'not base64%' },
     })
+    fireEvent.click(screen.getByRole('tab', { name: 'Base64' }))
     fireEvent.click(screen.getByRole('button', { name: 'Base64 Decode' }))
 
     expect(screen.getByLabelText('编解码输出')).toHaveValue('')
@@ -94,6 +99,7 @@ describe('UrlCodec', () => {
     fireEvent.change(screen.getByLabelText('编解码输入'), {
       target: { value: '中文' },
     })
+    fireEvent.click(screen.getByRole('tab', { name: '摘要' }))
     fireEvent.click(screen.getByRole('button', { name: 'MD5' }))
     expect(screen.getByLabelText('编解码输出')).toHaveValue('a7bac2239fcdcb3a067903d8077c4a07')
 

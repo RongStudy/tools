@@ -63,7 +63,7 @@
 .timestamp-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: 0 0.25rem;
+  padding: 0;
   box-shadow: inset 0 0 0 1px var(--color-border);
   border-radius: 999px;
   background: var(--color-bg);
@@ -328,3 +328,16 @@
     display: none;
   }
 }
+
+/* Keep the live clock secondary to the conversion workspace. */
+.timestamp-current-card { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 16px 20px; }
+.timestamp-section-heading h3 { font-size: 14px; color: var(--color-muted); }
+.timestamp-current-value { margin: 0; gap: 8px; }
+.timestamp-current-value span { font-size: clamp(24px, 3vw, 32px); }
+.timestamp-current-value small { font-size: 12px; }
+.timestamp-actions { margin-left: auto; gap: 8px; }
+.timestamp-actions .btn { min-height: 36px; font-size: 13px; }
+.timestamp-tabs { width: min(320px, 100%); }
+.timestamp-form-section h3 { font-size: 16px; }
+.timestamp-form-section { padding-top: 20px; }
+@media (max-width: 560px) { .timestamp-actions { margin-left: 0; } }

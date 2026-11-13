@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import AppShell from './AppShell'
 import type { ToolDefinition } from '../tools/registry'
+import { TOOL_ORDER_STORAGE_KEY } from '../utils/toolOrder'
 
 const tools: ToolDefinition[] = [
   { path: '/', title: '首页', navTitle: '首页', description: '工具总览', category: '总览', icon: 'home', component: () => null, isTool: false },
@@ -118,6 +119,76 @@ afterEach(() => {
 })
 
 describe('AppShell Dock navigation', () => {
+  it('reorders with keyboard, preserves the active workspace and restores saved order after remount', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderAppShell('/json')
+    await user.type(screen.getByRole('textbox', { name: '工作区输入' }), 'keep this draft')
+    const json = screen.getByRole('link', { name: 'JSON格式化' })
+    act(() => json.focus())
+    fireEvent.keyDown(json, { key: 'ArrowDown', altKey: true })
+    expect(getDockItems().map((item) => item.getAttribute('href'))).toEqual(['/', '/code-diff', '/json', '/url-codec'])
+    expect(json).toHaveFocus()
+    expect(json).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByTestId('current-route')).toHaveTextContent('/json')
+    expect(screen.getByRole('textbox', { name: '工作区输入' })).toHaveValue('keep this draft')
+    expect(JSON.parse(localStorage.getItem(TOOL_ORDER_STORAGE_KEY)!)).toEqual(['/code-diff', '/json', '/url-codec'])
+    unmount()
+    renderAppShell('/json')
+    expect(getDockItems().map((item) => item.getAttribute('href'))).toEqual(['/', '/code-diff', '/json', '/url-codec'])
+  })
+
+  it('supports drag and drop without navigating or moving Home', () => {
+    renderAppShell('/json')
+    const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' }
+    const source = screen.getByRole('link', { name: '编解码' })
+    const target = screen.getByRole('link', { name: 'JSON格式化' })
+    expect(screen.getByRole('link', { name: '首页' })).toHaveAttribute('draggable', 'false')
+    fireEvent.dragStart(source, { dataTransfer })
+    fireEvent.dragOver(target, { dataTransfer })
+    expect(target).toHaveClass('dock-drop-target')
+    fireEvent.drop(target, { dataTransfer })
+    fireEvent.dragEnd(source, { dataTransfer })
+    expect(getDockItems().map((item) => item.getAttribute('href'))).toEqual(['/', '/url-codec', '/json', '/code-diff'])
+    expect(screen.getByTestId('current-route')).toHaveTextContent('/json')
+    expect(target).not.toHaveClass('dock-drop-target')
+  })
+
+  it('supports settings movement, boundary buttons and reset independently of draft settings', async () => {
+    const user = userEvent.setup()
+    renderAppShell()
+    await user.click(screen.getByRole('button', { name: '设置' }))
+    expect(screen.getByRole('button', { name: '上移 JSON格式化' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '下移 编解码' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: '上移 代码对比' }))
+    expect(getDockItems().map((item) => item.getAttribute('href'))).toEqual(['/', '/code-diff', '/json', '/url-codec'])
+    await user.click(screen.getByRole('button', { name: '关闭' }))
+    await user.click(screen.getByRole('button', { name: '设置' }))
+    expect(within(screen.getByRole('list', { name: '工具菜单顺序' })).getAllByRole('listitem')[0]).toHaveTextContent('代码对比')
+    await user.click(screen.getByRole('button', { name: '恢复默认顺序' }))
+    expect(getDockItems().map((item) => item.getAttribute('href'))).toEqual(tools.map((tool) => tool.path))
+    expect(localStorage.getItem(TOOL_ORDER_STORAGE_KEY)).toBeNull()
+  })
+
+  it('updates the menu immediately and shows a warning when persistence fails', async () => {
+    const user = userEvent.setup()
+    renderAppShell()
+    await user.click(screen.getByRole('button', { name: '设置' }))
+    const target = Object.hasOwn(localStorage, 'setItem') ? localStorage : Storage.prototype
+    vi.spyOn(target, 'setItem').mockImplementation(() => { throw new Error('blocked') })
+    await user.click(screen.getByRole('button', { name: '上移 代码对比' }))
+    expect(getDockItems()[1]).toHaveAccessibleName('代码对比')
+    expect(screen.getByRole('alert')).toHaveTextContent('菜单顺序已调整，但保存失败')
+  })
+
+  it('syncs order changes from another tab and ignores unrelated preferences', () => {
+    renderAppShell()
+    localStorage.setItem(TOOL_ORDER_STORAGE_KEY, JSON.stringify(['/url-codec', '/json']))
+    fireEvent(window, new StorageEvent('storage', { key: 'other' }))
+    expect(getDockItems()[1]).toHaveAccessibleName('JSON格式化')
+    fireEvent(window, new StorageEvent('storage', { key: TOOL_ORDER_STORAGE_KEY }))
+    expect(getDockItems().map((item) => item.getAttribute('href'))).toEqual(['/', '/url-codec', '/json', '/code-diff'])
+  })
+
   it('opens local storage settings with the default, persists changes and preserves editor content', async () => {
     const user = userEvent.setup()
     const { unmount } = renderAppShell()

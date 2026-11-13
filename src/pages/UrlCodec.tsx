@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import EditorStatusBar from '../components/EditorStatusBar'
 import { useRef, useState } from 'react'
 import SplitPaneDivider from '../components/SplitPaneDivider'
@@ -59,8 +60,10 @@ const unicodeDecode = (value: string) => value.replace(
 )
 
 const UrlCodec = () => {
+  useLocale()
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
+  const [method, setMethod] = useState<'url' | 'base64' | 'unicode' | 'digest'>('url')
   const [mode, setMode] = useState<CodecMode>('component')
   const [error, setError] = useState('')
   const [splitRatio, setSplitRatio] = usePersistentSplitRatio(URL_CODEC_SPLIT_RATIO_KEY)
@@ -129,7 +132,7 @@ const UrlCodec = () => {
 
   const copyOutput = async () => {
     const success = await writeTextToClipboard(output)
-    showToast(success ? '已复制到剪贴板' : '复制失败', success ? 'success' : 'error')
+    showToast(success ? t("已复制到剪贴板") : t("复制失败"), success ? 'success' : 'error')
   }
 
   const swapOutputToInput = () => {
@@ -144,57 +147,42 @@ const UrlCodec = () => {
     setError('')
   }
 
-  const toolbar = (
-    <div className="url-codec-toolbar">
-      <div className="url-codec-mode" aria-label="编码范围">
-        <button
-          type="button"
-          className={mode === 'component' ? 'active' : ''}
-          onClick={() => setMode('component')}
-        >
-          参数值
-        </button>
-        <button
-          type="button"
-          className={mode === 'url' ? 'active' : ''}
-          onClick={() => setMode('url')}
-        >
-          完整 URL
-        </button>
-      </div>
-      <div className="url-codec-action-group" aria-label="URL 操作">
-        <span>URL</span>
-        <button type="button" className="btn btn-secondary" aria-label="URL Encode" onClick={encode}>编码</button>
-        <button type="button" className="btn btn-secondary" aria-label="URL Decode" onClick={decode}>解码</button>
-      </div>
-      <div className="url-codec-action-group" aria-label="Base64 操作">
-        <span>Base64</span>
-        <button type="button" className="btn btn-secondary" aria-label="Base64 Encode" onClick={base64Encode}>编码</button>
-        <button type="button" className="btn btn-secondary" aria-label="Base64 Decode" onClick={base64Decode}>解码</button>
-      </div>
-      <div className="url-codec-action-group" aria-label="Unicode 操作">
-        <span>Unicode</span>
-        <button type="button" className="btn btn-secondary" aria-label="Unicode Encode" onClick={encodeUnicode}>编码</button>
-        <button type="button" className="btn btn-secondary" aria-label="Unicode Decode" onClick={decodeUnicode}>解码</button>
-      </div>
-      <div className="url-codec-action-group" aria-label="摘要操作">
-        <span>摘要</span>
-        <button type="button" className="btn btn-secondary" onClick={() => createDigest('md5')}>MD5</button>
-        <button type="button" className="btn btn-secondary" onClick={() => createDigest('sha256')}>SHA-256</button>
-      </div>
-      <div className="url-codec-utility-group">
-        <button type="button" className="btn btn-secondary" onClick={swapOutputToInput} disabled={!output}>结果转输入</button>
-        <button type="button" className="btn btn-danger" onClick={clearAll}>清空</button>
-      </div>
+  const toolbar = <>
+    <button type="button" className="btn btn-danger" onClick={clearAll}>{t('清空')}</button>
+  </>
+
+  const workflow = <div className="tool-workflow">
+    <div className="tool-workflow-tabs" role="tablist" aria-label={t('处理类型')} onKeyDown={(event) => {
+      const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+      const index = tabs.indexOf(document.activeElement as HTMLButtonElement)
+      const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1
+      if (next < 0) return
+      event.preventDefault()
+      tabs[next].focus()
+      tabs[next].click()
+    }}>
+      {(['url', 'base64', 'unicode', 'digest'] as const).map((value) => <button key={value} type="button" role="tab" tabIndex={method === value ? 0 : -1} aria-selected={method === value} onClick={() => { setMethod(value); setError('') }}>{value === 'url' ? 'URL' : value === 'base64' ? 'Base64' : value === 'unicode' ? 'Unicode' : t('摘要')}</button>)}
     </div>
-  )
+    <div className="tool-workflow-actions">
+      {method === 'url' && <select className="codec-scope" aria-label={t('编码范围')} value={mode} onChange={(event) => setMode(event.target.value as CodecMode)}>
+        <option value="component">{t('参数值')}</option><option value="url">{t('完整 URL')}</option>
+      </select>}
+      {method === 'digest' ? <>
+        <button type="button" className="btn btn-primary" onClick={() => createDigest('md5')}>MD5</button>
+        <button type="button" className="btn btn-secondary" onClick={() => createDigest('sha256')}>SHA-256</button>
+      </> : <>
+        <button type="button" className="btn btn-primary" aria-label={(method === 'url' ? 'URL' : method === 'base64' ? 'Base64' : 'Unicode') + ' Encode'} onClick={method === 'url' ? encode : method === 'base64' ? base64Encode : encodeUnicode}>{t('编码')}</button>
+        <button type="button" className="btn btn-secondary" aria-label={(method === 'url' ? 'URL' : method === 'base64' ? 'Base64' : 'Unicode') + ' Decode'} onClick={method === 'url' ? decode : method === 'base64' ? base64Decode : decodeUnicode}>{t('解码')}</button>
+      </>}
+    </div>
+  </div>
 
   return (
     <ToolLayout
       className="url-codec"
-      title="编解码"
-      description="转换 URL、Base64、Unicode 文本并生成摘要。"
+      title={t("编解码")}
       actions={toolbar}
+      controls={workflow}
     >
       <div
         ref={gridRef}
@@ -203,43 +191,43 @@ const UrlCodec = () => {
       >
         <section className="url-codec-panel">
           <div className="url-codec-panel-header">
-            <span>输入</span>
+            <span>{t("输入")}</span>
             <button type="button" className="btn-small" onClick={() => void writeTextToClipboard(input)} disabled={!input}>
-              复制
-            </button>
+              {t("复制")}</button>
           </div>
           <textarea
-            aria-label="编解码输入"
+            aria-label={t("编解码输入")}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="输入需要编码、解码或生成摘要的文本..."
+            placeholder={t("输入需要编码、解码或生成摘要的文本...")}
             spellCheck={false}
           />
-          <EditorStatusBar text={input} label="编解码输入" />
+          <EditorStatusBar text={input} label={t("编解码输入")} />
         </section>
 
         <SplitPaneDivider
           containerRef={gridRef}
           ratio={splitRatio}
           onRatioChange={setSplitRatio}
-          label="调整输入输出宽度"
+          label={t("调整输入输出宽度")}
         />
 
         <section className="url-codec-panel">
           <div className="url-codec-panel-header">
-            <span>输出</span>
-            <button type="button" className="btn-small" onClick={copyOutput} disabled={!output}>
-              复制
-            </button>
+            <span>{t("输出")}</span>
+            <div className="panel-actions">
+              <button type="button" className="btn-small" onClick={swapOutputToInput} disabled={!output}>{t('结果转输入')}</button>
+              <button type="button" className="btn-small" onClick={copyOutput} disabled={!output}>{t('复制')}</button>
+            </div>
           </div>
           <textarea
-            aria-label="编解码输出"
+            aria-label={t("编解码输出")}
             value={output}
             readOnly
-            placeholder="处理结果会显示在这里"
+            placeholder={t("处理结果会显示在这里")}
             spellCheck={false}
           />
-          <EditorStatusBar text={output} label="编解码输出" error={error} />
+          <EditorStatusBar text={output} label={t("编解码输出")} error={error} />
         </section>
       </div>
     </ToolLayout>

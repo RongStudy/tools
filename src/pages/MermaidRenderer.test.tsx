@@ -58,6 +58,12 @@ vi.mock('@monaco-editor/react', async () => {
   return { default: MockEditor }
 })
 
+
+function openOptions(name: string | RegExp) {
+  const trigger = screen.getByRole('button', { name })
+  if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger)
+}
+
 describe('MermaidRenderer', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -102,12 +108,12 @@ describe('MermaidRenderer', () => {
   it('加载本地 Markdown 时移除 BOM 并从强制 Mermaid 模式恢复自动识别', async () => {
     render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
-    fireEvent.click(screen.getByRole('button', { name: 'Mermaid' }))
+    fireEvent.change(screen.getByRole('combobox', { name: '渲染格式' }), { target: { value: 'mermaid' } })
     const file = new File(['\uFEFF# 本地文档\n\n正文'], '说明.md')
     fireEvent.change(screen.getByLabelText('选择 Markdown 或 Mermaid 文件'), { target: { files: [file] } })
     expect(await screen.findByTestId('markdown-preview')).toHaveTextContent('本地文档')
     expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 本地文档\n\n正文')
-    expect(screen.getByRole('button', { name: '自动' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('combobox', { name: '渲染格式' })).toHaveValue('auto')
     expect(screen.getByTitle('说明.md')).toBeInTheDocument()
   })
 
@@ -233,7 +239,7 @@ describe('MermaidRenderer', () => {
       expect.objectContaining({ startLineNumber: 2, message: 'Parse error on line 2' }),
     ]))
     expect(setMarkersMock.mock.lastCall?.[0]).not.toBe(firstModel)
-    fireEvent.click(screen.getByRole('button', { name: 'Markdown' }))
+    fireEvent.change(screen.getByRole('combobox', { name: '渲染格式' }), { target: { value: 'markdown' } })
     await screen.findByTestId('markdown-preview')
     expect(setMarkersMock.mock.lastCall?.[2]).toEqual([])
   })
@@ -241,7 +247,7 @@ describe('MermaidRenderer', () => {
   it('渲染快捷键使用最新模式并同步编辑器语言', async () => {
     render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
-    fireEvent.click(screen.getByRole('button', { name: 'Markdown' }))
+    fireEvent.change(screen.getByRole('combobox', { name: '渲染格式' }), { target: { value: 'markdown' } })
     fireEvent.change(screen.getByLabelText('内容编辑器'), { target: { value: '# 快捷键' } })
     mermaidRenderMock.mockClear()
     await act(async () => { renderCommands[0]() })
@@ -280,9 +286,9 @@ describe('MermaidRenderer', () => {
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     // 强制 Markdown 模式
-    fireEvent.click(screen.getByRole('button', { name: 'Markdown' }))
+    fireEvent.change(screen.getByRole('combobox', { name: '渲染格式' }), { target: { value: 'markdown' } })
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Markdown' })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('combobox', { name: '渲染格式' })).toHaveValue('markdown')
     })
 
     fireEvent.change(screen.getByLabelText('内容编辑器'), {
@@ -292,9 +298,9 @@ describe('MermaidRenderer', () => {
     expect(preview.querySelector('strong')).toHaveTextContent('world')
 
     // 切回自动模式 → 内容首行非 Mermaid 关键字，仍按 Markdown 渲染
-    fireEvent.click(screen.getByRole('button', { name: '自动' }))
+    fireEvent.change(screen.getByRole('combobox', { name: '渲染格式' }), { target: { value: 'auto' } })
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: '自动' })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('combobox', { name: '渲染格式' })).toHaveValue('auto')
     })
     await waitFor(() => {
       expect(screen.getByTestId('markdown-preview')).not.toBeNull()
@@ -312,8 +318,10 @@ describe('MermaidRenderer', () => {
     const preview = await screen.findByTestId('markdown-preview')
     expect(preview).toHaveClass('layout-full')
     expect(preview).not.toHaveClass('layout-centered')
+    openOptions('预览选项')
     expect(screen.getByRole('button', { name: '铺满' })).toHaveAttribute('aria-pressed', 'true')
 
+    openOptions('预览选项')
     fireEvent.click(screen.getByRole('button', { name: '居中' }))
     expect(preview).toHaveClass('layout-centered')
     expect(screen.getByRole('button', { name: '居中' })).toHaveAttribute('aria-pressed', 'true')
@@ -351,6 +359,7 @@ describe('MermaidRenderer', () => {
     expect(text).toContain('<h1>导出测试</h1>')
 
     // 切换为居中 → 导出 HTML 居中样式
+    openOptions('预览选项')
     fireEvent.click(screen.getByRole('button', { name: '居中' }))
     fireEvent.click(screen.getByRole('button', { name: 'HTML' }))
     text = await capturedBlob!.text()
@@ -430,9 +439,7 @@ describe('MermaidRenderer', () => {
     render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '清空' }))
-    })
+    fireEvent.click(screen.getByRole('button', { name: '清空' }))
 
     expect(screen.getByLabelText('内容编辑器')).toHaveValue('')
     expect(screen.queryByRole('img', { name: 'Mermaid 图表预览' })).not.toBeInTheDocument()

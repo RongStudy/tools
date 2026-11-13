@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import EditorStatusBar from '../components/EditorStatusBar'
 import DocumentTab from '../components/DocumentTab'
 import { useDetectedLanguages } from '../hooks/useDetectedLanguages'
@@ -8,6 +9,7 @@ import EditorLanguageTools, { type EditorLanguageBinding } from '../components/E
 import { languageEditorOptions } from '../monaco/languageCapabilities'
 import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import ToolLayout from '../components/ToolLayout'
+import ToolOptions from '../components/ToolOptions'
 import SaveFileDialog, { type SaveFileRequest } from '../components/SaveFileDialog'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useToast } from '../components/toastContext'
@@ -121,13 +123,13 @@ const LANGUAGES = [
 
 const createScratchDocument = (documents: ScratchDocument[]): ScratchDocument => {
   const highestDocumentNumber = documents.reduce((highest, document) => {
-    const match = /^文本 (\d+)$/.exec(document.name)
+    const match = /^(?:文本|Text) (\d+)$/.exec(document.name)
     return match ? Math.max(highest, Number(match[1])) : highest
   }, 0)
 
   return {
     id: `scratch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    name: `文本 ${highestDocumentNumber + 1}`,
+    name: t("文本 {value0}", { value0: highestDocumentNumber + 1 }),
     panes: [createPane()],
   }
 }
@@ -169,8 +171,9 @@ const normalizeFontSize = (fontSize: unknown): number => {
 }
 
 const readScratchPadDraft = (): ScratchPadDraft => {
+  const defaultDraft = { ...DEFAULT_SCRATCH_PAD_DRAFT, documents: DEFAULT_SCRATCH_PAD_DRAFT.documents.map((document) => ({ ...document, name: t("文本 {value0}", { value0: 1 }) })) }
   const savedDraft = readExpiringStorage<unknown>(SCRATCH_PAD_DRAFT_KEY)
-  if (!savedDraft || typeof savedDraft !== 'object') return DEFAULT_SCRATCH_PAD_DRAFT
+  if (!savedDraft || typeof savedDraft !== 'object') return defaultDraft
 
   const draft = savedDraft as Partial<ScratchPadDraft> & Partial<LegacyScratchPadDraft>
   if (Array.isArray(draft.documents)) {
@@ -197,12 +200,11 @@ const readScratchPadDraft = (): ScratchPadDraft => {
     }
   }
 
-  return DEFAULT_SCRATCH_PAD_DRAFT
+  return defaultDraft
 }
 
-const editorLoading = <div className="monaco-loading">编辑器加载中</div>
-
 const ScratchPad = () => {
+  useLocale()
   const { monacoTheme } = useAppTheme()
   const [initialDraft] = useState(readScratchPadDraft)
   const [documents, setDocuments] = useState(initialDraft.documents)
@@ -343,9 +345,9 @@ const ScratchPad = () => {
   const copyPane = async (pane: ScratchPane) => {
     const success = await writeTextToClipboard(pane.content)
     if (success) {
-      showToast('已复制到剪贴板')
+      showToast(t("已复制到剪贴板"))
     } else {
-      showToast('复制失败', 'error')
+      showToast(t("复制失败"), 'error')
     }
   }
 
@@ -356,14 +358,14 @@ const ScratchPad = () => {
     try {
       const content = editor.getValue()
       const formatted = formatCurl(content)
-      if (formatted === content) { showToast('已是格式化后的内容', 'info'); return }
+      if (formatted === content) { showToast(t("已是格式化后的内容"), 'info'); return }
       editor.pushUndoStop()
       editor.executeEdits('format-curl', [{ range: model.getFullModelRange(), text: formatted, forceMoveMarkers: true }])
       editor.pushUndoStop()
       editor.focus()
-      showToast('格式化成功')
+      showToast(t("格式化成功"))
     } catch (error) {
-      showToast(error instanceof Error ? error.message : '格式化失败，已保留原文', 'error')
+      showToast(error instanceof Error ? error.message : t("格式化失败，已保留原文"), 'error')
     }
   }
 
@@ -385,46 +387,48 @@ const ScratchPad = () => {
 
   const toolbar = (
     <div className="scratch-toolbar">
-      <div className="scratch-zoom-control" role="group" aria-label="字号缩放">
+      <button onClick={addPane} className="btn btn-secondary" disabled={panes.length >= MAX_PANES}>{t('＋ 分栏')}</button>
+      <ToolOptions label={t('编辑选项')}>
+      <div className="scratch-zoom-control" role="group" aria-label={t("字号缩放")}>
         <button
           onClick={zoomOut}
           className="btn btn-secondary"
           disabled={fontSize <= MIN_FONT_SIZE}
-          title="缩小字号"
+          aria-label={t('缩小')}
+          title={t("缩小字号")}
         >
-          缩小
-        </button>
-        <span className="scratch-font-size" title="当前字号">{fontSize}px</span>
+          −</button>
+        <span className="scratch-font-size" title={t("当前字号")}>{fontSize}px</span>
         <button
           onClick={zoomIn}
           className="btn btn-secondary"
           disabled={fontSize >= MAX_FONT_SIZE}
-          title="放大字号"
+          aria-label={t('放大')}
+          title={t("放大字号")}
         >
-          放大
-        </button>
+          ＋</button>
         <button
           onClick={resetZoom}
+          aria-label={t('默认字号')}
           className="btn btn-secondary"
-          title={`恢复默认字号（${DEFAULT_FONT_SIZE}px）`}
+          title={t("恢复默认字号（{value0}px）", { value0: DEFAULT_FONT_SIZE })}
         >
-          默认字号
-        </button>
+          ↺</button>
       </div>
-      <button onClick={clearAllPanes} className="btn btn-danger">清空</button>
+      </ToolOptions>
+      <button onClick={clearAllPanes} className="btn btn-danger">{t("清空")}</button>
     </div>
   )
 
   return (
     <ToolLayout
       className={`scratch-pad ${isFullscreen ? 'fullscreen-mode' : ''}`}
-      title="临时文本输入"
-      description="编辑、比较或载入本地文本文件。"
+      title={t("临时文本输入")}
       actions={toolbar}
       hideHeader={isFullscreen}
     >
       {!isFullscreen && (
-        <div className="scratch-tabs" role="tablist" aria-label="临时文本">
+        <div className="scratch-tabs document-tabs" role="tablist" aria-label={t("临时文本")}>
           <div className="scratch-tab-list document-tab-list">
             {documents.map((document) => (
               <DocumentTab
@@ -438,50 +442,39 @@ const ScratchPad = () => {
               />
             ))}
           </div>
-          <button type="button" className="btn-small scratch-tab-add" onClick={addDocument}>
-            新建文本
-          </button>
+          <button type="button" className="btn-small scratch-tab-add document-tab-add" onClick={addDocument}>
+            {t("新建文本")}</button>
         </div>
       )}
       <div className={`editor-panel scratch-editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}>
         <div className="panel-header">
-          <span>输入</span>
+          <span>{t("输入")}</span>
           <div className="panel-actions">
-            <input ref={fileInputRef} type="file" hidden aria-label="选择本地文件" onChange={loadFile} />
-            <label className="toggle-switch" title={supportsFileWriteback() ? '开启后加载文件可保存回原文件' : '当前浏览器不支持保存到原文件'}>
+            <label className="toggle-switch" title={supportsFileWriteback() ? t("开启后加载文件可保存回原文件") : t("当前浏览器不支持保存到原文件")}>
               <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
               <span className="toggle-slider" />
-              <span className="toggle-label">写回原文件</span>
+              <span className="toggle-label">{t("写回原文件")}</span>
             </label>
-            <button type="button" onClick={chooseFile} className="btn-small" title="加载本地文件">
-              加载文件
-            </button>
-            {writeback && <LocalFileSave file={localFiles.files[selectedPane.id]} content={selectedPane.content} label="保存到原文件"
+            <input ref={fileInputRef} type="file" hidden aria-label={t("选择本地文件")} onChange={loadFile} />
+            <button type="button" onClick={chooseFile} className="btn-small" title={t("加载本地文件")}>
+              {t("加载文件")}</button>
+            {writeback && <LocalFileSave file={localFiles.files[selectedPane.id]} content={selectedPane.content} label={t("保存到原文件")}
               saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[selectedPane.id]} disabled={localFiles.savingFile !== null}
               onSave={() => localFiles.save(selectedPane.id, selectedPane.content)} />}
             <button
               type="button"
               onClick={saveSelectedPane}
               className="btn-small"
-              title={`保存栏 ${selectedPaneIndex + 1} 到本地文件`}
+              title={t("保存栏 {value0} 到本地文件", { value0: selectedPaneIndex + 1 })}
             >
-              保存本栏
-            </button>
-            <button
-              onClick={addPane}
-              className="btn-small"
-              disabled={panes.length >= MAX_PANES}
-              title="新增分栏"
-            >
-              ＋ 分栏
-            </button>
-            <small className="scratch-char-count">{totalChars.toLocaleString()} 字符</small>
+              {t("保存本栏")}</button>
+            <small className="scratch-char-count">{totalChars.toLocaleString()} {t("字符")}</small>
             <button
               onClick={() => setIsFullscreen((value) => !value)}
               className="btn-small btn-fullscreen"
-              title={isFullscreen ? '退出全屏' : '浏览器内全屏'}
+              title={isFullscreen ? t("退出全屏") : t("浏览器内全屏")}
             >
-              {isFullscreen ? '⤓ 退出全屏' : '⛶ 全屏'}
+              {isFullscreen ? t("⤓ 退出全屏") : t("⛶ 全屏")}
             </button>
           </div>
         </div>
@@ -497,43 +490,42 @@ const ScratchPad = () => {
               onFocusCapture={() => selectPane(pane.id)}
             >
               <div className="scratch-pane-header">
-                <span className="scratch-pane-label">栏 {index + 1}</span>
+                <span className="scratch-pane-label">{t("栏")}{index + 1}</span>
                 <select
                   value={pane.language}
                   onChange={(e) => updatePane(pane.id, { language: e.target.value })}
-                  aria-label={`栏 ${index + 1} 语言`}
+                  aria-label={t("栏 {value0} 语言", { value0: index + 1 })}
                 >
                   {LANGUAGES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.value === 'auto' && pane.language === 'auto' ? `自动 · ${LANGUAGES.find((item) => item.value === detectedLanguages[`${activeDocument.id}/${pane.id}`])?.label ?? '纯文本'}` : option.label}</option>
+                    <option key={option.value} value={option.value}>{option.value === 'auto' && pane.language === 'auto' ? t("自动 · {value0}", { value0: t(LANGUAGES.find((item) => item.value === detectedLanguages[`${activeDocument.id}/${pane.id}`])?.label ?? '纯文本') }) : t(option.label)}</option>
                   ))}
                 </select>
                 <button
                   onClick={() => copyPane(pane)}
                   className="btn-small"
                   disabled={!pane.content}
-                  title={`复制栏 ${index + 1}`}
+                  title={t("复制栏 {value0}", { value0: index + 1 })}
                 >
-                  复制
-                </button>
+                  {t("复制")}</button>
                 {isCurlCommand(pane.content) ? <button
                   type="button"
                   onClick={() => formatPaneCurl(pane)}
                   className="btn-small"
                   disabled={!paneBindings[pane.id]}
-                  aria-label={`栏 ${index + 1}格式化 curl`}
-                  title="格式化 curl，保留参数内容和顺序"
-                >格式化</button> : <EditorLanguageTools
+                  aria-label={t("栏 {value0}格式化 curl", { value0: index + 1 })}
+                  title={t("格式化 curl，保留参数内容和顺序")}
+                >{t("格式化")}</button> : <EditorLanguageTools
                   binding={paneBindings[pane.id]}
                   language={detectedLanguages[`${activeDocument.id}/${pane.id}`]}
                   path={modelPath('scratch', activeDocument.id, pane.id)}
-                  label={`栏 ${index + 1}`}
+                  label={t("栏 {value0}", { value0: index + 1 })}
                 />}
                 {panes.length > 1 && (
                   <button
                     onClick={() => removePane(pane.id)}
                     className="scratch-pane-close"
-                    aria-label={`关闭栏 ${index + 1}`}
-                    title={`关闭栏 ${index + 1}`}
+                    aria-label={t("关闭栏 {value0}", { value0: index + 1 })}
+                    title={t("关闭栏 {value0}", { value0: index + 1 })}
                   >
                     ×
                   </button>
@@ -550,7 +542,7 @@ const ScratchPad = () => {
                   }}
                   language={detectedLanguages[`${activeDocument.id}/${pane.id}`]}
                   value={pane.content}
-                  loading={editorLoading}
+                  loading={<div className="monaco-loading">{t("编辑器加载中")}</div>}
                   onChange={(value) => updatePane(pane.id, { content: value ?? '' })}
                   theme={monacoTheme}
                   options={{
@@ -560,11 +552,11 @@ const ScratchPad = () => {
                     wordWrap: 'on',
                     automaticLayout: true,
                     scrollBeyondLastLine: false,
-                    ariaLabel: `临时文本栏 ${index + 1}`,
+                    ariaLabel: t("临时文本栏 {value0}", { value0: index + 1 }),
                   }}
                 />
               </div>
-              <EditorStatusBar text={pane.content} label={`临时文本栏 ${index + 1}`} />
+              <EditorStatusBar text={pane.content} label={t("临时文本栏 {value0}", { value0: index + 1 })} />
             </div>
           ))}
         </div>

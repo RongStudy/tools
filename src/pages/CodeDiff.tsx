@@ -1,3 +1,4 @@
+import { t, useLocale } from '../i18n'
 import EditorStatusBar from '../components/EditorStatusBar'
 import DocumentTab from '../components/DocumentTab'
 import EditorLanguageTools, { type EditorLanguageBinding } from '../components/EditorLanguageTools'
@@ -7,6 +8,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import { diffLines, diffTrimmedLines } from 'diff'
 import ToolLayout from '../components/ToolLayout'
+import ToolOptions from '../components/ToolOptions'
 import { useToast } from '../components/toastContext'
 import { useAppTheme } from '../themeContext'
 import { useDetectedLanguages } from '../hooks/useDetectedLanguages'
@@ -67,14 +69,14 @@ const DEFAULT_CODE_DIFF_DRAFT: CodeDiffDraft = {
 
 const createCodeDiffDocument = (documents: CodeDiffDocument[]): CodeDiffDocument => {
   const highestDocumentNumber = documents.reduce((highest, document) => {
-    const match = /^对比 (\d+)$/.exec(document.name)
+    const match = /^(?:对比|Diff) (\d+)$/.exec(document.name)
     return match ? Math.max(highest, Number(match[1])) : highest
   }, 0)
 
   return {
     ...DEFAULT_CODE_DIFF_DOCUMENT,
     id: `diff-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    name: `对比 ${highestDocumentNumber + 1}`,
+    name: t("对比 {value0}", { value0: highestDocumentNumber + 1 }),
   }
 }
 
@@ -94,8 +96,9 @@ const isCodeDiffDocument = (value: unknown): value is CodeDiffDocument => {
 }
 
 const readCodeDiffDraft = (): CodeDiffDraft => {
+  const defaultDraft = { ...DEFAULT_CODE_DIFF_DRAFT, documents: DEFAULT_CODE_DIFF_DRAFT.documents.map((document) => ({ ...document, name: t("对比 {value0}", { value0: 1 }) })) }
   const savedDraft = readExpiringStorage<unknown>(CODE_DIFF_DRAFT_KEY)
-  if (!savedDraft || typeof savedDraft !== 'object') return DEFAULT_CODE_DIFF_DRAFT
+  if (!savedDraft || typeof savedDraft !== 'object') return defaultDraft
 
   const draft = savedDraft as Partial<CodeDiffDraft & LegacyCodeDiffDraft>
   if (Array.isArray(draft.documents)) {
@@ -133,12 +136,11 @@ const readCodeDiffDraft = (): CodeDiffDraft => {
     }
   }
 
-  return DEFAULT_CODE_DIFF_DRAFT
+  return defaultDraft
 }
 
-const editorLoading = <div className="monaco-loading">编辑器加载中</div>
-
 const CodeDiff = () => {
+  useLocale()
   const { monacoTheme } = useAppTheme()
   const [initialDraft] = useState(readCodeDiffDraft)
   const [documents, setDocuments] = useState(initialDraft.documents)
@@ -211,7 +213,7 @@ const CodeDiff = () => {
     if (selectedDocumentRef.current === documentId) {
       setEditorContent((current) => type === 'original' ? { ...current, originalCode: content } : { ...current, modifiedCode: content })
     }
-    showToast(`文件加载成功: ${name}`)
+    showToast(t("文件加载成功: {value0}", { value0: name }))
   }
 
   // 每侧只接受最近一次读取；切换标签时仅更新发起读取的文档。
@@ -282,9 +284,9 @@ const CodeDiff = () => {
   const copyCode = async (text: string, type: string) => {
     const success = await writeTextToClipboard(text)
     if (success) {
-      showToast(`${type}代码已复制到剪贴板`)
+      showToast(t("{value0}代码已复制到剪贴板", { value0: type }))
     } else {
-      showToast('复制失败', 'error')
+      showToast(t("复制失败"), 'error')
     }
   }
 
@@ -398,8 +400,8 @@ const CodeDiff = () => {
   // 公共编辑器选项
   const commonEditorOptions = {
     ...languageEditorOptions,
-    originalAriaLabel: '原始代码',
-    modifiedAriaLabel: '修改代码',
+    originalAriaLabel: t("原始代码"),
+    modifiedAriaLabel: t("修改代码"),
     minimap: { enabled: true } as const,
     fontSize: 14,
     wordWrap: 'on' as const,
@@ -419,85 +421,54 @@ const CodeDiff = () => {
   }
 
   const renderLanguageTools = () => (
-    <>
-      {language === 'auto' && <span className="editor-language-label" role="status" aria-label="自动检测结果">原始：{originalLanguage} · 修改：{modifiedLanguage}</span>}
-      <EditorLanguageTools binding={languageBindings?.original} language={originalLanguage} path={modelPath('diff', activeDocument.id, 'original')} label="原始代码" caption="原始" />
-      <EditorLanguageTools binding={languageBindings?.modified} language={modifiedLanguage} path={modelPath('diff', activeDocument.id, 'modified')} label="修改代码" caption="修改" />
-    </>
-  )
-
-  // 公共面板操作按钮
-  const renderPanelActions = (isUnified: boolean) => (
-    <>
-      <label className="toggle-switch" title={supportsFileWriteback() ? '开启后加载文件可保存回原文件' : '当前浏览器不支持保存到原文件'}>
-        <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
-        <span className="toggle-slider" />
-        <span className="toggle-label">写回原文件</span>
-      </label>
-      {writeback ? <>
-        <button type="button" className="btn-small" onClick={() => chooseWritableFile('original')}>加载原始文件</button>
-        <button type="button" className="btn-small" onClick={() => chooseWritableFile('modified')}>加载修改文件</button>
-      </> : <>
-      <label className="file-input-label">
-        加载原始文件
-        <input
-          id="code-diff-original-file"
-          name="codeDiffOriginalFile"
-          type="file"
-          onChange={(e) => handleFileSelect(e, 'original')}
-          style={{ display: 'none' }}
-        />
-      </label>
-      <label className="file-input-label">
-        加载修改文件
-        <input
-          id="code-diff-modified-file"
-          name="codeDiffModifiedFile"
-          type="file"
-          onChange={(e) => handleFileSelect(e, 'modified')}
-          style={{ display: 'none' }}
-        />
-      </label>
-      </>}
-      {writeback && (['original', 'modified'] as const).map((side) => {
-        const key = `${activeDocumentId}/${side}`
-        return <LocalFileSave key={side} file={localFiles.files[key]} content={side === 'original' ? originalCode : modifiedCode}
-          label={side === 'original' ? '保存原始文件' : '保存修改文件'} disabled={localFiles.savingFile !== null}
-          saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[key]}
-          onSave={() => localFiles.save(key, side === 'original' ? originalCode : modifiedCode)} />
+    <div className="diff-language-toolbar">
+      {(['original', 'modified'] as const).map((side) => {
+        const isOriginal = side === 'original'
+        const detected = isOriginal ? originalLanguage : modifiedLanguage
+        const content = isOriginal ? originalCode : modifiedCode
+        const filename = isOriginal ? originalFileName : modifiedFileName
+        const label = isOriginal ? t('原始代码') : t('修改代码')
+        const loadLabel = isOriginal ? t('加载原始文件') : t('加载修改文件')
+        const key = activeDocumentId + '/' + side
+        return <div className="diff-side-tools" key={side}>
+          <span className="diff-side-identity" role="status" aria-label={label}>
+            <strong>{isOriginal ? t('原始') : t('修改')}</strong>
+            <span className="diff-side-language">{detected}</span>
+            {filename && <span className="diff-side-filename" title={filename}>{filename}</span>}
+          </span>
+          <div className="diff-side-actions">
+            <input id={'code-diff-' + side + '-file'} type="file" hidden aria-label={loadLabel} onChange={(event) => handleFileSelect(event, side)} />
+            <button type="button" className="btn-small" aria-label={loadLabel} onClick={() => {
+              if (writeback) void chooseWritableFile(side)
+              else document.getElementById('code-diff-' + side + '-file')?.click()
+            }}>{t('加载文件')}</button>
+            <button type="button" className="btn-small" aria-label={isOriginal ? t('复制原始') : t('复制修改')} onClick={() => copyCode(content, isOriginal ? t('原始') : t('修改后'))} disabled={!content}>{t('复制')}</button>
+            {writeback && <LocalFileSave file={localFiles.files[key]} content={content}
+              label={isOriginal ? t('保存原始文件') : t('保存修改文件')} disabled={localFiles.savingFile !== null}
+              saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[key]}
+              onSave={() => localFiles.save(key, content)} />}
+            <EditorLanguageTools binding={languageBindings?.[side]} language={detected} path={modelPath('diff', activeDocument.id, side)} label={label} />
+          </div>
+        </div>
       })}
-      {(originalCode || modifiedCode) ? (
-        <>
-          <button onClick={navigateToPreviousDiff} className="btn-small btn-nav" title="上一个差异">↑ 上一个</button>
-          <button onClick={navigateToNextDiff} className="btn-small btn-nav" title="下一个差异">↓ 下一个</button>
-          <span className="diff-count">{getDiffCount()} 处差异</span>
-          {isUnified ? (
-            <button onClick={() => copyCode(generateUnifiedDiff(), '差异')} className="btn-small">复制差异</button>
-          ) : (
-            <>
-              <button onClick={() => copyCode(originalCode, '原始')} className="btn-small" disabled={!originalCode}>复制原始</button>
-              <button onClick={() => copyCode(modifiedCode, '修改后')} className="btn-small" disabled={!modifiedCode}>复制修改</button>
-            </>
-          )}
-        </>
-      ) : null}
-      <button onClick={() => setIsFullscreen((value) => !value)} className="btn-small btn-fullscreen" title={isFullscreen ? '退出全屏' : '全屏查看'}>
-        {isFullscreen ? '⤓ 退出全屏' : '⛶ 全屏'}
-      </button>
-    </>
-  )
-
-  // 公共面板标题
-  const renderPanelTitle = () => (
-    <div className="panel-title">
-      <span>{viewMode === 'split' ? '代码对比' : '差异对比'}</span>
-      {(originalFileName || modifiedFileName) && (
-        <span className="file-name">
-          {originalFileName || '原始'} ↔ {modifiedFileName || '修改后'}
-        </span>
-      )}
     </div>
   )
+
+  const renderWorkspaceActions = () => <div className="diff-workspace-actions">
+    <label className="toggle-switch" title={supportsFileWriteback() ? t('开启后加载文件可保存回原文件') : t('当前浏览器不支持保存到原文件')}>
+      <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
+      <span className="toggle-slider" /><span className="toggle-label">{t('写回原文件')}</span>
+    </label>
+    {(originalCode || modifiedCode) && <div className="diff-navigation">
+      <button onClick={navigateToPreviousDiff} className="btn-small" aria-label={t('上一个差异')} title={t('上一个差异')}>↑</button>
+      <span className="diff-count">{getDiffCount()} {t('处差异')}</span>
+      <button onClick={navigateToNextDiff} className="btn-small" aria-label={t('下一个差异')} title={t('下一个差异')}>↓</button>
+    </div>}
+    {viewMode === 'unified' && <button onClick={() => copyCode(generateUnifiedDiff(), t('差异'))} className="btn-small" disabled={!originalCode && !modifiedCode}>{t('复制差异')}</button>}
+    <button onClick={() => setIsFullscreen((value) => !value)} className="btn-small btn-fullscreen" title={isFullscreen ? t('退出全屏') : t('全屏查看')}>
+      {isFullscreen ? t('⤓ 退出全屏') : t('⛶ 全屏')}
+    </button>
+  </div>
 
   const toolbar = (
     <div className="diff-controls">
@@ -509,8 +480,7 @@ const CodeDiff = () => {
             updateActiveDocument({ viewMode: 'split' })
           }}
         >
-          分栏视图
-        </button>
+          {t("分栏视图")}</button>
         <button
           className={viewMode === 'unified' ? 'btn-toggle active' : 'btn-toggle'}
           onClick={() => {
@@ -518,9 +488,11 @@ const CodeDiff = () => {
             updateActiveDocument({ viewMode: 'unified' })
           }}
         >
-          统一视图
-        </button>
+          {t("统一视图")}</button>
       </div>
+      <button onClick={swapCode} className="btn btn-secondary" disabled={!originalCode || !modifiedCode}>
+        {t("交换")}</button>
+      <ToolOptions count={Number(ignoreWhitespace) + Number(hideUnchanged) + Number(showMoves) + Number(language !== 'auto')}>
       <div className="whitespace-toggle">
         <label className="toggle-switch">
           <input
@@ -531,31 +503,31 @@ const CodeDiff = () => {
             onChange={(e) => updateActiveDocument({ ignoreWhitespace: e.target.checked })}
           />
           <span className="toggle-slider"></span>
-          <span className="toggle-label">忽略空格</span>
+          <span className="toggle-label">{t("忽略空格")}</span>
         </label>
       </div>
       <div className="language-select">
         <label className="toggle-switch">
           <input type="checkbox" checked={hideUnchanged} onChange={(e) => updateActiveDocument({ hideUnchanged: e.target.checked })} />
           <span className="toggle-slider"></span>
-          <span className="toggle-label">仅看差异</span>
+          <span className="toggle-label">{t("仅看差异")}</span>
         </label>
         <label className="toggle-switch">
           <input type="checkbox" checked={showMoves} onChange={(e) => updateActiveDocument({ showMoves: e.target.checked })} />
           <span className="toggle-slider"></span>
-          <span className="toggle-label">识别移动</span>
+          <span className="toggle-label">{t("识别移动")}</span>
         </label>
       </div>
       <div className="language-select">
-        <label htmlFor="code-diff-language">语言:</label>
+        <label htmlFor="code-diff-language">{t("语言:")}</label>
         <select
           id="code-diff-language"
           name="codeDiffLanguage"
           value={language}
           onChange={(e) => updateActiveDocument({ language: e.target.value })}
         >
-          <option value="auto">自动检测</option>
-          <option value="plaintext">纯文本</option>
+          <option value="auto">{t("自动检测")}</option>
+          <option value="plaintext">{t("纯文本")}</option>
           <option value="javascript">JavaScript</option>
           <option value="typescript">TypeScript</option>
           <option value="python">Python</option>
@@ -596,26 +568,22 @@ const CodeDiff = () => {
           <option value="properties">Properties</option>
         </select>
       </div>
-      <button onClick={swapCode} className="btn btn-secondary" disabled={!originalCode || !modifiedCode}>
-        交换
-      </button>
+      </ToolOptions>
       <button onClick={clearCode} className="btn btn-danger">
-        清空
-      </button>
+        {t("清空")}</button>
     </div>
   )
 
   return (
     <ToolLayout
       className={`code-diff ${isFullscreen ? 'fullscreen-mode' : ''}`}
-      title="代码对比"
-      description="对比文本或本地文件，查看差异。"
+      title={t("代码对比")}
       actions={toolbar}
       hideHeader={isFullscreen}
     >
-      {!isFullscreen && (
-        <div className="code-diff-tabs" role="tablist" aria-label="代码对比文档">
-          <div className="code-diff-tab-list document-tab-list">
+      <div className={isFullscreen ? 'diff-document-bar' : 'code-diff-tabs document-tabs diff-document-bar'}>
+        {!isFullscreen && <>
+          <div className="code-diff-tab-list document-tab-list" role="tablist" aria-label={t('代码对比文档')}>
             {documents.map((document) => (
               <DocumentTab
                 key={document.id}
@@ -630,25 +598,19 @@ const CodeDiff = () => {
           </div>
           <button
             type="button"
-            className="btn-small code-diff-tab-add"
+            className="btn-small code-diff-tab-add document-tab-add"
             onClick={addDocument}
           >
-            新建对比
-          </button>
-        </div>
-      )}
+            {t("新建对比")}</button>
+        </>}
+        {renderWorkspaceActions()}
+      </div>
       {viewMode === 'split' ? (
         <div className="split-view">
           <div
             className={`editor-panel diff-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
           >
-            <div className="panel-header">
-              {renderPanelTitle()}
-              <div className="panel-actions">
-                {renderLanguageTools()}
-                {renderPanelActions(false)}
-              </div>
-            </div>
+            {renderLanguageTools()}
             <div className="diff-editor-body">
               <DiffEditor
                 key={`${activeDocument.id}-split`}
@@ -657,7 +619,7 @@ const CodeDiff = () => {
                 modifiedLanguage={modifiedLanguage}
                 original={editorContent.originalCode}
                 modified={editorContent.modifiedCode}
-                loading={editorLoading}
+                loading={<div className="monaco-loading">{t("编辑器加载中")}</div>}
                 originalModelPath={modelPath('diff', activeDocument.id, 'original')}
                 modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
                 keepCurrentOriginalModel
@@ -673,8 +635,8 @@ const CodeDiff = () => {
               />
             </div>
             <div className="diff-status-bars">
-              <EditorStatusBar text={originalCode} label="原始代码">原始</EditorStatusBar>
-              <EditorStatusBar text={modifiedCode} label="修改代码">修改</EditorStatusBar>
+              <EditorStatusBar text={originalCode} label={t("原始代码")}>{t("原始")}</EditorStatusBar>
+              <EditorStatusBar text={modifiedCode} label={t("修改代码")}>{t("修改")}</EditorStatusBar>
             </div>
           </div>
         </div>
@@ -683,13 +645,7 @@ const CodeDiff = () => {
           <div
             className={`editor-panel diff-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}
           >
-            <div className="panel-header">
-              {renderPanelTitle()}
-              <div className="panel-actions">
-                {renderLanguageTools()}
-                {renderPanelActions(true)}
-              </div>
-            </div>
+            {renderLanguageTools()}
             <div className="diff-editor-body">
               {originalCode || modifiedCode ? (
                 <DiffEditor
@@ -699,7 +655,7 @@ const CodeDiff = () => {
                   modifiedLanguage={modifiedLanguage}
                   original={editorContent.originalCode}
                   modified={editorContent.modifiedCode}
-                  loading={editorLoading}
+                  loading={<div className="monaco-loading">{t("编辑器加载中")}</div>}
                   originalModelPath={modelPath('diff', activeDocument.id, 'original')}
                   modifiedModelPath={modelPath('diff', activeDocument.id, 'modified')}
                   keepCurrentOriginalModel
@@ -714,14 +670,14 @@ const CodeDiff = () => {
                 />
               ) : (
                 <div className="empty-state">
-                  <p>请在分栏视图中输入代码，或加载文件进行对比</p>
-                  <p className="hint">切换到"分栏视图"可以分别编辑原始代码和修改后的代码</p>
+                  <p>{t("请在分栏视图中输入代码，或加载文件进行对比")}</p>
+                  <p className="hint">{t("切换到\"分栏视图\"可以分别编辑原始代码和修改后的代码")}</p>
                 </div>
               )}
             </div>
             <div className="diff-status-bars">
-              <EditorStatusBar text={originalCode} label="原始代码">原始</EditorStatusBar>
-              <EditorStatusBar text={modifiedCode} label="修改代码">修改</EditorStatusBar>
+              <EditorStatusBar text={originalCode} label={t("原始代码")}>{t("原始")}</EditorStatusBar>
+              <EditorStatusBar text={modifiedCode} label={t("修改代码")}>{t("修改")}</EditorStatusBar>
             </div>
           </div>
         </div>

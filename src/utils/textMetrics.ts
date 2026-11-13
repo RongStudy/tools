@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 export const getTextMetrics = (text: string) => ({
   bytes: new TextEncoder().encode(text).length,
   lines: text ? text.split(/\r\n|\r|\n/).length : 0,
@@ -12,6 +13,6 @@ export const formatByteSize = (bytes: number) => {
 export const describeSizeChange = (inputBytes: number, outputBytes: number) => {
   if (!inputBytes) return ''
   const change = (outputBytes - inputBytes) / inputBytes * 100
-  if (change === 0) return '与输入等大'
-  return `较输入${change < 0 ? '减少' : '增加'} ${Math.abs(change).toFixed(1)}%`
+  if (change === 0) return t("与输入等大")
+  return t("较输入{value0} {value1}%", { value0: change < 0 ? t('减少') : t('增加'), value1: Math.abs(change).toFixed(1) })
 }
