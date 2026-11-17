@@ -1,92 +1,155 @@
 # Forge
 
-面向日常工程操作的开发工作台，提供格式化、代码对比、编解码、时间转换和图表渲染等功能。
+面向日常工程操作的开发工具工作台，将文本编辑、数据处理、代码对比与图表预览集中在同一个界面中。提供 **Web 网页版、Chrome 扩展和跨平台独立程序** 三种使用方式。
 
-## 在线使用
+[在线使用](https://rongstudy.github.io/tools/) · [版本发布](https://github.com/RongStudy/tools/releases) · [构建产物](https://github.com/RongStudy/tools/actions/workflows/deploy.yml) · [问题反馈](https://github.com/RongStudy/tools/issues)
 
-直接访问 **[https://rongstudy.github.io/tools](https://rongstudy.github.io/tools)** 即可使用，无需安装或启动本地服务。
+## 功能一览
 
-建议使用电脑浏览器。当前暂不支持手机使用；平板需要至少 901px 的页面宽度，否则会提示切换横屏或使用电脑。
-
-## 功能特性
-
-| 工具 | 主要功能 |
+| 工具 | 主要能力 |
 | --- | --- |
 | JSON 格式化 | 格式化、压缩、转义、多层解转义、缩进设置、JSON Schema 校验、多文档标签、复制与自定义文件名导出 |
-| 代码对比 | 分栏与统一视图、文件加载、语言检测、忽略空格、识别移动、多标签与全屏对比 |
-| 临时文本 | 多文档标签、每个文档最多 3 栏、语言检测与语法高亮、字号调整、curl 格式化、复制与保存本栏 |
-| 时间戳转换 | 当前时间戳、秒与毫秒切换、时间戳与日期互转、常用时区选择（默认 Asia/Shanghai） |
+| 临时文本 | 多文档标签、每个文档最多 3 栏、语言自动识别、语法高亮、字号调整、curl 格式化、本地文件加载与保存 |
+| 代码对比 | 分栏与统一视图、文件加载、语言自动识别、忽略空格、隐藏未修改内容、识别移动、多标签与全屏对比 |
 | 编解码 | 参数值与完整 URL 编解码、Base64、Unicode 编解码、MD5 与 SHA-256 摘要 |
-| 二维码 | HTTP/HTTPS URL 生成二维码、PNG 下载、上传/拖拽/粘贴图片解析 URL 或文本，全部本地处理 |
+| 二维码 | HTTP/HTTPS 地址生成二维码、PNG 下载、通过上传/拖拽/粘贴图片识别 URL 或文本 |
+| Mermaid / Markdown | 自动识别格式、实时预览、GFM、LaTeX 公式、Markdown 内嵌 Mermaid、本地文件加载、缩放与拖拽、全屏及 SVG/PNG/HTML 导出 |
+| 时间戳转换 | 当前时间戳、秒与毫秒切换、时间戳与日期互转、常用时区选择，默认 Asia/Shanghai |
 | 正则表达式 | 实时匹配、标志设置、捕获组、替换、文本分割与常用模板 |
-| Mermaid / Markdown | 自动识别格式、实时渲染、GFM 与 LaTeX 公式、Markdown 内嵌 Mermaid、图表缩放与拖拽、全屏预览、图表及 Markdown HTML 导出 |
-| Lottie 动画 | 通过 URL 或 JSON 播放、加载后回显 JSON、本地示例、暂停与重播、循环及速度控制 |
+| Lottie 动画 | 通过 URL 或 JSON 播放、加载后回显 JSON、内置示例、暂停与重播、循环及速度控制 |
 
-### 导航与设置
+### 工作台体验
 
-- 使用左侧工具栏切换工具，或按 `Cmd+K` / `Ctrl+K` 搜索工具。
-- 点击工具栏底部的“设置”，分别管理“外观主题”和“草稿保存”。
-- **外观主题**：支持深色与浅色，切换立即生效并自动记住，编辑器与预览同步切换主题。
-- **草稿保存**：默认保存 **2 天**，可设置 **1–365 天**。点击“保存草稿设置”后，从下一次自动保存起使用新时长，每次保存重新计时；过期草稿在下次读取时清除。
+- **双语界面**：支持中文与 English，首次使用默认为 English，可在设置中切换并记住偏好。
+- **深浅主题**：编辑器与预览同步切换，设置立即生效并自动保存。
+- **工具搜索**：按 `Cmd+K` / `Ctrl+K` 搜索和切换工具。
+- **导航排序**：拖动导航图标、聚焦图标后按 `Alt+方向键`，或在设置中使用上下移按钮；首页固定在首位，支持恢复默认顺序。
+- **编辑体验**：使用本地打包的 Monaco Editor，提供语法高亮；多个编辑页支持标签、可调整分栏和全屏查看。
+- **自动草稿**：JSON、代码对比、临时文本和 Mermaid / Markdown 支持在当前浏览器中恢复草稿。
+
+## 选择使用方式
+
+| 方式 | 适用场景 | 如何开始 |
+| --- | --- | --- |
+| Web 网页版 | 直接打开即可使用 | 访问 [在线工作台](https://rongstudy.github.io/tools/) |
+| Chrome 扩展 | 从浏览器工具栏快速打开 | 加载解压后的扩展目录，点击扩展图标打开工具页 |
+| 独立程序 | 本地运行、离线使用核心工具 | 运行对应平台的可执行文件，再用浏览器访问本地地址 |
+
+推荐使用电脑浏览器。当前不支持手机使用；平板页面宽度至少需要 **901px**，宽度不足时会提示切换横屏或使用电脑。
+
+### 下载构建产物
+
+当前工作流在推送到 `main` 后自动构建。打开 [GitHub Actions](https://github.com/RongStudy/tools/actions/workflows/deploy.yml)，选择对应提交的构建记录，在 **Artifacts** 中下载：
+
+| Artifact 名称 | 内容 |
+| --- | --- |
+| `chrome-extension` | Chrome 扩展压缩包 |
+| `forge-darwin-arm64` | macOS Apple Silicon 可执行文件 |
+| `forge-darwin-amd64` | macOS Intel 可执行文件 |
+| `forge-windows-amd64` | Windows x64 可执行文件 |
+| `forge-windows-arm64` | Windows ARM64 可执行文件 |
+| `forge-linux-amd64` | Linux x64 可执行文件 |
+
+**Actions 的 Artifacts 与 Release 的 Assets 是两个独立位置。** 当前工作流不会在创建 tag 或发布 Release 时自动构建、上传附件；Release 中的编译包需要单独上传。页面中的 `Source code (zip)` 和 `Source code (tar.gz)` 是源码包，不是可执行程序。
+
+### 安装 Chrome 扩展
+
+1. 下载并解压扩展构建产物，或按下文执行 `npm run build:chrome`。
+2. 找到直接包含 `manifest.json`、`background.js` 和 `index.html` 的目录。Actions 下载包内若还有 `chrome-extension.zip`，需继续解压。
+3. 在 Chrome 中打开 `chrome://extensions/`，开启「开发者模式」。
+4. 点击「加载已解压的扩展程序」，选择上述目录；本地构建时为 `dist/chrome`。
+5. 点击浏览器工具栏中的扩展图标，在新标签页打开完整工作台。
+
+### 运行独立程序
+
+选择与系统、CPU 架构相符的文件并解压。例如 macOS Apple Silicon：
+
+```bash
+chmod +x forge-darwin-arm64
+./forge-darwin-arm64
+```
+
+Windows 可在 PowerShell 中运行，例如：
+
+```powershell
+.\forge-windows-amd64.exe
+```
+
+默认访问地址为 **http://127.0.0.1:8080/tools/**。程序只监听本机，不会自动打开浏览器；运行后手动访问终端显示的地址，按 `Ctrl+C` 停止服务。
+
+可以通过 `-addr` 更改端口，例如：
+
+```bash
+./forge-darwin-arm64 -addr 127.0.0.1:9090
+```
+
+可执行文件已嵌入前端资源，运行时不需要 Node.js、Go 或额外的前端目录。核心工具可离线使用，远程资源仍需要网络。当前构建流程未提供 macOS 或 Windows 平台签名。
+
+## 草稿、文件与网络访问
+
+### 自动草稿与设置
+
+- 自动草稿默认保存 **2 天**，可在「设置 → 草稿保存」中调整为 **1–365 天**。
+- 点击「保存草稿设置」后，从下一次自动保存起使用新时长，每次保存重新计时；过期草稿在下次读取时清除。
 - 自动草稿覆盖 JSON 格式化、代码对比、临时文本和 Mermaid / Markdown；其他工具不保证恢复输入内容。
+- 草稿、语言、主题和菜单顺序保存在当前浏览器本地，不会上传到云端或跨设备同步。
+- 清除网站数据会删除草稿。不同设备、浏览器、域名或端口使用不同的本地存储；需要长期留存的内容请导出文件备份。
 
-### 本地保存说明
+### 本地文件编辑
 
-**自动草稿仅保存在当前浏览器本地，不会上传到云端。** 设置同样保存在本地；更换设备、浏览器或访问来源不会同步草稿，清除浏览器网站数据会删除本地草稿。需要长期留存的内容可导出文件备份。
+临时文本和代码对比支持加载本地文本文件。在支持文件写回能力的浏览器中，可手动开启写回开关，选择文件并授权，再点击保存按钮写回原文件。
 
-Lottie 的 URL 加载会向用户指定的地址请求动画资源，远程地址需要允许跨域访问（CORS）。这与自动草稿的本地保存相互独立。
+- 写回仅支持 UTF-8 文本，并保留原文件的 UTF-8 BOM。
+- 保存前检查文件是否已被外部修改，发现冲突时提示重新加载，不覆盖外部修改。
+- 文件句柄仅在当前页面会话中保留；恢复浏览器草稿不会恢复原文件的访问授权。
+- 不支持写回时，仍可使用普通文件加载或导出功能。
 
-## 技术栈
+Mermaid / Markdown 支持选择或拖入本地文档并预览，图表可导出 SVG/PNG，Markdown 可导出 HTML。
 
-- **React 18** - UI 框架
-- **TypeScript** - 类型安全
-- **Vite** - 构建工具
-- **Monaco Editor** - 代码编辑器（VS Code 编辑器核心）
-- **Mermaid.js** - 图表解析与 SVG 渲染
-- **React Router** - 路由管理
+### 网络访问说明
 
-## 快速开始
+文本处理、二维码生成与识别在浏览器本地完成；Monaco 编辑器及语言 Worker 随应用打包，不依赖 Monaco CDN。
 
-### 安装依赖
+加载远程 Lottie URL 会向指定地址请求动画 JSON，远程地址需允许跨域访问（CORS）。Markdown 中的远程图片、Lottie 引用的外部图片等资源也可能触发网络请求；使用离线内容时应一并准备这些资源。
 
-使用 Node.js 24，与 CI 保持一致。
+## 本地开发
+
+### 环境要求
+
+- **Node.js 24** 与 npm：安装依赖、启动开发服务和构建前端，与 CI 保持一致。
+- **Go 1.26**：仅在构建独立程序或验证 Go 启动器时需要。
 
 ```bash
+git clone https://github.com/RongStudy/tools.git
+cd tools
 npm ci
+npm run dev
 ```
 
-ESLint 10 使用 `eslint.config.js` 平面配置。依赖升级后应执行 `npm run lint`、`npm test`、两个 target 的构建以及 `npm audit --registry=https://registry.npmjs.org`。
+默认开发地址为 `http://localhost:3000/tools/`，实际地址以终端输出为准。开发 Chrome target 可使用 `npm run dev:chrome`，加载到浏览器扩展中仍需先执行生产构建。
 
-依赖兼容说明：Monaco 的 DOMPurify、Mermaid 的 KaTeX 通过 `overrides` 统一使用已修复版本；KaTeX 固定为 `0.18.10`，避免安装被弃用的 `0.18.11`，同时满足 Markdown 公式扩展的版本要求。
+### 常用命令
 
-`package.json` 的 `allowScripts` 仅按版本批准 esbuild 的二进制安装脚本；macOS 可选依赖 fsevents 使用包内的预编译二进制，显式禁止其安装脚本。升级 esbuild 后，需检查新版脚本并运行 `npm install-scripts approve esbuild` 更新批准记录。
+| 命令 | 说明 |
+| --- | --- |
+| `npm run dev` | 启动 Web 开发服务 |
+| `npm run dev:chrome` | 启动 Chrome target 开发服务，使用 hash 路由 |
+| `npm run build` / `npm run build:web` | 构建 Web，输出到 `dist/web` |
+| `npm run build:chrome` | 构建 Chrome 扩展，输出到 `dist/chrome` |
+| `npm run build:go` | 先构建 Web，再构建全部 5 种平台的独立程序，输出到 `dist/bin` |
+| `npm run build:go -- --target linux/amd64` | 仅构建指定平台的独立程序，仍会先构建 Web |
+| `npm run preview -- --outDir dist/web` | 预览已经构建的 Web 产物 |
+| `npm run lint` | 执行 ESLint 检查 |
+| `npm test` | 执行 Vitest 测试 |
+| `npm run test:watch` | 以监听模式执行测试 |
 
-### 开发模式
+预览 Web 产物前先运行 `npm run build:web`，随后访问预览服务地址下的 `/tools/` 路径。
 
-```bash
-npm run dev          # Web target，http://localhost:3000/tools/
-npm run dev:chrome   # Chrome target，使用 hash 路由与本地 Monaco
-```
-
-### 构建生产版本
-
-```bash
-npm run build          # 等价于 build:web
-npm run build:web      # Web 产物，输出到 dist/web，部署到 GitHub Pages 的 /tools/ 子路径
-npm run build:chrome   # Chrome 扩展产物，输出到 dist/chrome
-npm run build:go       # 前端内嵌到 5 种平台的独立 Go 可执行文件，输出到 dist/bin
-```
-
-### 预览生产构建
-
-```bash
-npm run build:web
-npm run preview -- --outDir dist/web
-```
-
-打开终端提示地址下的 `/tools/` 路径。
+Go 构建支持 `darwin/arm64`、`darwin/amd64`、`windows/amd64`、`windows/arm64` 和 `linux/amd64`，产物文件名与上表一致，Windows 文件带 `.exe` 后缀。例如本地构建的 Linux 版本位于 `dist/bin/forge-linux-amd64`。更多启动器说明见 [go/README.md](go/README.md)。
 
 ### 验证改动
+
+前端改动后执行：
 
 ```bash
 npm run lint
@@ -95,207 +158,87 @@ npm run build:web
 npm run build:chrome
 ```
 
-推送到 `main` 后，GitHub Actions 会构建 Web 版本并部署到上述在线地址，同时构建 Chrome 扩展压缩包。
-
-### Go 独立程序
-
-`npm run build:go` 会先构建 Web target，再使用 Go 1.26 将静态文件嵌入单个可执行文件。运行后在终端显示本地地址，浏览器访问该地址即可使用；默认仅监听本机：
+修改 Go 启动器后，在 `go/` 目录中执行：
 
 ```bash
-./dist/bin/forge-darwin-arm64
-./dist/bin/forge-darwin-amd64
-./dist/bin/forge-windows-amd64.exe
-./dist/bin/forge-windows-arm64.exe
-./dist/bin/forge-linux-amd64
+gofmt -l .
+go vet ./...
+go test -race ./...
 ```
 
-可用 `-addr 127.0.0.1:9090` 修改监听地址。只构建单一目标时，可使用 `npm run build:go -- --target linux/amd64`；支持目标为 `darwin/arm64`、`darwin/amd64`、`windows/amd64`、`windows/arm64` 和 `linux/amd64`。该构建需要 Node.js 24 和 Go 1.26；运行生成文件不需要 Node.js、Go 或外置前端目录。
+`gofmt -l .` 应无输出。涉及前端资源嵌入或跨平台构建的改动，还需在仓库根目录执行 `npm run build:go`。
 
-推送到 `main` 后，GitHub Actions 除部署 Pages 与打包 Chrome 扩展外，也会编译上述五种 Go 可执行文件，并分别上传为 `forge-darwin-arm64`、`forge-darwin-amd64`、`forge-windows-amd64`、`forge-windows-arm64` 和 `forge-linux-amd64` 五个 workflow artifact。Actions 页面按平台显示五行，每项下载为只包含对应可执行文件的 ZIP。前端资源嵌入文件为忽略的构建产物，不会混入源码提交。
+### 依赖维护
 
-## 构建目标
+ESLint 使用 `eslint.config.js` 平面配置。升级依赖后，除上述前端检查外，还应运行 `npm audit --registry=https://registry.npmjs.org`。
 
-两个 target 共用同一套页面、组件、工具注册表和测试，平台差异只在 Vite 配置和少量适配模块中：
+- `package.json` 通过 `overrides` 统一 Monaco 的 DOMPurify 和 Mermaid 的 KaTeX 版本。
+- KaTeX 当前固定为 `0.18.10`，升级时需同时检查 `marked-katex-extension` 的兼容要求。
+- `allowScripts` 按版本批准 esbuild 的安装脚本，禁止 fsevents 的安装脚本。升级 esbuild 后，应检查安装脚本并使用 `npm install-scripts approve esbuild` 更新批准记录。
 
-| 配置项 | Web target | Chrome target |
-|---|---|---|
+## 构建与部署
+
+Web 和 Chrome 共用页面、组件、工具注册表与测试，差异集中在 `vite.config.ts` 和平台适配模块中。Go 启动器嵌入 Web 构建产物，不维护另一套前端。
+
+| 配置项 | Web | Chrome 扩展 |
+| --- | --- | --- |
 | Vite mode | `web` | `chrome` |
-| `base` | `/tools/` | `./` |
-| 路由 | `BrowserRouter`（`src/platform/web.tsx`） | `HashRouter`（`src/platform/chrome.tsx`） |
-| Monaco | 本地打包的 Monaco ESM 与语言 Worker | 本地打包的 Monaco ESM 与语言 Worker |
-| 扩展文件 | 不输出 | 输出 `manifest.json`、`background.js`、`icon.png` |
+| 资源路径 `base` | `/tools/` | `./` |
+| 路由 | `BrowserRouter` | `HashRouter` |
 | 输出目录 | `dist/web` | `dist/chrome` |
+| 扩展专属资源 | 不输出 | `manifest.json`、`background.js`、`icon.png` |
+| Monaco | 本地 ESM 与语言 Worker | 本地 ESM 与语言 Worker |
 
-平台模块通过 `vite.config.ts` 中的 `@platform`、`@monaco-setup` alias 在编译期选定，业务代码不感知运行环境，也不做运行时环境探测。
-
-Web 构建会根据 `src/tools/paths.json` 为每个工具生成 `<工具路径>/index.html`，确保 GitHub Pages 上直接访问或刷新子页面也能加载。工具注册表共用这份路径清单，新增工具时需在清单中登记路径。
-
-两个 target 通过 `src/monaco/setup.ts` 按需加载同一套本地 Monaco 运行时（`src/monaco/runtime.ts`），均不依赖 Monaco CDN。
-
-## Chrome 扩展
-
-`dist/chrome` 是一个可直接加载的 Manifest V3 扩展：
-
-1. 执行 `npm run build:chrome`；
-2. 打开 `chrome://extensions/` 并开启「开发者模式」；
-3. 点击「加载已解压的扩展程序」，选择 `dist/chrome` 目录；
-4. 点击工具栏中的扩展图标，会在新标签页打开完整工具页。
-
-实现说明：
-
-- 扩展专属文件放在独立的 `chrome/` 目录，不放进共享 `public/`，避免 Web 产物也发布扩展清单；
-- `manifest.json` 的 `version` 在构建时由 `package.json` 的 `version` 注入，无需两处手动同步；
-- Manifest V3 禁止远程执行代码，因此 Chrome target 不使用 Monaco CDN，Worker 也随扩展包一起发布；
-- 扩展页面没有服务端 history fallback，必须使用 hash 路由。
+- `@platform`、`@monaco-setup` alias 在编译期选择平台模块。
+- Web 构建根据 `src/tools/paths.json` 生成各工具的静态入口，支持在 GitHub Pages 上直接打开或刷新子页面；部署位置需与 `/tools/` 资源路径及路由前缀匹配。
+- Chrome 扩展采用 Manifest V3，构建时从 `package.json` 注入版本号。
+- Go 构建将 `dist/web` 复制到嵌入目录，并使用 `CGO_ENABLED=0` 交叉编译；生成的前端快照与 `dist/` 均不提交源码。
+- `.github/workflows/deploy.yml` 在推送 `main` 时分别部署 GitHub Pages、上传 Chrome 扩展和五个平台的 Go 构建产物。当前不包含 tag/Release 触发器或 Release 附件上传步骤。
 
 ## 项目结构
 
-```
-tool/
-├── chrome/                       # Chrome 扩展专属文件，仅在 build:chrome 时输出
-│   ├── manifest.json
-│   ├── background.js
-│   └── icon.png
+```text
+.
+├── .github/workflows/deploy.yml  # Pages 部署、Chrome 与 Go 构建
+├── chrome/                      # Chrome 扩展清单、后台脚本与图标
+├── go/                          # Go 独立启动器与 HTTP 测试
+│   ├── cmd/forge/               # 命令行入口
+│   └── internal/                # 服务生命周期、静态资源与嵌入目录
+├── scripts/build-go.mjs         # 前端嵌入与跨平台编译
 ├── src/
-│   ├── pages/
-│   │   ├── Home.tsx              # 首页
-│   │   ├── JsonFormatter.tsx     # JSON 格式化工具
-│   │   ├── JsonFormatter.css
-│   │   ├── CodeDiff.tsx          # 代码对比工具
-│   │   ├── CodeDiff.css
-│   │   ├── ScratchPad.tsx        # 临时文本编辑器
-│   │   ├── ScratchPad.css
-│   │   ├── TimestampConverter.tsx # 时间戳转换工具
-│   │   ├── TimestampConverter.css
-│   │   ├── UrlCodec.tsx          # URL 编解码工具
-│   │   ├── UrlCodec.css
-│   │   ├── RegexTester.tsx       # 正则表达式测试工具
-│   │   ├── RegexTester.css
-│   │   ├── MermaidRenderer.tsx   # Mermaid / Markdown 渲染
-│   │   ├── MermaidRenderer.css
-│   │   ├── LottiePlayer.tsx      # Lottie 动画播放器
-│   │   └── LottiePlayer.css
-│   ├── components/
-│   │   ├── AppShell.tsx          # 应用壳层与工具导航
-│   │   ├── SettingsDialog.tsx    # 外观主题与草稿保存设置
-│   │   ├── ToolLayout.tsx        # 工具页通用布局
-│   │   └── Toast.tsx             # Toast 通知组件
-│   ├── hooks/
-│   │   └── useDiffEditor.ts      # Diff 编辑器 Hook
-│   ├── platform/                 # 路由等平台适配，按 target 二选一
-│   │   ├── types.ts              # 平台模块契约
-│   │   ├── web.tsx               # BrowserRouter + /tools basename
-│   │   └── chrome.tsx            # HashRouter
-│   ├── monaco/                   # 平台入口与共用本地 Monaco 运行时
-│   │   ├── types.ts              # 平台模块契约
-│   │   ├── web.ts                # Web 初始化入口
-│   │   ├── chrome.ts             # Chrome 初始化入口
-│   │   ├── setup.ts              # 按需初始化与失败重试
-│   │   └── runtime.ts            # 共用本地 Monaco + 语言 Worker
-│   ├── tools/
-│   │   ├── paths.json            # 共用路径与 Web 静态入口清单
-│   │   └── registry.tsx          # 工具页注册表
-│   ├── types/
-│   │   ├── css.d.ts              # CSS 导入类型声明
-│   │   └── worker.d.ts           # Vite ?worker 导入类型声明
-│   ├── utils/
-│   │   ├── clipboard.ts          # 剪贴板工具
-│   │   ├── expiringStorage.ts    # 带过期时间的本地存储
-│   │   └── languageDetection.ts  # 语言检测工具
-│   ├── App.tsx                   # 主应用组件
-│   ├── App.css
-│   ├── main.tsx                  # 应用入口
-│   └── index.css                 # 全局样式
-├── public/                       # Web 与 Chrome 共用的静态资源
-├── dist/
-│   ├── web/                      # build:web 产物
-│   └── chrome/                   # build:chrome 产物
-├── index.html
-├── package.json
-├── tsconfig.json
-├── tsconfig.node.json
-├── vite.config.ts
-└── README.md
+│   ├── assets/                  # 工具图标与内置 Lottie 示例
+│   ├── components/              # 导航、设置、编辑器和文件操作组件
+│   ├── hooks/                   # 编辑器、草稿、文件与分栏逻辑
+│   ├── locales/                 # English 界面文案
+│   ├── monaco/                  # 本地编辑器、语言能力与 Schema 配置
+│   ├── pages/                   # 首页与九款工具页面
+│   ├── platform/                # Web / Chrome 路由适配
+│   ├── tools/                   # 工具注册表与路径清单
+│   ├── utils/                   # 格式化、渲染、存储与文件处理
+│   └── workers/                 # JSON、正则与二维码任务 Worker
+├── dist/                        # 构建产物：web/、chrome/、bin/（不提交）
+├── DESIGN.md                    # UI 设计规范
+├── LICENSE                      # MIT 许可证
+├── package.json                 # 依赖与开发脚本
+└── vite.config.ts               # 构建目标与测试配置
 ```
 
-## 新增工具页
+## 参与开发
 
-1. 在 `src/pages/` 下创建页面组件和页面样式。
-2. 在 `src/tools/paths.json` 中登记路径，再在 `src/tools/registry.tsx` 中新增工具配置，填写 `path`、`title`、`navTitle`、`description`、`category` 和 `component`。
-3. 页面内优先使用 `ToolLayout`、`editor-panel`、`panel-header`、`panel-actions`、`btn` 等已有布局和样式类，保持工具页交互一致。
+欢迎通过 [Issues](https://github.com/RongStudy/tools/issues) 反馈问题或提出建议。报告问题时请附上使用方式（Web / Chrome / 独立程序）、浏览器版本、复现步骤及脱敏后的示例内容。
 
-## 使用说明
+新增工具页时：
 
-### JSON 格式化工具
+1. 在 `src/pages/` 下添加页面组件和样式，UI 遵循 [DESIGN.md](DESIGN.md)。
+2. 在 `src/tools/paths.json` 登记路径，并在 `src/tools/registry.tsx` 注册工具信息与组件。
+3. 复用 `ToolLayout`、`editor-panel`、`panel-header`、`panel-actions`、`btn` 等通用组件和样式。
+4. 新增界面文案使用 `src/i18n.ts` 的翻译函数，并维护 `src/locales/en.json`。
+5. 为新增行为补充测试，执行前端检查和两个 target 的构建；涉及 Go 启动器时再执行对应验证。
 
-1. 在左侧编辑器中输入或粘贴 JSON 代码
-2. 选择缩进大小（2空格/4空格/无缩进）
-3. 点击相应按钮：
-   - **格式化**：美化 JSON 代码
-   - **压缩**：移除所有空格和换行
-   - **转义**：将 JSON 字符串转义
-   - **解转义**：自动解转义多层嵌套的 JSON 字符串
-4. 右侧编辑器会实时显示格式化后的结果
-5. 点击"复制"按钮可复制代码到剪贴板
+## 技术栈
 
-### 代码对比工具
-
-#### 分栏视图模式
-
-1. 在左侧编辑器中输入原始代码
-2. 在右侧编辑器中输入修改后的代码
-3. 可以点击"加载文件"按钮从文件系统加载代码
-4. 选择对应的编程语言（或使用自动检测）
-5. 使用"交换"按钮可以交换左右两侧的代码
-6. 点击"全屏"按钮进入 Tab 内全屏模式，按 ESC 键退出
-
-#### 统一视图模式
-
-1. 切换到"统一视图"模式
-2. 查看逐行差异文本；新增行以 `+` 标记，删除行以 `-` 标记
-3. 差异会以高亮方式显示，方便识别修改内容
-
-#### 多标签页管理
-
-1. 点击"新建对比"创建新的对比标签页
-2. 每个标签页独立保存对比内容
-3. 点击标签右侧的关闭按钮删除对应标签页
-
-### 临时文本编辑器
-
-1. 支持多栏编辑模式，点击"新增栏"可添加编辑栏（最多 3 栏）
-2. 每栏可独立选择编程语言，享受语法高亮
-3. 支持多标签页，可创建多个临时文本文档
-4. 实时显示字符计数
-5. 点击"复制"快速复制当前栏内容
-6. 草稿自动保存，默认 2 天内重新打开仍可恢复；可在“设置 → 草稿保存”中调整时长，从下一次自动保存起生效，每次保存重新计时。草稿仅保存在当前浏览器本地，不会上传到云端；清除网站数据会删除草稿。
-
-### Mermaid / Markdown 渲染
-
-支持自动识别内容，也可手动选择 Mermaid 或 Markdown 模式。Markdown 支持 GFM、LaTeX 数学公式和内嵌 Mermaid 图表，可导出 HTML。Mermaid 模式使用方式：
-
-1. 在编辑器中输入 Mermaid 图表代码
-2. 预览区会实时渲染 SVG 图表
-3. 使用缩放按钮调整图表大小（50%–200%）
-4. 点击"全屏"按钮进入 Tab 内全屏模式查看大图，按 ESC 键退出
-5. 支持拖拽移动图表位置
-6. 点击"导出 SVG"或"导出 PNG"下载图表
-7. 语法错误会在预览区显示详细错误信息
-
-### Lottie 动画播放器
-
-1. 选择内置示例，或粘贴动画 JSON 后点击“播放 JSON”。
-2. 也可输入 HTTP(S) 动画 URL，点击“加载并播放”；成功读取后会在编辑器中回显 JSON。
-3. 使用预览区控件暂停、重播、设置循环或调整速度。
-4. 若远程地址不允许跨域读取，可将 JSON 直接粘贴到编辑器中播放。
-
-## 浏览器支持
-
-- Chrome (最新版本)
-- Firefox (最新版本)
-- Safari (最新版本)
-- Edge (最新版本)
+React 18、TypeScript、Vite、React Router、Monaco Editor、Mermaid、Marked、KaTeX、Lottie、Vitest，以及用于独立程序的 Go 标准库。
 
 ## 许可证
 
-MIT
+本项目采用 [MIT License](LICENSE)，版权信息见许可证文件。
