@@ -34,6 +34,19 @@
   --font-display: 'SF Pro Display', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-text: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* Monaco 菜单位于 Shadow DOM，需从根节点继承主题变量，普通选择器无法覆盖。 */
+  --vscode-menu-foreground: var(--color-text);
+  --vscode-menu-background: var(--color-surface-muted);
+  --vscode-menu-border: var(--color-border-tertiary);
+  --vscode-menu-separatorBackground: var(--color-border-strong);
+  --vscode-menu-selectionBorder: var(--color-primary-border);
+  --vscode-list-hoverForeground: var(--color-text);
+  --vscode-list-hoverBackground: var(--color-surface-raised);
+  --vscode-disabledForeground: var(--color-muted);
+  --vscode-strokeThickness: 1px;
+  --vscode-cornerRadius-large: 8px;
+  --vscode-cornerRadius-medium: 4px;
 }
 
 :root[data-theme='light'] {

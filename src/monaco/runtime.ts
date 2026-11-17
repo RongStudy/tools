@@ -23,6 +23,18 @@ self.MonacoEnvironment = {
 
 configureBuiltinLanguageServices()
 registerMermaidLanguage(monaco)
+// Cmd/Ctrl+K belongs to tool search, so the default K → F chord cannot reach Monaco.
+monaco.editor.addKeybindingRules([
+  {
+    keybinding: monaco.KeyMod.chord(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF),
+    command: '-editor.action.formatSelection',
+  },
+  {
+    keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
+    command: 'editor.action.formatSelection',
+    when: 'editorTextFocus && !editorReadonly && editorHasDocumentSelectionFormattingProvider',
+  },
+])
 loader.config({ monaco })
 
 export const initializeMonaco = () => loader.init().then(() => undefined)
