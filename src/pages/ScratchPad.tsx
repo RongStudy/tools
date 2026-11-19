@@ -215,6 +215,7 @@ const ScratchPad = () => {
   const [saveRequest, setSaveRequest] = useState<SaveFileRequest | null>(null)
   const [paneBindings, setPaneBindings] = useState<Record<string, EditorLanguageBinding>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const tabListRef = useRef<HTMLDivElement>(null)
   const [writeback, setWriteback] = useState(false)
   const localFiles = useLocalFiles()
   const pendingLoads = useRef(new Set<symbol>())
@@ -240,6 +241,25 @@ const ScratchPad = () => {
   const clearSavedDraft = useDraftPersistence(SCRATCH_PAD_DRAFT_KEY, draft)
 
   useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
+
+  useEffect(() => {
+    const tabList = tabListRef.current
+    const activeTab = tabList?.querySelector('[role="tab"][aria-selected="true"]')
+    if (!tabList || !activeTab) return
+
+    const revealActiveTab = () => {
+      const listBounds = tabList.getBoundingClientRect()
+      const tabBounds = activeTab.getBoundingClientRect()
+      if (tabBounds.left < listBounds.left) tabList.scrollLeft += tabBounds.left - listBounds.left
+      else if (tabBounds.right > listBounds.right) tabList.scrollLeft += tabBounds.right - listBounds.right
+    }
+    revealActiveTab()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(revealActiveTab)
+    observer.observe(tabList)
+    observer.observe(activeTab)
+    return () => observer.disconnect()
+  }, [activeDocumentId, isFullscreen])
 
   const updateActiveDocument = useCallback((updater: (document: ScratchDocument) => ScratchDocument) => {
     setDocuments((currentDocuments) => currentDocuments.map((document) => (
@@ -422,6 +442,37 @@ const ScratchPad = () => {
     </div>
   )
 
+  const fileActions = (
+    <div className="panel-actions scratch-file-actions">
+      <label className="toggle-switch" title={supportsFileWriteback() ? t("开启后加载文件可保存回原文件") : t("当前浏览器不支持保存到原文件")}>
+        <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
+        <span className="toggle-slider" />
+        <span className="toggle-label">{t("写回原文件")}</span>
+      </label>
+      <button type="button" onClick={chooseFile} className="btn-small" title={t("加载本地文件")}>
+        {t("加载文件")}</button>
+      {writeback && <LocalFileSave file={localFiles.files[selectedPane.id]} content={selectedPane.content} label={t("保存到原文件")}
+        saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[selectedPane.id]} disabled={localFiles.savingFile !== null}
+        onSave={() => localFiles.save(selectedPane.id, selectedPane.content)} />}
+      <button
+        type="button"
+        onClick={saveSelectedPane}
+        className="btn-small"
+        title={t("保存栏 {value0} 到本地文件", { value0: selectedPaneIndex + 1 })}
+      >
+        {t("保存本栏")}</button>
+      <small className="scratch-char-count">{totalChars.toLocaleString()} {t("字符")}</small>
+      <button
+        type="button"
+        onClick={() => setIsFullscreen((value) => !value)}
+        className="btn-small btn-fullscreen"
+        title={isFullscreen ? t("退出全屏") : t("浏览器内全屏")}
+      >
+        {isFullscreen ? t("⤓ 退出全屏") : t("⛶ 全屏")}
+      </button>
+    </div>
+  )
+
   return (
     <ToolLayout
       className={`scratch-pad ${isFullscreen ? 'fullscreen-mode' : ''}`}
@@ -430,56 +481,33 @@ const ScratchPad = () => {
       hideHeader={isFullscreen}
     >
       {!isFullscreen && (
-        <div className="scratch-tabs document-tabs" role="tablist" aria-label={t("临时文本")}>
-          <div className="scratch-tab-list document-tab-list">
-            {documents.map((document) => (
-              <DocumentTab
-                key={document.id}
-                prefix="scratch"
-                name={document.name}
-                selected={document.id === activeDocumentId}
-                onSelect={() => setActiveDocumentId(document.id)}
-                onRename={(name) => setDocuments((current) => current.map((item) => item.id === document.id ? { ...item, name } : item))}
-                onClose={documents.length > 1 ? () => closeDocument(document.id) : undefined}
-              />
-            ))}
+        <div className="scratch-tabs document-tabs">
+          <div className="scratch-tab-strip">
+            <div ref={tabListRef} className="document-tab-list" role="tablist" aria-label={t("临时文本")}>
+              {documents.map((document) => (
+                <DocumentTab
+                  key={document.id}
+                  prefix="scratch"
+                  name={document.name}
+                  selected={document.id === activeDocumentId}
+                  onSelect={() => setActiveDocumentId(document.id)}
+                  onRename={(name) => setDocuments((current) => current.map((item) => item.id === document.id ? { ...item, name } : item))}
+                  onClose={documents.length > 1 ? () => closeDocument(document.id) : undefined}
+                />
+              ))}
+            </div>
+            <button type="button" className="btn-small scratch-tab-add document-tab-add" onClick={addDocument}>
+              {t("新建文本")}</button>
           </div>
-          <button type="button" className="btn-small scratch-tab-add document-tab-add" onClick={addDocument}>
-            {t("新建文本")}</button>
+          {fileActions}
         </div>
       )}
       <div className={`editor-panel scratch-editor-panel ${isFullscreen ? 'fullscreen-panel' : ''}`}>
-        <div className="panel-header">
+        <input ref={fileInputRef} type="file" hidden aria-label={t("选择本地文件")} onChange={loadFile} />
+        {isFullscreen && <div className="panel-header">
           <span>{t("输入")}</span>
-          <div className="panel-actions">
-            <label className="toggle-switch" title={supportsFileWriteback() ? t("开启后加载文件可保存回原文件") : t("当前浏览器不支持保存到原文件")}>
-              <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
-              <span className="toggle-slider" />
-              <span className="toggle-label">{t("写回原文件")}</span>
-            </label>
-            <input ref={fileInputRef} type="file" hidden aria-label={t("选择本地文件")} onChange={loadFile} />
-            <button type="button" onClick={chooseFile} className="btn-small" title={t("加载本地文件")}>
-              {t("加载文件")}</button>
-            {writeback && <LocalFileSave file={localFiles.files[selectedPane.id]} content={selectedPane.content} label={t("保存到原文件")}
-              saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[selectedPane.id]} disabled={localFiles.savingFile !== null}
-              onSave={() => localFiles.save(selectedPane.id, selectedPane.content)} />}
-            <button
-              type="button"
-              onClick={saveSelectedPane}
-              className="btn-small"
-              title={t("保存栏 {value0} 到本地文件", { value0: selectedPaneIndex + 1 })}
-            >
-              {t("保存本栏")}</button>
-            <small className="scratch-char-count">{totalChars.toLocaleString()} {t("字符")}</small>
-            <button
-              onClick={() => setIsFullscreen((value) => !value)}
-              className="btn-small btn-fullscreen"
-              title={isFullscreen ? t("退出全屏") : t("浏览器内全屏")}
-            >
-              {isFullscreen ? t("⤓ 退出全屏") : t("⛶ 全屏")}
-            </button>
-          </div>
-        </div>
+          {fileActions}
+        </div>}
         <div
           className="scratch-editor-body"
           style={{ gridTemplateColumns: `repeat(${panes.length}, minmax(0, 1fr))` }}

@@ -62,9 +62,6 @@ export default function DocumentTab({ name, selected, prefix, onSelect, onRename
             if (event.key === 'F2') { event.preventDefault(); beginRename() }
           }}
         >
-          <svg className="document-tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
-            <path d="M3.5 4.5h9m-9 3h9m-9 3h6" />
-          </svg>
           <span className="document-tab-label">{name}</span>
         </button>
         {editing && <input

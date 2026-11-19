@@ -38,6 +38,35 @@
   background: var(--color-surface);
 }
 
+.tool-layout .scratch-tabs {
+  flex-wrap: wrap;
+}
+
+.scratch-tab-strip {
+  display: flex;
+  flex: 1 1 13rem;
+  min-width: 0;
+}
+
+.scratch-tab-strip .document-tab-list {
+  overflow-y: hidden;
+}
+
+.scratch-tabs .scratch-file-actions {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  margin-inline-start: auto;
+  justify-content: flex-end;
+  padding: 0 8px 4px;
+}
+
+@media (pointer: coarse) {
+  .scratch-tabs .scratch-file-actions :is(.btn-small, .toggle-switch) {
+    min-height: 44px;
+  }
+}
+
 .scratch-editor-panel {
   flex: 1;
   min-height: 420px;

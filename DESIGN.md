@@ -136,7 +136,7 @@ The shell consists of a persistent left icon Dock and a `100vh` contained worksp
 
 ## Left Dock (Desktop `> 900px`)
 - **Fixed Width**: `84px`. Hovering never expands the rail or shifts the workspace.
-- **Slots**: Brand mark at top; Search (`Cmd/Ctrl+K`) and Settings pinned and reachable even when short viewports scroll the tool list. Reserve symmetrical scrollbar space so icons stay vertically aligned.
+- **Slots**: Start with Home, followed by the scrollable tool list. Keep Search (`Cmd/Ctrl+K`) and Settings pinned at the bottom with an `8px` gap. Reserve symmetrical scrollbar space so icons stay vertically aligned.
 - **Magnification**: Each tool link sits in a fixed `64px × 76px` slot with a `40px` icon surface. Fine-pointer movement magnifies nearby icon surfaces up to `1.45×` (max `6px` vertical displacement) with spring physics. Disable magnification on touch devices or when `prefers-reduced-motion: reduce` is active.
 - **Tooltips**: Render tool-name tooltips outside the scrolling rail. Offset tooltips horizontally past the maximum `1.45×` magnified icon boundary so they never overlap hovered icons.
 - **Active State**: Lavender icon surface + distinct side indicator pill in both themes. Ensure SVG/image tool icons adapt cleanly to light surfaces.
@@ -144,10 +144,10 @@ The shell consists of a persistent left icon Dock and a `100vh` contained worksp
 Tool icons support drag-to-reorder and Alt + arrow keys. Settings offers named up/down controls and a reset action. Persist tool paths locally; keep Home first and Search/Settings pinned. New tools append to saved orders; removed tools are ignored.
 
 ## Mobile/Tablet Launcher (`<= 900px`)
-- Collapse the vertical Dock into a horizontally scrolling top launcher bar displaying icons with short visible text labels and the Settings trigger.
+- Collapse the vertical Dock into a horizontally scrolling top launcher bar displaying icons with short visible text labels. Keep Search and Settings visible to the right of the scrollable list.
 
 ## Main Workspace
-- **Padding**: `24px` desktop, `16px` tablet, `12px` mobile.
+- **Padding**: Desktop uses `10px` above and below the workspace and `12px` on each side. Tablet uses `8px` above and below and `10px` on each side. Mobile (`<= 560px`) uses `8px` on all sides.
 - **Overflow**: Contain overflow at the shell level (`100vh`); panels and editors scroll internally. Only allow document-level page scrolling if a tool explicitly requires a long-form document flow.
 
 # Layout & Component Specifications
@@ -157,7 +157,7 @@ Tool icons support drag-to-reorder and Alt + arrow keys. Settings offers named u
 - Subtle, motion-safe canvas background animation is permitted; hero banners, pricing, testimonials, and promotional CTAs are strictly forbidden.
 
 ## Tool Pages (`ToolLayout`)
-- **Header**: Single page title and a compact group of primary actions or mode controls. Keep frequent actions such as Clear, Copy, file writeback and language status visible beside their content. Only advanced or low-frequency settings belong in a named options popover. Avoid a wall of equivalent buttons.
+- **Header**: Single page title and a compact group of primary actions or mode controls, with `8px` between the header and the content. Keep frequent actions such as Clear, Copy, file writeback and language status visible beside their content. Only advanced or low-frequency settings belong in a named options popover. Avoid a wall of equivalent buttons.
 - **Progressive disclosure**: Use the shared ToolOptions component for advanced configuration, grouped file selection and export variants. Do not hide frequently used actions or create a menu that only contains status text. Show an enabled-settings count where hidden options affect results. Popovers size to their content (200–300px), use 32px flat menu rows with 4px gaps and 6px outer padding, and omit repeated headings and close buttons. Keep form labels and selects aligned; use 44px targets on coarse pointers. Popovers must escape panel clipping, close on Escape/outside click, and restore keyboard focus.
 - **Workflow selection**: Choose one task family first (e.g. URL / Base64 / Unicode / Digest), then show only that family's actions. Keep mode selection separate from document tabs.
 - **Context**: Put copy, file save, export and preview controls beside their corresponding content. Never repeat every action in the page header. Keep core inputs, Run/Format/Render, result copy, and fullscreen discoverable without opening menus.

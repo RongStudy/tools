@@ -8,7 +8,6 @@ import { useToolOrder } from '../hooks/useToolOrder'
 import ToolIcon from './ToolIcon'
 import ToolSearchDialog from './ToolSearchDialog'
 import SettingsDialog from './SettingsDialog'
-import forgeIcon from '../assets/tool-icons/forge.png'
 import { ThemeProvider } from '../theme'
 
 type AppShellProps = {
@@ -87,10 +86,6 @@ const AppShellContent = ({ tools, children }: AppShellProps) => {
   return (
     <div className="app-shell">
       <aside className="app-sidebar">
-        <div className="app-brand" aria-label={t("Forge 工具箱")}>
-          <span className="app-brand-mark" aria-hidden="true"><ToolIcon src={forgeIcon} /></span>
-          <span className="dock-sr-only">{t("Forge 工具箱")}</span>
-        </div>
         <nav ref={navRef} className="tool-dock" aria-label={t("工具导航")} onPointerMove={(event) => { if (!dragPath) onPointerMove(event) }} onPointerLeave={() => { onPointerLeave(); setTooltip(null) }} onPointerCancel={() => { reset(); setTooltip(null) }} onScroll={() => { reset(); setTooltip(null) }}>
           {orderedTools.map((tool) => (
             <NavLink key={tool.path} data-tool-path={tool.path} to={tool.path} end={tool.path === '/'} aria-label={t(tool.navTitle)} aria-describedby={tooltip?.key === tool.path ? tooltipId : undefined} className={({ isActive }) => `dock-item${isActive ? ' active' : ''}${tool.isTool === false ? ' dock-home' : ''}${dragPath === tool.path ? ' dock-dragging' : ''}${dropPath === tool.path ? ' dock-drop-target' : ''}`}

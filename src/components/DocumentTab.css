@@ -1,5 +1,5 @@
 .tool-layout:has(> .document-tabs) { row-gap: 0; }
-.tool-layout:has(> .document-tabs) > .tool-layout-header { margin-bottom: 1rem; }
+.tool-layout:has(> .document-tabs) > .tool-layout-header { margin-bottom: var(--tool-content-gap); }
 
 .tool-layout .document-tabs + .editor-panel,
 .tool-layout .document-tabs + :is(.editor-container, .split-view, .unified-view) > .editor-panel {
@@ -60,7 +60,6 @@
 .tool-layout .document-tab-button {
   display: flex;
   align-items: center;
-  gap: 5px;
   flex: 1;
   min-width: 0;
   min-height: 32px;
@@ -72,7 +71,6 @@
   font: 400 13px/1.2 var(--font-text);
   cursor: pointer;
 }
-.document-tab-icon { width: 14px; height: 14px; flex-shrink: 0; }
 .document-tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tool-layout .document-tab.is-active .document-tab-button { color: var(--color-text); }
 
