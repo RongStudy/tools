@@ -237,7 +237,7 @@ const ScratchPad = () => {
   const { showToast } = useToast()
 
   const draft = useMemo(() => ({ activeDocumentId, documents, fontSize }), [activeDocumentId, documents, fontSize])
-  useDraftPersistence(SCRATCH_PAD_DRAFT_KEY, draft)
+  const clearSavedDraft = useDraftPersistence(SCRATCH_PAD_DRAFT_KEY, draft)
 
   useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
@@ -415,6 +415,8 @@ const ScratchPad = () => {
         >
           ↺</button>
       </div>
+      <hr className="tool-options-divider" />
+      <button type="button" className="btn btn-secondary" onClick={clearSavedDraft}>{t("清除已保存草稿")}</button>
       </ToolOptions>
       <button onClick={clearAllPanes} className="btn btn-danger">{t("清空")}</button>
     </div>

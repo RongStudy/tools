@@ -249,7 +249,7 @@ const MermaidRenderer = () => {
     }] : [])
   }, [error, activeFormat, code, editorState])
 
-  useDraftPersistence(MERMAID_DRAFT_KEY, code)
+  const clearSavedDraft = useDraftPersistence(MERMAID_DRAFT_KEY, code)
 
   useEffect(() => () => { fileReadSequenceRef.current += 1 }, [])
 
@@ -509,6 +509,9 @@ const MermaidRenderer = () => {
         disabled={!code.trim() || isRendering}
       >
         {t("渲染")}</button>
+      <ToolOptions label={t('编辑选项')} compact closeOnAction>
+        <button type="button" className="btn-small" onClick={clearSavedDraft}>{t("清除已保存草稿")}</button>
+      </ToolOptions>
     </div>
   )
 

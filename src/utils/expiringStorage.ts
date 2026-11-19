@@ -2,7 +2,13 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000
 export const TWO_DAYS_IN_MS = 2 * DAY_IN_MS
 export const DEFAULT_DRAFT_RETENTION_DAYS = 2
 export const MAX_DRAFT_RETENTION_DAYS = 365
-const DRAFT_RETENTION_KEY = 'dev-tools:draft-retention-days'
+export const DRAFT_SETTINGS_KEY = 'dev-tools:draft-retention-days'
+export const DRAFT_AUTOSAVE_DISABLED_EVENT = 'draft-autosave-disabled'
+
+type DraftSettings = {
+  enabled: boolean
+  days: number
+}
 
 type ExpiringStoragePayload<T> = {
   value: T
@@ -23,21 +29,43 @@ const isValidRetentionDays = (days: number) => (
   Number.isInteger(days) && days >= 1 && days <= MAX_DRAFT_RETENTION_DAYS
 )
 
-export const getDraftRetentionDays = (): number => {
+export const getDraftSettings = (): DraftSettings => {
+  const defaults = { enabled: true, days: DEFAULT_DRAFT_RETENTION_DAYS }
   try {
-    const days = Number(getLocalStorage()?.getItem(DRAFT_RETENTION_KEY))
-    return isValidRetentionDays(days) ? days : DEFAULT_DRAFT_RETENTION_DAYS
+    const raw = getLocalStorage()?.getItem(DRAFT_SETTINGS_KEY)
+    if (!raw) return defaults
+    // Earlier versions stored only the retention period under this key.
+    const saved = JSON.parse(raw) as Partial<DraftSettings> | number | null
+    const days = typeof saved === 'number' ? saved : saved?.days
+    return {
+      enabled: typeof saved === 'number' || saved?.enabled !== false,
+      days: typeof days === 'number' && isValidRetentionDays(days) ? days : defaults.days,
+    }
   } catch {
-    return DEFAULT_DRAFT_RETENTION_DAYS
+    return defaults
   }
 }
 
-export const setDraftRetentionDays = (days: number): boolean => {
-  if (!isValidRetentionDays(days)) return false
+export const getDraftRetentionDays = (): number => getDraftSettings().days
+
+export const setDraftSettings = (settings: DraftSettings): boolean => {
+  if (!isValidRetentionDays(settings.days)) return false
   const storage = getLocalStorage()
   if (!storage) return false
   try {
-    storage.setItem(DRAFT_RETENTION_KEY, String(days))
+    storage.setItem(DRAFT_SETTINGS_KEY, JSON.stringify(settings))
+  } catch {
+    return false
+  }
+  if (!settings.enabled) window.dispatchEvent(new Event(DRAFT_AUTOSAVE_DISABLED_EVENT))
+  return true
+}
+
+export const removeExpiringStorage = (key: string): boolean => {
+  const storage = getLocalStorage()
+  if (!storage) return false
+  try {
+    storage.removeItem(key)
     return true
   } catch {
     return false

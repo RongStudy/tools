@@ -90,6 +90,7 @@ const JsonFormatter = () => {
   const [documents, setDocuments] = useState(initialDraft.documents)
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
   const [indentSize, setIndentSize] = useState(initialDraft.indentSize)
+  const [draftRevision, setDraftRevision] = useState(0)
   const [fullscreenMode, setFullscreenMode] = useState<'none' | 'output' | 'both'>('none')
   const [saveRequest, setSaveRequest] = useState<SaveFileRequest | null>(null)
   const [showSchema, setShowSchema] = useState(false)
@@ -125,7 +126,8 @@ const JsonFormatter = () => {
   }, [])
 
   const draft = useMemo(() => ({ activeDocumentId, documents, indentSize }), [activeDocumentId, documents, indentSize])
-  useDraftPersistence(JSON_FORMATTER_DRAFT_KEY, draft)
+  // Processing results can arrive after clearing a saved draft without a new edit.
+  const clearSavedDraft = useDraftPersistence(JSON_FORMATTER_DRAFT_KEY, draft, draftRevision)
   const { process, cancel, busyIds } = useJsonTasks()
 
   useEffect(() => {
@@ -163,6 +165,7 @@ const JsonFormatter = () => {
   }, [activeDocumentId, error, fullscreenMode, splitRatio])
 
   const updateActiveDocument = (updates: Partial<Pick<JsonDocument, 'input' | 'output' | 'error' | 'splitRatio' | 'schema'>>) => {
+    setDraftRevision((revision) => revision + 1)
     setDocuments((currentDocuments) => currentDocuments.map((document) => (
       document.id === activeDocumentId ? { ...document, ...updates } : document
     )))
@@ -202,6 +205,7 @@ const JsonFormatter = () => {
   }
 
   const addDocument = () => {
+    setDraftRevision((revision) => revision + 1)
     const document = createJsonDocument(documents)
     setDocuments((currentDocuments) => [...currentDocuments, document])
     setActiveDocumentId(document.id)
@@ -215,6 +219,7 @@ const JsonFormatter = () => {
     }
 
     const currentIndex = documents.findIndex((document) => document.id === documentId)
+    setDraftRevision((revision) => revision + 1)
     const nextActiveDocument = documents[currentIndex + 1] ?? documents[currentIndex - 1]
     setDocuments((currentDocuments) => currentDocuments.filter((document) => document.id !== documentId))
     if (documentId === activeDocumentId) {
@@ -238,6 +243,8 @@ const JsonFormatter = () => {
             setIndentSize(newSize)
             if (input.trim()) {
               handleInputChange(input, newSize)
+            } else {
+              setDraftRevision((revision) => revision + 1)
             }
           }}
         >
@@ -249,6 +256,8 @@ const JsonFormatter = () => {
       <button onClick={escapeJson} className="btn btn-secondary">{t("转义")}</button>
       <button onClick={unescapeJsonAction} className="btn btn-secondary">{t("解转义")}</button>
       <button onClick={() => setShowSchema(true)} className="btn btn-secondary" aria-pressed={Boolean(activeDocument.schema)}>Schema{activeDocument.schema ? t(" · 已启用") : ''}</button>
+      <hr className="tool-options-divider" />
+      <button type="button" className="btn btn-secondary" onClick={clearSavedDraft}>{t("清除已保存草稿")}</button>
       </ToolOptions>
       <button onClick={clearAll} className="btn btn-danger">{t("清空")}</button>
     </div>

@@ -192,7 +192,7 @@ const CodeDiff = () => {
   useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
 
   const draft = useMemo(() => ({ activeDocumentId, documents, languageDetectionVersion: 1 }), [activeDocumentId, documents])
-  useDraftPersistence(CODE_DIFF_DRAFT_KEY, draft)
+  const clearSavedDraft = useDraftPersistence(CODE_DIFF_DRAFT_KEY, draft)
 
   const updateActiveDocument = useCallback((updates: Partial<Omit<CodeDiffDocument, 'id' | 'name'>>) => {
     setDocuments((currentDocuments) => currentDocuments.map((document) => (
@@ -568,6 +568,8 @@ const CodeDiff = () => {
           <option value="properties">Properties</option>
         </select>
       </div>
+      <hr className="tool-options-divider" />
+      <button type="button" className="btn btn-secondary" onClick={clearSavedDraft}>{t("清除已保存草稿")}</button>
       </ToolOptions>
       <button onClick={clearCode} className="btn btn-danger">
         {t("清空")}</button>

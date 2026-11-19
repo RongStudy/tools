@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { getDraftRetentionDays, MAX_DRAFT_RETENTION_DAYS, setDraftRetentionDays } from '../utils/expiringStorage'
+import { getDraftSettings, MAX_DRAFT_RETENTION_DAYS, setDraftSettings } from '../utils/expiringStorage'
 import { useAppTheme } from '../themeContext'
 import { t, setLocale, useLocale } from '../i18n'
 import type { ToolDefinition } from '../tools/registry'
@@ -20,8 +20,11 @@ type SettingsDialogProps = {
 const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFailed }: SettingsDialogProps) => {
   const { theme, toggleTheme } = useAppTheme()
   const locale = useLocale()
-  const [days, setDays] = useState(() => String(getDraftRetentionDays()))
+  const [initialDraftSettings] = useState(getDraftSettings)
+  const [autosave, setAutosave] = useState(initialDraftSettings.enabled)
+  const [days, setDays] = useState(() => String(initialDraftSettings.days))
   const [error, setError] = useState('')
+  const autosaveRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const dialogRef = useRef<HTMLFormElement>(null)
   const titleId = useId()
@@ -35,7 +38,8 @@ const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFai
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    inputRef.current?.focus({ preventScroll: true })
+    const focusTarget = inputRef.current?.disabled ? autosaveRef.current : inputRef.current
+    focusTarget?.focus({ preventScroll: true })
     return () => { previousFocus?.focus() }
   }, [])
 
@@ -61,13 +65,13 @@ const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFai
 
   const save = (event: FormEvent) => {
     event.preventDefault()
-    const value = Number(days)
+    const value = autosave ? Number(days) : initialDraftSettings.days
     if (!Number.isInteger(value) || value < 1 || value > MAX_DRAFT_RETENTION_DAYS) {
       setError(t("请输入 1–{value0} 之间的整数天数", { value0: MAX_DRAFT_RETENTION_DAYS }))
       inputRef.current?.focus()
       return
     }
-    if (!setDraftRetentionDays(value)) {
+    if (!setDraftSettings({ enabled: autosave, days: value })) {
       setError(t("设置保存失败，请检查浏览器是否允许本地存储后重试"))
       return
     }
@@ -115,10 +119,16 @@ const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFai
         </section>
         <section className="settings-section" aria-labelledby={draftTitleId}>
           <h3 id={draftTitleId}>{t("草稿保存")}</h3>
+          <label className="toggle-switch">
+            <input ref={autosaveRef} type="checkbox" role="switch" checked={autosave} aria-describedby={helpId} onChange={(event) => { setAutosave(event.target.checked); setError('') }} />
+            <span className="toggle-slider" aria-hidden="true" />
+            <span className="toggle-label">{t("自动保存草稿")}</span>
+          </label>
           <label htmlFor={inputId}>{t("草稿保存时长（天）")}</label>
-          <input ref={inputRef} id={inputId} type="number" min={1} max={MAX_DRAFT_RETENTION_DAYS} step={1} value={days} onChange={(event) => { setDays(event.target.value); setError('') }} aria-invalid={Boolean(error)} aria-describedby={error ? `${helpId} ${errorId}` : helpId} />
+          <input ref={inputRef} id={inputId} type="number" min={1} max={MAX_DRAFT_RETENTION_DAYS} step={1} value={days} disabled={!autosave} onChange={(event) => { setDays(event.target.value); setError('') }} aria-invalid={Boolean(error)} aria-describedby={error ? `${helpId} ${errorId}` : helpId} />
           <div id={helpId}>
             <p className="save-file-help">{t("默认 2 天，可设置 1–365 天。点击“保存草稿设置”后，从下一次自动保存起生效，每次保存重新计时。")}</p>
+            <p className="save-file-help">{t("关闭后暂停写入新草稿。已有草稿可在对应工具的选项中清除。")}</p>
             <p className="save-file-help">{t("适用于 JSON 格式化、代码对比、临时文本和 Mermaid / Markdown 的自动草稿。")}</p>
             <p className="save-file-help">{t("草稿数据仅保存在当前浏览器本地，不会上传到云端。清除浏览器网站数据会删除本地草稿。")}</p>
           </div>

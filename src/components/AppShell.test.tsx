@@ -239,6 +239,22 @@ describe('AppShell Dock navigation', () => {
     expect(screen.getByRole('dialog', { name: '切换工具' })).toBeInTheDocument()
   })
 
+  it('persists the autosave switch and retains the configured duration', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderAppShell()
+    await user.click(screen.getByRole('button', { name: '设置' }))
+    const toggle = screen.getByRole('switch', { name: '自动保存草稿' })
+    expect(toggle).toBeChecked()
+    await user.click(toggle)
+    expect(screen.getByRole('spinbutton')).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: '保存草稿设置' }))
+    unmount()
+    renderAppShell()
+    await user.click(screen.getByRole('button', { name: '设置' }))
+    expect(screen.getByRole('switch', { name: '自动保存草稿' })).not.toBeChecked()
+    expect(screen.getByRole('spinbutton')).toHaveValue(2)
+  })
+
   it('keeps settings open and reports failure when local storage is unavailable', async () => {
     const user = userEvent.setup()
     renderAppShell()

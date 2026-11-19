@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getDraftRetentionDays, readExpiringStorage, setDraftRetentionDays, TWO_DAYS_IN_MS, writeExpiringStorage } from './expiringStorage'
+import { getDraftRetentionDays, getDraftSettings, readExpiringStorage, setDraftSettings, TWO_DAYS_IN_MS, writeExpiringStorage } from './expiringStorage'
 
 const DAY = 24 * 60 * 60 * 1000
+const setDraftRetentionDays = (days: number) => setDraftSettings({ enabled: true, days })
 
 beforeEach(() => { localStorage.clear(); vi.useFakeTimers() })
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe('configurable draft retention', () => {
+  it('defaults to autosave and preserves legacy retention settings', () => {
+    expect(getDraftSettings()).toEqual({ enabled: true, days: 2 })
+    localStorage.setItem('dev-tools:draft-retention-days', '7')
+    expect(getDraftSettings()).toEqual({ enabled: true, days: 7 })
+  })
+
   it('defaults to two days and expires drafts when next read', () => {
     expect(getDraftRetentionDays()).toBe(2)
     writeExpiringStorage('draft', 'content')
