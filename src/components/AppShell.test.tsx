@@ -13,8 +13,9 @@ const tools: ToolDefinition[] = [
   { path: '/url-codec', title: '编解码', navTitle: '编解码', description: 'URL、Base64 编解码', category: '编码处理', icon: 'codec', iconSrc: '/icons/codec.svg', component: () => null },
 ]
 
+const LIGHT_SCHEME_QUERY = '(prefers-color-scheme: light)'
 const MOTION_QUERY = '(min-width: 901px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
-type MediaProfile = { desktop: boolean; hover: boolean; fine: boolean; motion: boolean }
+type MediaProfile = { desktop: boolean; hover: boolean; fine: boolean; motion: boolean; light: boolean }
 let profile: MediaProfile
 let mediaListeners: Map<string, Set<EventListenerOrEventListenerObject>>
 let frames: Map<number, FrameRequestCallback>
@@ -26,6 +27,7 @@ const matchesMedia = (query: string) => (
   && (!query.includes('hover: hover') || profile.hover)
   && (!query.includes('pointer: fine') || profile.fine)
   && (!query.includes('prefers-reduced-motion: no-preference') || profile.motion)
+  && (query !== LIGHT_SCHEME_QUERY || profile.light)
 )
 
 class TestPointerEvent extends MouseEvent {
@@ -76,18 +78,25 @@ const settleFrames = (elapsed = 1000 / 60) => {
 const movePointer = (clientY: number, pointerType = 'mouse', clientX = 40) => {
   fireEvent.pointerMove(screen.getByRole('navigation', { name: '工具导航' }), { clientX, clientY, pointerType })
 }
-const changeMotionPreference = (motion: boolean) => act(() => {
-  profile.motion = motion
-  const event = Object.assign(new Event('change'), { matches: matchesMedia(MOTION_QUERY), media: MOTION_QUERY })
-  mediaListeners.get(MOTION_QUERY)?.forEach((listener) => {
+const notifyMediaChange = (query: string) => {
+  const event = Object.assign(new Event('change'), { matches: matchesMedia(query), media: query })
+  mediaListeners.get(query)?.forEach((listener) => {
     if (typeof listener === 'function') listener(event)
     else listener.handleEvent(event)
   })
+}
+const changeMotionPreference = (motion: boolean) => act(() => {
+  profile.motion = motion
+  notifyMediaChange(MOTION_QUERY)
+})
+const changeColorPreference = (light: boolean) => act(() => {
+  profile.light = light
+  notifyMediaChange(LIGHT_SCHEME_QUERY)
 })
 
 beforeEach(() => {
   localStorage.clear()
-  profile = { desktop: true, hover: true, fine: true, motion: true }
+  profile = { desktop: true, hover: true, fine: true, motion: true, light: false }
   mediaListeners = new Map()
   frames = new Map()
   nextFrame = 0
@@ -276,7 +285,7 @@ describe('AppShell Dock navigation', () => {
     await user.click(screen.getByRole('button', { name: '设置' }))
     const appearance = screen.getByRole('region', { name: '外观主题' })
     expect(screen.getByRole('region', { name: '草稿保存' })).toBeInTheDocument()
-    expect(within(appearance).getByRole('button', { name: '深色主题' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(appearance).getByRole('button', { name: '跟随系统' })).toHaveAttribute('aria-pressed', 'true')
     await user.clear(screen.getByRole('spinbutton'))
     await user.type(screen.getByRole('spinbutton'), '7')
     await user.click(within(appearance).getByRole('button', { name: '浅色主题' }))
@@ -284,8 +293,7 @@ describe('AppShell Dock navigation', () => {
     expect(localStorage.getItem('dev-tools:theme')).toBe('light')
     expect(screen.getByRole('spinbutton')).toHaveValue(7)
     expect(editor).toHaveValue('keep my draft')
-    await user.click(within(appearance).getByRole('button', { name: '浅色主题' }))
-    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(within(appearance).getByRole('button', { name: '浅色主题' })).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: '关闭' }))
     expect(document.documentElement.dataset.theme).toBe('light')
 
@@ -294,6 +302,34 @@ describe('AppShell Dock navigation', () => {
     await user.click(screen.getByRole('button', { name: '设置' }))
     expect(screen.getByRole('button', { name: '浅色主题' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('spinbutton')).toHaveValue(2)
+  })
+
+  it('follows live browser color preference changes only in System mode', async () => {
+    const user = userEvent.setup()
+    profile.light = true
+    renderAppShell()
+    const root = document.documentElement
+    expect(root.dataset.theme).toBe('light')
+
+    await user.click(screen.getByRole('button', { name: '设置' }))
+    const system = screen.getByRole('button', { name: '跟随系统' })
+    expect(system).toHaveAttribute('aria-pressed', 'true')
+    changeColorPreference(false)
+    expect(root.dataset.theme).toBe('dark')
+    expect(root.style.colorScheme).toBe('dark')
+
+    // Selecting Dark should pin it even when the current system theme is already dark.
+    await user.click(screen.getByRole('button', { name: '深色主题' }))
+    changeColorPreference(true)
+    expect(root.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('dev-tools:theme')).toBe('dark')
+
+    await user.click(system)
+    expect(root.dataset.theme).toBe('light')
+    expect(localStorage.getItem('dev-tools:theme')).toBe('system')
+    changeColorPreference(false)
+    expect(root.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('dev-tools:theme')).toBe('system')
   })
 
   it('renders named tool links and updates the accessible current page after navigation', async () => {

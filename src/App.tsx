@@ -8,6 +8,7 @@ import AppShell from './components/AppShell'
 import MobileAccessNotice from './components/MobileAccessNotice'
 import { getDeviceKind, TABLET_MIN_WIDTH } from './utils/device'
 import { tools } from './tools/registry'
+import { ThemeProvider } from './theme'
 import { suppressMonacoCancellationErrorLogs } from './utils/monacoErrorFilter'
 import './App.css'
 import './components/ToolLayout.css'
@@ -108,7 +109,11 @@ function App() {
   }, [device])
 
   if (device === 'phone' || (device === 'tablet' && viewportWidth < TABLET_MIN_WIDTH)) {
-    return <MobileAccessNotice tablet={device === 'tablet'} />
+    return (
+      <ThemeProvider>
+        <MobileAccessNotice tablet={device === 'tablet'} />
+      </ThemeProvider>
+    )
   }
 
   return (

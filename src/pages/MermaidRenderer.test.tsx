@@ -77,8 +77,8 @@ describe('MermaidRenderer', () => {
 
   it('switches Monaco and Mermaid themes without replacing the editor', async () => {
     const ThemeToggle = () => {
-      const { toggleTheme } = useAppTheme()
-      return <button onClick={toggleTheme}>切换主题</button>
+      const { setThemePreference } = useAppTheme()
+      return <button onClick={() => setThemePreference('light')}>切换主题</button>
     }
     render(<ThemeProvider><ToastProvider><ThemeToggle /><MermaidRenderer /></ToastProvider></ThemeProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })

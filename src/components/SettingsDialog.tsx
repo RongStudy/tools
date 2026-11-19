@@ -18,7 +18,7 @@ type SettingsDialogProps = {
 }
 
 const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFailed }: SettingsDialogProps) => {
-  const { theme, toggleTheme } = useAppTheme()
+  const { themePreference, setThemePreference } = useAppTheme()
   const locale = useLocale()
   const [initialDraftSettings] = useState(getDraftSettings)
   const [autosave, setAutosave] = useState(initialDraftSettings.enabled)
@@ -96,8 +96,9 @@ const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFai
         <section className="settings-section" aria-labelledby={themeTitleId}>
           <h3 id={themeTitleId}>{t("外观主题")}</h3>
           <div className="settings-theme-options" role="group" aria-label={t("选择主题")}>
-            <button type="button" className="btn btn-secondary" aria-pressed={theme === 'dark'} onClick={() => { if (theme !== 'dark') toggleTheme() }}><span aria-hidden="true">{theme === 'dark' ? '✓ ' : ''}</span>{t("深色主题")}</button>
-            <button type="button" className="btn btn-secondary" aria-pressed={theme === 'light'} onClick={() => { if (theme !== 'light') toggleTheme() }}><span aria-hidden="true">{theme === 'light' ? '✓ ' : ''}</span>{t("浅色主题")}</button>
+            <button type="button" className="btn btn-secondary" aria-pressed={themePreference === 'system'} onClick={() => setThemePreference('system')}><span aria-hidden="true">{themePreference === 'system' ? '✓ ' : ''}</span>{t("跟随系统")}</button>
+            <button type="button" className="btn btn-secondary" aria-pressed={themePreference === 'dark'} onClick={() => setThemePreference('dark')}><span aria-hidden="true">{themePreference === 'dark' ? '✓ ' : ''}</span>{t("深色主题")}</button>
+            <button type="button" className="btn btn-secondary" aria-pressed={themePreference === 'light'} onClick={() => setThemePreference('light')}><span aria-hidden="true">{themePreference === 'light' ? '✓ ' : ''}</span>{t("浅色主题")}</button>
           </div>
           <p className="save-file-help">{t("主题切换立即生效，并自动记住，无需点击保存。")}</p>
         </section>

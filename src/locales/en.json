@@ -383,6 +383,7 @@
   "适用于 JSON 格式化、代码对比、临时文本和 Mermaid / Markdown 的自动草稿。": "Applies to autosaved drafts in JSON Format, Code Diff, Scratch Pad and Mermaid / Markdown.",
   "选择 Markdown 或 Mermaid 文件": "Choose a Markdown or Mermaid file",
   "选择主题": "Choose theme",
+  "跟随系统": "System",
   "选择本地文件": "Choose a local file",
   "速度": "Speed",
   "速查": "Reference",

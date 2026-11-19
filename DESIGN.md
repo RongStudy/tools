@@ -108,7 +108,7 @@ This project is a high-precision developer utility workbench, not a marketing we
 
 # Color & Theme Tokens
 
-All tokens defined in the YAML frontmatter map directly to CSS custom properties (`--color-*`). Dark mode is the default; light mode uses a cool neutral gray canvas (`#f6f7f9`) with crisp white working surfaces (`#ffffff`).
+All tokens defined in the YAML frontmatter map directly to CSS custom properties (`--color-*`). Light mode uses a cool neutral gray canvas (`#f6f7f9`) with crisp white working surfaces (`#ffffff`).
 
 ## Semantic Usage Mapping
 - `--color-bg`: App canvas, sidebar Dock, fullscreen background.
@@ -120,6 +120,7 @@ All tokens defined in the YAML frontmatter map directly to CSS custom properties
 - `--color-border` / `--color-border-strong` / `--color-border-tertiary`: Default dividers / hover borders / nested or fullscreen separators.
 
 ## Scrollbars & Theme Behavior
+- **Appearance**: Offer System, Dark, and Light in Settings. New users default to System, which follows the browser’s reported color preference in real time. Keep existing manual preferences when upgrading.
 - **Custom Scrollbars**: Style WebKit and standard scrollbars to match the active theme (`transparent` track, `--color-border-strong` thumb, `--color-border-tertiary` on hover, `6px` width/height). Never leave default white OS scrollbars visible in dark mode.
 - **Instant Sync**: Switching themes in the Settings dialog must immediately update the shell, panels, scrollbars, Monaco (`vs-dark` vs `vs`), Mermaid diagrams, and Markdown syntax highlighting without remounting editors or losing draft state.
 - **Exports**: Standalone Markdown/HTML exports must use a self-contained light document style.
