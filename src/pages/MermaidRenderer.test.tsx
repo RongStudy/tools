@@ -4,6 +4,7 @@ import type { EditorProps } from '@monaco-editor/react'
 import { ToastProvider } from '../components/Toast'
 import { ThemeProvider } from '../theme'
 import { useAppTheme } from '../themeContext'
+import { writeExpiringStorage } from '../utils/expiringStorage'
 import MermaidRenderer, { DEFAULT_MERMAID_CODE } from './MermaidRenderer'
 
 const { mermaidRenderMock, setMarkersMock, renderCommands } = vi.hoisted(() => ({
@@ -42,7 +43,8 @@ vi.mock('@monaco-editor/react', async () => {
         addCommand: (_key: number, command: () => void) => { renderCommands.push(command) },
       } as unknown as Parameters<NonNullable<EditorProps['onMount']>>[0], {
         KeyMod: { CtrlCmd: 1 }, KeyCode: { Enter: 2 }, MarkerSeverity: { Error: 8 },
-        editor: { setModelMarkers: setMarkersMock },
+        Uri: { parse: (path: string) => path },
+        editor: { setModelMarkers: setMarkersMock, getModel: () => null },
       } as unknown as Parameters<NonNullable<EditorProps['onMount']>>[1])
     }, [])
     return (
@@ -103,6 +105,71 @@ describe('MermaidRenderer', () => {
 
     expect(await screen.findByRole('img', { name: 'Mermaid 图表预览' })).toHaveTextContent('diagram')
     expect(screen.getByRole('status')).toHaveTextContent('已渲染')
+  })
+
+  it('各标签独立保留内容、设置和名称，重新打开时恢复活动标签', async () => {
+    const { unmount } = render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    fireEvent.click(screen.getByRole('button', { name: '放大图表' }))
+    fireEvent.click(screen.getByRole('button', { name: '新建文档' }))
+    expect(screen.getByRole('tab', { name: 'Mermaid 2' })).toHaveFocus()
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('')
+    expect(screen.queryByRole('img', { name: 'Mermaid 图表预览' })).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('combobox', { name: '渲染格式' }), { target: { value: 'markdown' } })
+    fireEvent.change(screen.getByLabelText('内容编辑器'), { target: { value: '# 标签二' } })
+    await screen.findByTestId('markdown-preview')
+    openOptions('预览选项')
+    fireEvent.click(screen.getByRole('button', { name: '居中' }))
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Mermaid 2' }), { key: 'F2' })
+    const nameInput = screen.getByRole('textbox', { name: '重命名 Mermaid 2' })
+    fireEvent.change(nameInput, { target: { value: '文档草稿' } })
+    fireEvent.keyDown(nameInput, { key: 'Enter' })
+
+    fireEvent.keyDown(screen.getByRole('tab', { name: '文档草稿' }), { key: 'ArrowLeft' })
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue(DEFAULT_MERMAID_CODE)
+    expect(screen.getByRole('combobox', { name: '渲染格式' })).toHaveValue('auto')
+    await screen.findByRole('img', { name: 'Mermaid 图表预览' })
+    expect(screen.getByRole('button', { name: '重置图表缩放，当前 125%' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('tab', { name: '文档草稿' }))
+    unmount()
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    expect(screen.getByRole('tab', { name: '文档草稿' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 标签二')
+    expect(screen.getByRole('combobox', { name: '渲染格式' })).toHaveValue('markdown')
+    expect(await screen.findByTestId('markdown-preview')).toHaveClass('layout-centered')
+
+    fireEvent.click(screen.getByRole('button', { name: '关闭 文档草稿' }))
+    expect(screen.getByRole('tab', { name: 'Mermaid 1' })).toHaveFocus()
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue(DEFAULT_MERMAID_CODE)
+    expect(screen.queryByRole('tab', { name: '文档草稿' })).not.toBeInTheDocument()
+  })
+
+  it('将旧版单文档草稿保留在首个标签', () => {
+    writeExpiringStorage('dev-tools:mermaid-renderer:draft', '# 旧版草稿')
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    expect(screen.getByRole('tab', { name: 'Mermaid 1' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 旧版草稿')
+  })
+
+  it('切换标签后丢弃上一标签尚未完成的预览和文件读取', async () => {
+    let finishRender!: (result: { svg: string }) => void
+    let finishRead!: (source: string) => void
+    mermaidRenderMock.mockImplementationOnce(() => new Promise((resolve) => { finishRender = resolve }))
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    await waitFor(() => expect(mermaidRenderMock).toHaveBeenCalled())
+    const file = Object.assign(new File([], '慢文件.md'), {
+      text: () => new Promise<string>((resolve) => { finishRead = resolve }),
+    })
+    fireEvent.change(screen.getByLabelText('选择 Markdown 或 Mermaid 文件'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: '新建文档' }))
+    await act(async () => {
+      finishRender({ svg: '<svg><text>old diagram</text></svg>' })
+      finishRead('# 旧文件')
+    })
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('')
+    expect(screen.queryByRole('img', { name: 'Mermaid 图表预览' })).not.toBeInTheDocument()
   })
 
   it('加载本地 Markdown 时移除 BOM 并从强制 Mermaid 模式恢复自动识别', async () => {

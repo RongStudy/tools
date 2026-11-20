@@ -4,21 +4,25 @@ import { useDraftPersistence } from '../hooks/useDraftPersistence'
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type ChangeEvent,
   type DragEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import Editor from '@monaco-editor/react'
 import type { editor as MonacoEditorNamespace } from 'monaco-editor'
+import DocumentTab from '../components/DocumentTab'
 import SplitPaneDivider from '../components/SplitPaneDivider'
 import {
   getSplitPaneGridStyle,
   usePersistentSplitRatio,
 } from '../hooks/useSplitPane'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import { useToast } from '../components/toastContext'
 import ToolLayout from '../components/ToolLayout'
 import ToolOptions from '../components/ToolOptions'
@@ -47,6 +51,21 @@ const SUPPORTED_TEXT_FILE = /\.(?:md|markdown|mmd|mermaid|txt)$/i
 
 type RenderMode = 'auto' | 'mermaid' | 'markdown'
 
+type MermaidDocument = {
+  id: string
+  name: string
+  code: string
+  mode: RenderMode
+  markdownLayout: MarkdownLayout
+  sourceName: string
+  zoom: number
+}
+
+type MermaidDraft = {
+  activeDocumentId: string
+  documents: MermaidDocument[]
+}
+
 const MODE_OPTIONS: Array<{ value: RenderMode; label: string }> = [
   { value: 'auto', label: '自动' },
   { value: 'mermaid', label: 'Mermaid' },
@@ -71,6 +90,48 @@ export const DEFAULT_MERMAID_CODE = `flowchart LR
   B -->|Yes| C[Render SVG diagram]
   B -->|No| D[Show error]
   D --> A`
+
+const EMPTY_DOCUMENT: MermaidDocument = {
+  id: 'mermaid-1',
+  name: 'Mermaid 1',
+  code: '',
+  mode: 'auto',
+  markdownLayout: 'full',
+  sourceName: '',
+  zoom: 100,
+}
+
+const isMermaidDocument = (value: unknown): value is MermaidDocument => {
+  if (!value || typeof value !== 'object') return false
+  const document = value as Partial<MermaidDocument>
+  return typeof document.id === 'string'
+    && Boolean(document.id)
+    && typeof document.name === 'string'
+    && typeof document.code === 'string'
+    && MODE_OPTIONS.some(({ value }) => value === document.mode)
+    && LAYOUT_OPTIONS.some(({ value }) => value === document.markdownLayout)
+    && typeof document.sourceName === 'string'
+    && typeof document.zoom === 'number'
+    && document.zoom >= MIN_ZOOM && document.zoom <= MAX_ZOOM
+}
+
+const readMermaidDraft = (): MermaidDraft => {
+  const saved = readExpiringStorage<unknown>(MERMAID_DRAFT_KEY)
+  if (saved && typeof saved === 'object') {
+    const draft = saved as Partial<MermaidDraft>
+    if (Array.isArray(draft.documents)) {
+      const documents = draft.documents.filter(isMermaidDocument)
+      if (documents.length) {
+        const active = documents.find(({ id }) => id === draft.activeDocumentId) ?? documents[0]
+        return { activeDocumentId: active.id, documents }
+      }
+    }
+  }
+  return {
+    activeDocumentId: EMPTY_DOCUMENT.id,
+    documents: [{ ...EMPTY_DOCUMENT, code: typeof saved === 'string' ? saved : DEFAULT_MERMAID_CODE }],
+  }
+}
 
 let mermaidPromise: Promise<typeof import('mermaid')['default']> | null = null
 let initializedMermaidTheme: AppTheme | null = null
@@ -140,18 +201,20 @@ const downloadBlob = (blob: Blob, filename: string) => {
 const MermaidRenderer = () => {
   const locale = useLocale()
   const { theme, monacoTheme } = useAppTheme()
-  const [initialCode] = useState(() => (
-    readExpiringStorage<string>(MERMAID_DRAFT_KEY) ?? DEFAULT_MERMAID_CODE
-  ))
-  const [code, setCode] = useState(initialCode)
-  const [mode, setMode] = useState<RenderMode>('auto')
-  const [markdownLayout, setMarkdownLayout] = useState<MarkdownLayout>('full')
+  const [initialDraft] = useState(readMermaidDraft)
+  const [documents, setDocuments] = useState(initialDraft.documents)
+  const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
+  const activeDocument = documents.find(({ id }) => id === activeDocumentId) ?? documents[0]
+  const { code, mode, markdownLayout, sourceName, zoom } = activeDocument
+  const editorPath = modelPath('mermaid', activeDocument.id, 'source')
+  const registerMonaco = useMonacoModels(documents.map(({ id }) => modelPath('mermaid', id, 'source')))
+  const tabListRef = useRef<HTMLDivElement>(null)
+  const focusActiveTabRef = useRef(false)
   const [activeFormat, setActiveFormat] = useState<ContentFormat | null>(null)
   const [svg, setSvg] = useState('')
   const [html, setHtml] = useState('')
   const [error, setError] = useState('')
   const [isRendering, setIsRendering] = useState(false)
-  const [zoom, setZoom] = useState(100)
   const [isDragging, setIsDragging] = useState(false)
   const [splitRatio, setSplitRatio] = usePersistentSplitRatio(MERMAID_SPLIT_RATIO_KEY)
   const previewDragRef = useRef<PreviewDrag | null>(null)
@@ -162,7 +225,6 @@ const MermaidRenderer = () => {
   const markdownMermaidSeqRef = useRef(0)
   const markdownPreviewRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [sourceName, setSourceName] = useState('')
   const [isFileDragging, setIsFileDragging] = useState(false)
   const { showToast } = useToast()
   const [editorState, setEditorState] = useState<{
@@ -247,11 +309,15 @@ const MermaidRenderer = () => {
       startColumn: 1,
       endColumn: model.getLineMaxColumn(line),
     }] : [])
-  }, [error, activeFormat, code, editorState])
+  }, [activeDocumentId, error, activeFormat, code, editorState])
 
-  const clearSavedDraft = useDraftPersistence(MERMAID_DRAFT_KEY, code)
+  const draft = useMemo(() => ({ activeDocumentId, documents }), [activeDocumentId, documents])
+  const clearSavedDraft = useDraftPersistence(MERMAID_DRAFT_KEY, draft, documents)
 
-  useEffect(() => () => { fileReadSequenceRef.current += 1 }, [])
+  useEffect(() => () => {
+    fileReadSequenceRef.current += 1
+    renderSequenceRef.current += 1
+  }, [])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -259,9 +325,25 @@ const MermaidRenderer = () => {
     }, RENDER_DELAY_MS)
 
     return () => window.clearTimeout(timer)
-  }, [code, mode, renderContent, locale])
+  }, [activeDocumentId, code, renderContent, locale])
 
   useEscapeToClose(isFullscreen, () => setIsFullscreen(false))
+
+  useEffect(() => {
+    const list = tabListRef.current
+    const tab = list?.querySelector<HTMLElement>('.document-tab.is-active')
+    if (!list || !tab) return
+
+    const listBounds = list.getBoundingClientRect()
+    const tabBounds = tab.getBoundingClientRect()
+    if (tabBounds.left < listBounds.left) list.scrollLeft += tabBounds.left - listBounds.left
+    else if (tabBounds.right > listBounds.right) list.scrollLeft += tabBounds.right - listBounds.right
+
+    if (focusActiveTabRef.current) {
+      focusActiveTabRef.current = false
+      tab.querySelector<HTMLButtonElement>('[role="tab"]')?.focus({ preventScroll: true })
+    }
+  }, [activeDocumentId, documents.length, isFullscreen])
 
   // Markdown 内容中的 mermaid 代码块：DOM 注入后逐个异步渲染为 SVG
   useEffect(() => {
@@ -310,11 +392,76 @@ const MermaidRenderer = () => {
     }
   }, [activeFormat, html, theme])
 
+  const updateDocument = (id: string, updates: Partial<Omit<MermaidDocument, 'id'>>) => {
+    setDocuments((current) => current.map((item) => item.id === id ? { ...item, ...updates } : item))
+  }
+
+  const clearPreview = () => {
+    setSvg('')
+    setHtml('')
+    setError('')
+    setActiveFormat(null)
+    setIsRendering(false)
+    previewDragRef.current = null
+    setIsDragging(false)
+  }
+
+  const selectDocument = (id: string) => {
+    if (id === activeDocumentId) return
+    fileReadSequenceRef.current += 1
+    renderSequenceRef.current += 1
+    setIsFileDragging(false)
+    clearPreview()
+    setActiveDocumentId(id)
+  }
+
+  const addDocument = () => {
+    const highestNumber = documents.reduce((highest, { name }) => {
+      const match = /^Mermaid (\d+)$/.exec(name)
+      return match ? Math.max(highest, Number(match[1])) : highest
+    }, 0)
+    const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    setDocuments((current) => [...current, { ...EMPTY_DOCUMENT, id, name: `Mermaid ${highestNumber + 1}` }])
+    focusActiveTabRef.current = true
+    selectDocument(id)
+  }
+
+  const closeDocument = (id: string) => {
+    const index = documents.findIndex((item) => item.id === id)
+    const next = documents[index + 1] ?? documents[index - 1]
+    if (!next) return
+    focusActiveTabRef.current = true
+    setDocuments((current) => current.filter((item) => item.id !== id))
+    if (id === activeDocumentId) selectDocument(next.id)
+  }
+
+  const navigateTabs = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+    const index = tabs.findIndex((tab) => tab === event.target)
+    if (index < 0) return
+    let next: HTMLButtonElement
+    switch (event.key) {
+      case 'ArrowLeft': next = tabs[(index + tabs.length - 1) % tabs.length]; break
+      case 'ArrowRight': next = tabs[(index + 1) % tabs.length]; break
+      case 'Home': next = tabs[0]; break
+      case 'End': next = tabs[tabs.length - 1]; break
+      default: return
+    }
+    event.preventDefault()
+    next.focus()
+    next.click()
+  }
+
   const changeCode = (value: string) => {
     fileReadSequenceRef.current += 1
     if (value !== code) renderSequenceRef.current += 1
-    setSourceName('')
-    setCode(value)
+    updateDocument(activeDocumentId, { code: value, sourceName: '' })
+  }
+
+  const changeMode = (nextMode: RenderMode) => {
+    if (nextMode === mode) return
+    renderSequenceRef.current += 1
+    updateDocument(activeDocumentId, { mode: nextMode })
   }
 
   const resetExample = () => {
@@ -324,13 +471,10 @@ const MermaidRenderer = () => {
   }
 
   const clearCode = () => {
-    changeCode('')
-    setSvg('')
-    setHtml('')
-    setError('')
-    setActiveFormat(null)
-    setIsRendering(false)
-    setZoom(100)
+    fileReadSequenceRef.current += 1
+    renderSequenceRef.current += 1
+    updateDocument(activeDocumentId, { code: '', sourceName: '', zoom: 100 })
+    clearPreview()
   }
 
   const loadTextFile = async (file: File) => {
@@ -346,10 +490,7 @@ const MermaidRenderer = () => {
       if (content.includes('\0')) throw new Error(t("非文本文件"))
       const source = content.replace(/^\uFEFF/, '')
       if (source !== code || mode !== 'auto') renderSequenceRef.current += 1
-      setMode('auto')
-      setSourceName(file.name)
-      setCode(source)
-      setZoom(100)
+      updateDocument(activeDocumentId, { code: source, mode: 'auto', sourceName: file.name, zoom: 100 })
       showToast(t("已加载 {value0}", { value0: file.name }))
     } catch {
       if (sequence === fileReadSequenceRef.current) showToast(t("读取文件失败：{value0}", { value0: file.name }), 'error')
@@ -381,9 +522,6 @@ const MermaidRenderer = () => {
     const file = event.dataTransfer.files[0]
     if (file) void loadTextFile(file)
   }
-
-  const zoomOut = () => setZoom((value) => Math.max(MIN_ZOOM, value - ZOOM_STEP))
-  const zoomIn = () => setZoom((value) => Math.min(MAX_ZOOM, value + ZOOM_STEP))
 
   const startPreviewDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!svg || event.button !== 0 || (event.pointerType === 'touch')) return
@@ -500,7 +638,7 @@ const MermaidRenderer = () => {
   const toolbar = (
     <div className="mermaid-toolbar">
       <label className="tool-select-control"><span className="dock-sr-only">{t('渲染格式')}</span>
-        <select aria-label={t('渲染格式')} value={mode} onChange={(event) => setMode(event.target.value as typeof mode)}>{MODE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select>
+        <select aria-label={t('渲染格式')} value={mode} onChange={(event) => changeMode(event.target.value as RenderMode)}>{MODE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select>
       </label>
       <button
         type="button"
@@ -509,7 +647,7 @@ const MermaidRenderer = () => {
         disabled={!code.trim() || isRendering}
       >
         {t("渲染")}</button>
-      <ToolOptions label={t('编辑选项')} compact closeOnAction>
+      <ToolOptions label={t('编辑选项')} closeOnAction>
         <button type="button" className="btn-small" onClick={clearSavedDraft}>{t("清除已保存草稿")}</button>
       </ToolOptions>
     </div>
@@ -522,6 +660,26 @@ const MermaidRenderer = () => {
       actions={toolbar}
       hideHeader={isFullscreen}
     >
+      {!isFullscreen && (
+        <div className="mermaid-document-tabs document-tabs">
+          <div ref={tabListRef} className="document-tab-list" role="tablist" aria-label={t("Mermaid / Markdown 文档")} onKeyDown={navigateTabs}>
+            {documents.map(({ id, name }) => (
+              <DocumentTab
+                key={id}
+                prefix="mermaid-document"
+                name={name}
+                selected={id === activeDocumentId}
+                onSelect={() => selectDocument(id)}
+                onRename={(name) => updateDocument(id, { name })}
+                onClose={documents.length > 1 ? () => closeDocument(id) : undefined}
+              />
+            ))}
+          </div>
+          <button type="button" className="btn-small document-tab-add" onClick={addDocument}>
+            {t("新建文档")}
+          </button>
+        </div>
+      )}
       <div
         ref={workspaceRef}
         className={`mermaid-workspace ${isFullscreen ? 'preview-is-fullscreen' : ''}`}
@@ -556,11 +714,14 @@ const MermaidRenderer = () => {
             <div className="mermaid-editor-body">
               <Editor
                 height="100%"
+                path={editorPath}
+                keepCurrentModel
                 language={(mode === 'auto' ? detectFormat(code) : mode) === 'mermaid' ? 'mermaid' : 'markdown'}
                 value={code}
                 loading={<div className="monaco-loading">{t("编辑器加载中")}</div>}
                 onChange={(value) => changeCode(value ?? '')}
                 onMount={(editor, monaco) => {
+                  registerMonaco(monaco)
                   setEditorState({ editor, monaco })
                   editor.addCommand(
                     monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
@@ -606,7 +767,7 @@ const MermaidRenderer = () => {
                     <button
                       type="button"
                       className="btn-small mermaid-zoom-button"
-                      onClick={zoomOut}
+                      onClick={() => updateDocument(activeDocumentId, { zoom: Math.max(MIN_ZOOM, zoom - ZOOM_STEP) })}
                       disabled={!svg || zoom <= MIN_ZOOM}
                       aria-label={t("缩小图表")}
                       title={t("缩小")}
@@ -614,7 +775,7 @@ const MermaidRenderer = () => {
                     <button
                       type="button"
                       className="btn-small mermaid-zoom-value"
-                      onClick={() => setZoom(100)}
+                      onClick={() => updateDocument(activeDocumentId, { zoom: 100 })}
                       disabled={!svg || zoom === 100}
                       aria-label={t("重置图表缩放，当前 {value0}%", { value0: zoom })}
                       title={t("重置为 100%")}
@@ -622,7 +783,7 @@ const MermaidRenderer = () => {
                     <button
                       type="button"
                       className="btn-small mermaid-zoom-button"
-                      onClick={zoomIn}
+                      onClick={() => updateDocument(activeDocumentId, { zoom: Math.min(MAX_ZOOM, zoom + ZOOM_STEP) })}
                       disabled={!svg || zoom >= MAX_ZOOM}
                       aria-label={t("放大图表")}
                       title={t("放大")}
@@ -641,7 +802,7 @@ const MermaidRenderer = () => {
                         key={option.value}
                         type="button"
                         className={`btn-small mode-button ${markdownLayout === option.value ? 'active' : ''}`}
-                        onClick={() => setMarkdownLayout(option.value)}
+                        onClick={() => updateDocument(activeDocumentId, { markdownLayout: option.value })}
                         aria-pressed={markdownLayout === option.value}
                         title={t(option.title)}
                       >
@@ -664,6 +825,7 @@ const MermaidRenderer = () => {
             </div>
           </div>
           <div
+            key={activeDocumentId}
             className={`mermaid-preview-body ${svg ? 'has-diagram' : ''} ${isDragging ? 'is-dragging' : ''}`}
             data-testid="mermaid-preview-body"
             onPointerDown={startPreviewDrag}

@@ -34,6 +34,8 @@
 .tool-layout-actions { display: flex; flex: 0 1 auto; align-items: center; gap: 8px; min-width: 0; }
 .tool-layout-actions > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .tool-layout-actions .btn { white-space: nowrap; }
+.tool-layout-actions .btn:focus-visible { outline-offset: -3px; }
+.tool-layout-actions .btn-primary:focus-visible { outline-color: currentColor; }
 .tool-layout-controls { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .tool-workflow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
 .tool-workflow-tabs { display: inline-flex; gap: 4px; flex-wrap: wrap; }
