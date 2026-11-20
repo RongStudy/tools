@@ -65,7 +65,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.json,
     title: 'JSON格式化',
-    navTitle: 'JSON格式化',
+    navTitle: 'JSON',
     // description: '格式化、压缩、转义和解转义 JSON 内容',
     description: '',
     category: '编码处理',
@@ -75,7 +75,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.scratchPad,
     title: '临时文本输入',
-    navTitle: '临时文本',
+    navTitle: '便签',
     // description: '随手记录或粘贴文本，支持多标签、字号缩放和全屏编辑',
     description: '',
     category: '编码处理',
@@ -85,7 +85,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.codeDiff,
     title: '代码对比',
-    navTitle: '代码对比',
+    navTitle: '对比',
     // description: '对比两段代码或文件内容，支持分栏和统一视图',
     description: '',
     category: '编码处理',
@@ -95,7 +95,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.urlCodec,
     title: '编解码',
-    navTitle: '编解码',
+    navTitle: '转码',
     // description: 'URL、Base64、Unicode 编解码与 MD5、SHA-256 摘要',
     description: '',
     category: '编码处理',
@@ -114,7 +114,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.mermaid,
     title: 'Mermaid / Markdown 渲染',
-    navTitle: 'Mermaid / Markdown',
+    navTitle: 'Mermaid / MD',
     // description: '自动识别 Mermaid 或 Markdown 内容并渲染',
     description: '',
     category: '编码处理',
@@ -124,7 +124,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.timestamp,
     title: '时间戳转换',
-    navTitle: '时间戳转换',
+    navTitle: '时间戳',
     // description: '查看当前时间戳，互转时间戳和日期时间',
     description: '',
     category: '时间工具',
@@ -134,7 +134,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.regex,
     title: '正则表达式',
-    navTitle: '正则表达式',
+    navTitle: '正则',
     // description: '测试匹配、捕获组、替换和文本分割',
     description: '',
     category: '编码处理',
@@ -144,7 +144,7 @@ const toolDefinitions: ToolDefinition[] = [
   {
     path: toolPaths.lottie,
     title: 'Lottie 动画播放器',
-    navTitle: 'Lottie 动画',
+    navTitle: 'Lottie',
     // description: '加载 URL 或 JSON 并预览 Lottie 动画',
     description: '',
     category: '多媒体工具',

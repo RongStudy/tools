@@ -10,7 +10,7 @@ colors:
   surface-deep: "#191a1b"
   text: "#f7f8f8"
   muted: "#8a8f98"
-  subtle: "#737880"
+  subtle: "#80858e"
   border: "#23252a"
   border-strong: "#34343a"
   border-tertiary: "#3e3e44"
@@ -27,7 +27,7 @@ colors:
   success-soft: "rgba(39, 166, 68, 0.12)"
   info: "#7a7fad"
   info-hover: "#8e94c4"
-  focus: "rgba(94, 105, 209, 0.5)"
+  focus: "#9aa5ff"
 light-colors:
   bg: "#f6f7f9"
   surface: "#ffffff"
@@ -36,7 +36,7 @@ light-colors:
   surface-deep: "#eef1f5"
   text: "#20232b"
   muted: "#5d6572"
-  subtle: "#767f8d"
+  subtle: "#606a78"
   border: "#e1e5eb"
   border-strong: "#cbd2dc"
   border-tertiary: "#b9c1cc"
@@ -53,7 +53,7 @@ light-colors:
   success-soft: "rgba(33, 134, 66, 0.1)"
   info: "#5d65a4"
   info-hover: "#4b528c"
-  focus: "rgba(79, 91, 195, 0.38)"
+  focus: "#4f5bc3"
 typography:
   display:
     fontFamily: "SF Pro Display, Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"

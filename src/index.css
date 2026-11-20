@@ -12,7 +12,7 @@
   --color-surface-deep: #191a1b;
   --color-text: #f7f8f8;
   --color-muted: #8a8f98;
-  --color-subtle: #737880;
+  --color-subtle: #80858e;
   --color-border: #23252a;
   --color-border-strong: #34343a;
   --color-border-tertiary: #3e3e44;
@@ -29,7 +29,7 @@
   --color-success-soft: rgba(39, 166, 68, 0.12);
   --color-info: #7a7fad;
   --color-info-hover: #8e94c4;
-  --color-focus: rgba(94, 105, 209, 0.5);
+  --color-focus: #9aa5ff;
   --shadow-panel: none;
   --font-display: 'SF Pro Display', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-text: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -57,7 +57,7 @@
   --color-surface-deep: #eef1f5;
   --color-text: #20232b;
   --color-muted: #5d6572;
-  --color-subtle: #767f8d;
+  --color-subtle: #606a78;
   --color-border: #e1e5eb;
   --color-border-strong: #cbd2dc;
   --color-border-tertiary: #b9c1cc;
@@ -74,7 +74,7 @@
   --color-success-soft: rgba(33, 134, 66, 0.1);
   --color-info: #5d65a4;
   --color-info-hover: #4b528c;
-  --color-focus: rgba(79, 91, 195, 0.38);
+  --color-focus: #4f5bc3;
   --shadow-panel: 0 1px 2px rgba(31, 40, 55, 0.04);
 }
 
