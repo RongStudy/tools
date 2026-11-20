@@ -6,18 +6,13 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # Web 产物：部署到 GitHub Pages 的 /tools/ 子路径
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # Pages 和 Go 启动器共用同一份 Web 产物。
+  build-web:
     runs-on: ubuntu-latest
     steps:
       - name: 1. 拉取代码
@@ -39,7 +34,17 @@ jobs:
         with:
           path: './dist/web'
 
-      - name: 5. 正式发布到 Pages
+  deploy:
+    needs: build-web
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 发布到 Pages
         id: deployment
         uses: actions/deploy-pages@v5
 
@@ -72,67 +77,82 @@ jobs:
           path: chrome-extension.zip
           if-no-files-found: error
 
-  # Go 启动器与 Pages 部署独立执行，复用相同的 Web 构建。
-  go-binaries:
+  # Go 检查可在 Web 打包时执行，静态资源目录有 Git 占位文件。
+  go-check:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: 1. 拉取代码
         uses: actions/checkout@v6
 
-      - name: 2. 安装 Node.js 环境
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'npm'
-
-      - name: 3. 安装 Go 环境
+      - name: 2. 安装 Go 环境
         uses: actions/setup-go@v6
         with:
           go-version: '1.26.x'
           cache: false # 仅使用标准库，没有 go.sum。
 
-      - name: 4. 安装依赖、打包并检查 Go 代码
+      - name: 3. 检查 Go 代码
+        working-directory: ./go
         run: |
-          npm ci
-          npm run build:go
-          cd go
           test -z "$(gofmt -l .)"
           go vet ./...
           go test -race ./...
 
-      - name: 5. 上传 macOS ARM64 可执行文件
-        uses: actions/upload-artifact@v7
-        with:
-          name: forge-darwin-arm64
-          path: dist/bin/forge-darwin-arm64
-          if-no-files-found: error
+  go-binaries:
+    needs: [build-web, go-check]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: darwin
+            goarch: arm64
+            extension: ''
+          - goos: darwin
+            goarch: amd64
+            extension: ''
+          - goos: windows
+            goarch: amd64
+            extension: .exe
+          - goos: windows
+            goarch: arm64
+            extension: .exe
+          - goos: linux
+            goarch: amd64
+            extension: ''
+    env:
+      BINARY_NAME: forge-${{ matrix.goos }}-${{ matrix.goarch }}
+      BINARY_EXTENSION: ${{ matrix.extension }}
+    steps:
+      - name: 1. 拉取代码
+        uses: actions/checkout@v6
 
-      - name: 6. 上传 macOS x64 可执行文件
-        uses: actions/upload-artifact@v7
+      - name: 2. 安装 Go 环境
+        uses: actions/setup-go@v6
         with:
-          name: forge-darwin-amd64
-          path: dist/bin/forge-darwin-amd64
-          if-no-files-found: error
+          go-version: '1.26.x'
+          cache: false # 仅使用标准库，没有 go.sum。
 
-      - name: 7. 上传 Windows x64 可执行文件
-        uses: actions/upload-artifact@v7
+      - name: 3. 下载 Web 构建产物
+        uses: actions/download-artifact@v8
         with:
-          name: forge-windows-amd64
-          path: dist/bin/forge-windows-amd64.exe
-          if-no-files-found: error
+          name: github-pages
+          path: ${{ runner.temp }}/forge-web
 
-      - name: 8. 上传 Windows ARM64 可执行文件
-        uses: actions/upload-artifact@v7
-        with:
-          name: forge-windows-arm64
-          path: dist/bin/forge-windows-arm64.exe
-          if-no-files-found: error
+      - name: 4. 嵌入 Web 产物并编译 Go 启动器
+        working-directory: ./go
+        env:
+          CGO_ENABLED: '0'
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          tar -xf "$RUNNER_TEMP/forge-web/artifact.tar" -C internal/web/static/site
+          test -s internal/web/static/site/index.html
+          mkdir -p ../dist/bin
+          go build -trimpath -ldflags='-s -w' -o "../dist/bin/${BINARY_NAME}${BINARY_EXTENSION}" ./cmd/forge
 
-      - name: 9. 上传 Linux x64 可执行文件
+      - name: 5. 上传可执行文件
         uses: actions/upload-artifact@v7
         with:
-          name: forge-linux-amd64
-          path: dist/bin/forge-linux-amd64
+          name: ${{ env.BINARY_NAME }}
+          path: dist/bin/${{ env.BINARY_NAME }}${{ env.BINARY_EXTENSION }}
           if-no-files-found: error
