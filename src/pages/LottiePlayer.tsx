@@ -202,8 +202,7 @@ const LottiePlayer = () => {
     >
       <div className="lottie-source">
         <form className="lottie-url-form" onSubmit={(event) => { event.preventDefault(); void loadUrl() }}>
-          <label htmlFor="lottie-url">{t("动画 URL")}</label>
-          <input id="lottie-url" type="text" value={url} onChange={(event) => { cancelRequest(); setUrl(event.target.value) }} placeholder="https://example.com/animation.json" spellCheck={false} />
+          <input type="text" aria-label={t("动画 URL")} value={url} onChange={(event) => { cancelRequest(); setUrl(event.target.value) }} placeholder="https://example.com/animation.json" spellCheck={false} />
           <button type="submit" className="btn btn-primary">{loading ? t("重新加载") : t("加载并播放")}</button>
         </form>
 

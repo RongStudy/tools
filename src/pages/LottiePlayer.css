@@ -11,12 +11,6 @@
   gap: .75rem;
 }
 
-.lottie-url-form label {
-  color: var(--color-muted);
-  font-size: .875rem;
-  white-space: nowrap;
-}
-
 .lottie-url-form input {
   flex: 1;
   min-width: 0;
@@ -146,7 +140,6 @@
 
 @media (max-width: 560px) {
   .lottie-url-form { flex-wrap: wrap; gap: .5rem; }
-  .lottie-url-form label { width: 100%; }
 }
 
 .tool-options-content .lottie-samples { flex-direction: column; align-items: stretch; }

@@ -320,19 +320,16 @@ const RegexTester = () => {
     >
       <section className="regex-builder" aria-label={t("正则表达式配置")}>
         <div className="regex-pattern-row">
-          <label className="regex-pattern-field">
-            <span>{t("表达式")}</span>
-            <div className={error ? 'regex-pattern-input invalid' : 'regex-pattern-input'}>
-              <i>/</i>
-              <input
-                aria-label={t("正则表达式")}
-                value={pattern}
-                onChange={(event) => setPattern(event.target.value)}
-                placeholder={t("例如 (?<name>\\\\w+)")}
-                spellCheck={false}
-              />
-              <i>/{flags}</i>
-            </div>
+          <label className={error ? 'regex-pattern-input invalid' : 'regex-pattern-input'}>
+            <i aria-hidden="true">/</i>
+            <input
+              aria-label={t("正则表达式")}
+              value={pattern}
+              onChange={(event) => setPattern(event.target.value)}
+              placeholder={t("例如 (?<name>\\\\w+)")}
+              spellCheck={false}
+            />
+            <i aria-hidden="true">/{flags}</i>
           </label>
           <div className="regex-run-controls">
             <ToolOptions label={'Flags · ' + (flags || '—')} compact>
