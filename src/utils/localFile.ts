@@ -1,41 +1,65 @@
 import { t } from '../i18n'
 export type LocalFileHandle = {
   getFile: () => Promise<File>
-  createWritable: () => Promise<{ write: (content: Uint8Array) => Promise<void>; close: () => Promise<void>; abort: () => Promise<void> }>
+  createWritable: () => Promise<{ write: (content: Uint8Array<ArrayBuffer>) => Promise<void>; close: () => Promise<void>; abort: () => Promise<void> }>
 }
 
-type FilePickerWindow = Window & { showOpenFilePicker?: () => Promise<LocalFileHandle[]> }
+type FilePickerOptions = {
+  types: { accept: Record<string, string[]> }[]
+}
+
+type FilePickerWindow = Window & { showOpenFilePicker?: (options?: FilePickerOptions) => Promise<LocalFileHandle[]> }
+type FileDropItem = DataTransferItem & { getAsFileSystemHandle?: () => Promise<FileSystemHandle | null> }
 
 export const supportsFileWriteback = () => typeof (window as FilePickerWindow).showOpenFilePicker === 'function'
 
 export class LocalFileError extends Error {
-  constructor(public readonly code: 'encoding' | 'conflict', message: string) {
+  constructor(public readonly code: 'conflict', message: string) {
     super(message)
     this.name = 'LocalFileError'
   }
 }
 
-export type OpenLocalFile = {
-  handle: LocalFileHandle
+export type LoadedTextFile = {
   name: string
   content: string
+}
+
+export type OpenLocalFile = LoadedTextFile & {
+  handle: LocalFileHandle
   bytes: Uint8Array
   hasBom: boolean
 }
 
-export const openWritableFile = async () => {
-  const [handle] = await (window as FilePickerWindow).showOpenFilePicker!()
+export const readLocalFile = async (handle: LocalFileHandle): Promise<LoadedTextFile | OpenLocalFile> => {
   const file = await handle.getFile()
   const bytes = new Uint8Array(await file.arrayBuffer())
   let content: string
   try {
     content = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-    if (content.includes('\0')) throw new Error('Binary content')
   } catch {
-    throw new LocalFileError('encoding', t("写回仅支持 UTF-8 文本，请先转换文件编码，或关闭写回后查看"))
+    return { name: file.name, content: new TextDecoder().decode(bytes) }
   }
+  if (content.includes('\0')) return { name: file.name, content }
   const hasBom = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
   return { handle, name: file.name, content, bytes, hasBom }
+}
+
+export const openLocalFile = async (options?: FilePickerOptions) => {
+  const [handle] = await (window as FilePickerWindow).showOpenFilePicker!(options)
+  return readLocalFile(handle)
+}
+
+export const getDroppedFileHandle = async (item?: DataTransferItem) => {
+  try {
+    const handle = await (item as FileDropItem | undefined)?.getAsFileSystemHandle?.()
+    if (handle?.kind === 'file' && typeof (handle as FileSystemFileHandle).createWritable === 'function') {
+      return handle as FileSystemFileHandle
+    }
+  } catch {
+    // Some browsers expose the dropped file without granting access to its handle.
+  }
+  return null
 }
 
 export const writeLocalFile = async (opened: OpenLocalFile, content: string) => {

@@ -14,7 +14,7 @@ import './App.css'
 import './components/ToolLayout.css'
 import './styles/common.css'
 
-const CACHED_TOOL_PATHS = ['/json', '/code-diff', '/scratch-pad']
+const CACHED_TOOL_PATHS = ['/json', '/code-diff', '/scratch-pad', '/mermaid']
 
 const isCachedToolPath = (path: string) => CACHED_TOOL_PATHS.includes(path)
 
@@ -22,7 +22,7 @@ const ToolRoutes = () => {
   useLocale()
   const location = useLocation()
   const activePath = location.pathname.replace(/\/+$/, '') || '/'
-  const needsMonaco = [...CACHED_TOOL_PATHS, '/mermaid', '/lottie'].includes(activePath)
+  const needsMonaco = isCachedToolPath(activePath) || activePath === '/lottie'
   const [monacoReady, setMonacoReady] = useState(false)
   const [monacoError, setMonacoError] = useState(false)
   const [initializationAttempt, setInitializationAttempt] = useState(0)
@@ -47,7 +47,9 @@ const ToolRoutes = () => {
       mountedCachedPaths.includes(tool.path) || tool.path === activePath
     )
   ))
-  const activeTool = tools.find((tool) => tool.path === activePath)
+  const UncachedTool = !isCachedToolPath(activePath)
+    ? tools.find((tool) => tool.path === activePath)?.component
+    : undefined
 
   useEffect(() => {
     if (!isCachedToolPath(activePath)) return
@@ -65,32 +67,27 @@ const ToolRoutes = () => {
     ) : <div className="tool-route-loading" role="status">{t("编辑器加载中")}</div>
   }
 
-  if (!isCachedToolPath(activePath)) {
-    if (!activeTool) return null
-
-    const ToolComponent = activeTool.component
-    return (
-      <div className="tool-route">
-        <ToolComponent />
-      </div>
-    )
-  }
-
   return (
     <div className="tool-route-stack">
       {cachedTools.map(({ path, component: ToolComponent }) => {
-        const isActive = path === '/' ? activePath === '/' : activePath === path
+        const isActive = activePath === path
 
         return (
           <div
             key={path}
             className={isActive ? 'tool-route-panel active' : 'tool-route-panel'}
             aria-hidden={!isActive}
+            ref={(panel) => { if (panel) panel.inert = !isActive }}
           >
             <ToolComponent />
           </div>
         )
       })}
+      {UncachedTool && (
+        <div key={activePath} className="tool-route">
+          <UncachedTool />
+        </div>
+      )}
     </div>
   )
 }

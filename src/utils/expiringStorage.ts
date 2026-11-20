@@ -25,7 +25,7 @@ const getLocalStorage = (): Storage | null => {
   }
 }
 
-const isValidRetentionDays = (days: number) => (
+export const isValidRetentionDays = (days: number) => (
   Number.isInteger(days) && days >= 1 && days <= MAX_DRAFT_RETENTION_DAYS
 )
 

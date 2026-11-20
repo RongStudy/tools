@@ -167,7 +167,7 @@ Tool icons support drag-to-reorder and Alt + arrow keys. Settings offers named u
 
 ## Editor Panels (`.editor-panel`)
 - **Structure**: `1px solid var(--color-border)`, `16px` radius, `--color-surface` background. In dark mode, apply a subtle `1px` inset top highlight (`rgba(255,255,255,0.04)`) for crisp separation.
-- **Header (`.panel-header`)**: Minimum `56px` height, `--color-surface-muted` background. Content title on the left; `.panel-actions` on the right (wrapping cleanly without overflow).
+- **Header (`.panel-header`)**: Minimum `44px` height, `--color-surface-muted` background. Keep the title and `.panel-actions` on one row when space permits and wrap only as needed.
 - **Body**: Must use `min-height: 0` and flex/grid growth to fill remaining space cleanly.
 - **Drag-and-Drop State**: For tools supporting file drops (text, JSON, images, etc.), highlight the target panel with `border-color: var(--color-primary)` and a `var(--color-primary-soft)` overlay during `dragover`.
 - **Fullscreen Mode**: Removes border-radius, locks to `100vw × 100vh` (`z-index` above shell), and exits via button or `Esc`.

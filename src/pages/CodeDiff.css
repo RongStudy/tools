@@ -180,7 +180,7 @@
 }
 
 .diff-language-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex-shrink: 0; border-bottom: 1px solid var(--color-border); background: var(--color-surface-muted); }
-.diff-side-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 8px 12px; }
+.diff-side-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 0.4rem 0.6rem; }
 .diff-side-tools + .diff-side-tools { border-left: 1px solid var(--color-border); }
 .diff-side-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; font-size: 13px; }
 .diff-side-identity strong { font-weight: 600; }
@@ -190,8 +190,7 @@
 .diff-side-tools .editor-language-tools { flex-wrap: wrap; }
 .code-diff .diff-document-bar { align-items: center; flex-wrap: wrap; padding-right: 8px; }
 .code-diff .diff-document-bar .document-tab-list { align-self: stretch; }
-.diff-workspace-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-left: auto; padding: 4px 0; }
-.diff-workspace-actions .toggle-label { font-size: 12px; white-space: nowrap; }
+.diff-workspace-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-left: auto; }
 .diff-navigation { display: flex; align-items: center; gap: 4px; }
 .diff-navigation .btn-small { min-width: 28px; padding-inline: 6px; }
 .diff-navigation .diff-count { font-size: 12px; padding: 0 2px; }

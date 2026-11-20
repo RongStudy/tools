@@ -243,7 +243,6 @@
 .regex-result-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  min-height: 3.5rem;
   padding: 0.45rem;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-muted);
@@ -251,6 +250,7 @@
 
 .regex-result-tabs button {
   min-width: 0;
+  height: var(--tool-tab-height);
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
@@ -678,14 +678,6 @@
   .regex-input-panel,
   .regex-result-panel {
     min-height: 24rem;
-  }
-
-  .regex-result-tabs {
-    min-height: 3.25rem;
-  }
-
-  .regex-result-tabs button {
-    min-height: 2.4rem;
   }
 
   .regex-reference {

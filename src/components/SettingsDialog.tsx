@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { getDraftSettings, MAX_DRAFT_RETENTION_DAYS, setDraftSettings } from '../utils/expiringStorage'
+import { getDraftSettings, isValidRetentionDays, MAX_DRAFT_RETENTION_DAYS, setDraftSettings } from '../utils/expiringStorage'
 import { useAppTheme } from '../themeContext'
 import { t, setLocale, useLocale } from '../i18n'
 import type { ToolDefinition } from '../tools/registry'
@@ -23,7 +23,9 @@ const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFai
   const [initialDraftSettings] = useState(getDraftSettings)
   const [autosave, setAutosave] = useState(initialDraftSettings.enabled)
   const [days, setDays] = useState(() => String(initialDraftSettings.days))
-  const [error, setError] = useState('')
+  const [saveFailed, setSaveFailed] = useState(false)
+  const retentionDays = Number(days)
+  const invalidDays = autosave && !isValidRetentionDays(retentionDays)
   const autosaveRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const dialogRef = useRef<HTMLFormElement>(null)
@@ -65,14 +67,12 @@ const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFai
 
   const save = (event: FormEvent) => {
     event.preventDefault()
-    const value = autosave ? Number(days) : initialDraftSettings.days
-    if (!Number.isInteger(value) || value < 1 || value > MAX_DRAFT_RETENTION_DAYS) {
-      setError(t("请输入 1–{value0} 之间的整数天数", { value0: MAX_DRAFT_RETENTION_DAYS }))
+    if (invalidDays) {
       inputRef.current?.focus()
       return
     }
-    if (!setDraftSettings({ enabled: autosave, days: value })) {
-      setError(t("设置保存失败，请检查浏览器是否允许本地存储后重试"))
+    if (!setDraftSettings({ enabled: autosave, days: autosave ? retentionDays : initialDraftSettings.days })) {
+      setSaveFailed(true)
       return
     }
     onClose()
@@ -121,23 +121,24 @@ const SettingsDialog = ({ onClose, tools, onMoveTool, onResetOrder, orderSaveFai
         <section className="settings-section" aria-labelledby={draftTitleId}>
           <h3 id={draftTitleId}>{t("草稿保存")}</h3>
           <label className="toggle-switch">
-            <input ref={autosaveRef} type="checkbox" role="switch" checked={autosave} aria-describedby={helpId} onChange={(event) => { setAutosave(event.target.checked); setError('') }} />
+            <input ref={autosaveRef} type="checkbox" role="switch" checked={autosave} aria-describedby={helpId} onChange={(event) => { setAutosave(event.target.checked); setSaveFailed(false) }} />
             <span className="toggle-slider" aria-hidden="true" />
             <span className="toggle-label">{t("自动保存草稿")}</span>
           </label>
           <label htmlFor={inputId}>{t("草稿保存时长（天）")}</label>
-          <input ref={inputRef} id={inputId} type="number" min={1} max={MAX_DRAFT_RETENTION_DAYS} step={1} value={days} disabled={!autosave} onChange={(event) => { setDays(event.target.value); setError('') }} aria-invalid={Boolean(error)} aria-describedby={error ? `${helpId} ${errorId}` : helpId} />
+          <input ref={inputRef} id={inputId} type="number" min={1} max={MAX_DRAFT_RETENTION_DAYS} step={1} value={days} disabled={!autosave} onChange={(event) => { setDays(event.target.value); setSaveFailed(false) }} aria-invalid={invalidDays} aria-describedby={invalidDays ? `${errorId} ${helpId}` : helpId} />
+          {invalidDays && <p id={errorId} className="save-file-error" role="alert">{t("请输入 1–{value0} 之间的整数天数", { value0: MAX_DRAFT_RETENTION_DAYS })}</p>}
           <div id={helpId}>
             <p className="save-file-help">{t("默认 2 天，可设置 1–365 天。点击“保存草稿设置”后，从下一次自动保存起生效，每次保存重新计时。")}</p>
             <p className="save-file-help">{t("关闭后暂停写入新草稿。已有草稿可在对应工具的选项中清除。")}</p>
             <p className="save-file-help">{t("适用于 JSON 格式化、代码对比、临时文本和 Mermaid / Markdown 的自动草稿。")}</p>
             <p className="save-file-help">{t("草稿数据仅保存在当前浏览器本地，不会上传到云端。清除浏览器网站数据会删除本地草稿。")}</p>
           </div>
-          {error && <p id={errorId} className="save-file-error" role="alert">{error}</p>}
+          {saveFailed && <p className="save-file-error" role="alert">{t("设置保存失败，请检查浏览器是否允许本地存储后重试")}</p>}
         </section>
         <div className="save-file-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>{t("关闭")}</button>
-          <button type="submit" className="btn btn-primary">{t("保存草稿设置")}</button>
+          <button type="submit" className="btn btn-primary" disabled={invalidDays}>{t("保存草稿设置")}</button>
         </div>
       </form>
     </div>,

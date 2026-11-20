@@ -54,17 +54,19 @@ function openOptions(name: string | RegExp) {
 }
 
 describe('ScratchPad', () => {
-  it('默认关闭写回，不支持时无法启用', () => {
+  it('不支持写回时仍可使用普通文件选择器', () => {
     renderScratchPad()
-    expect(screen.getByRole('checkbox', { name: '写回原文件' })).not.toBeChecked()
-    expect(screen.getByRole('checkbox', { name: '写回原文件' })).toBeDisabled()
+    const picker = vi.spyOn(screen.getByLabelText('选择本地文件'), 'click')
+    fireEvent.click(screen.getByRole('button', { name: '加载文件' }))
+    expect(picker).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: '保存到原文件' })).not.toBeInTheDocument()
   })
 
-  it('启用写回后将编辑内容保存到所选文件，并阻止覆盖外部修改', async () => {
+  it('加载文件后才显示写回操作，并阻止覆盖外部修改', async () => {
     const disk = memoryLocalFile('note.txt', '原文')
     vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
     renderScratchPad()
-    fireEvent.click(screen.getByRole('checkbox', { name: '写回原文件' }))
+    expect(screen.queryByRole('button', { name: '保存到原文件' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '加载文件' }))
     await screen.findByRole('tab', { name: 'note.txt' })
     expect(screen.getByRole('button', { name: '保存到原文件' })).toBeDisabled()
@@ -79,6 +81,10 @@ describe('ScratchPad', () => {
     expect(disk.write).toHaveBeenCalledTimes(1)
     expect(disk.abort).toHaveBeenCalledTimes(1)
     expect(screen.getByLabelText('保存到原文件状态')).toHaveTextContent('未保存')
+    fireEvent.click(screen.getByRole('tab', { name: '文本 1' }))
+    expect(screen.queryByRole('button', { name: '保存到原文件' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'note.txt' }))
+    expect(screen.getByRole('button', { name: '保存到原文件' })).toBeEnabled()
   })
 
   it('保存期间继续编辑，完成后仍显示未保存，后续保存提交最新内容', async () => {
@@ -87,7 +93,6 @@ describe('ScratchPad', () => {
     disk.close.mockImplementationOnce(async () => { await commit.promise; disk.setDisk('第一次修改') })
     vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
     renderScratchPad()
-    fireEvent.click(screen.getByRole('checkbox', { name: '写回原文件' }))
     fireEvent.click(screen.getByRole('button', { name: '加载文件' }))
     await screen.findByRole('tab', { name: 'note.txt' })
     fireEvent.change(screen.getByLabelText('scratch-editor-plaintext'), { target: { value: '第一次修改' } })

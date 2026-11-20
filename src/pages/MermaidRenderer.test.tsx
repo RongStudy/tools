@@ -1,9 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EditorProps } from '@monaco-editor/react'
 import { ToastProvider } from '../components/Toast'
 import { ThemeProvider } from '../theme'
 import { useAppTheme } from '../themeContext'
+import { memoryLocalFile } from '../test/localFileMock'
 import { writeExpiringStorage } from '../utils/expiringStorage'
 import MermaidRenderer, { DEFAULT_MERMAID_CODE } from './MermaidRenderer'
 
@@ -67,6 +68,8 @@ function openOptions(name: string | RegExp) {
 }
 
 describe('MermaidRenderer', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
   beforeEach(() => {
     localStorage.clear()
     mermaidRenderMock.mockReset()
@@ -172,7 +175,7 @@ describe('MermaidRenderer', () => {
     expect(screen.queryByRole('img', { name: 'Mermaid 图表预览' })).not.toBeInTheDocument()
   })
 
-  it('加载本地 Markdown 时移除 BOM 并从强制 Mermaid 模式恢复自动识别', async () => {
+  it('加载 Markdown 到新标签，移除 BOM 并保留原标签内容和模式', async () => {
     render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     fireEvent.change(screen.getByRole('combobox', { name: '渲染格式' }), { target: { value: 'mermaid' } })
@@ -182,6 +185,12 @@ describe('MermaidRenderer', () => {
     expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 本地文档\n\n正文')
     expect(screen.getByRole('combobox', { name: '渲染格式' })).toHaveValue('auto')
     expect(screen.getByTitle('说明.md')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '说明.md' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('button', { name: '保存到原文件' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '关闭 说明.md' }))
+    expect(screen.queryByRole('tab', { name: '说明.md' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue(DEFAULT_MERMAID_CODE)
+    expect(screen.getByRole('combobox', { name: '渲染格式' })).toHaveValue('mermaid')
   })
 
   it('拖入 Mermaid 文件时高亮面板并加载图表', async () => {
@@ -195,7 +204,50 @@ describe('MermaidRenderer', () => {
     fireEvent.drop(panel, { dataTransfer })
     expect(panel).not.toHaveClass('is-file-dragging')
     await waitFor(() => expect(screen.getByLabelText('内容编辑器')).toHaveValue(source))
+    expect(screen.getByRole('tab', { name: '时序.mmd' })).toHaveAttribute('aria-selected', 'true')
     await waitFor(() => expect(mermaidRenderMock).toHaveBeenLastCalledWith(expect.any(String), source))
+  })
+
+  it('加载可写文件后能保存到原文件，并可关闭最后一个文件标签', async () => {
+    const disk = memoryLocalFile('示例.md', '\ufeff# 原文')
+    const picker = vi.fn(async () => [disk.handle])
+    vi.stubGlobal('showOpenFilePicker', picker)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    expect(screen.queryByRole('button', { name: '保存到原文件' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '加载文件' }))
+    expect(await screen.findByRole('tab', { name: '示例.md' })).toHaveFocus()
+    expect(picker).toHaveBeenCalledOnce()
+    const save = screen.getByRole('button', { name: '保存到原文件' })
+    expect(save).toBeDisabled()
+    expect(disk.handle.createWritable).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText('内容编辑器'), { target: { value: '# 编辑后' } })
+    expect(save).toBeEnabled()
+    fireEvent.click(save)
+    await waitFor(() => expect(save).toBeDisabled())
+    expect([...disk.bytes]).toEqual([...new TextEncoder().encode('\ufeff# 编辑后')])
+
+    fireEvent.click(screen.getByRole('button', { name: '关闭 Mermaid 1' }))
+    fireEvent.click(screen.getByRole('button', { name: '关闭 示例.md' }))
+    expect(screen.getByRole('tab', { name: 'Mermaid 1' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('内容编辑器')).toHaveValue('')
+    expect(screen.queryByRole('button', { name: '保存到原文件' })).not.toBeInTheDocument()
+  })
+
+  it('拖入带文件句柄的图表时可以写回', async () => {
+    const source = 'flowchart LR\n  A --> B'
+    const disk = memoryLocalFile('chart.mmd', source)
+    render(<ToastProvider><MermaidRenderer /></ToastProvider>)
+    const panel = screen.getByLabelText('内容编辑器').closest('.editor-panel')!
+    const getAsFileSystemHandle = vi.fn(async () => ({ kind: 'file', ...disk.handle }))
+    fireEvent.drop(panel, { dataTransfer: {
+      files: [new File([source], 'chart.mmd')],
+      items: [{ kind: 'file', getAsFileSystemHandle }],
+    } })
+    expect(getAsFileSystemHandle).toHaveBeenCalledOnce()
+    expect(await screen.findByRole('tab', { name: 'chart.mmd' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: '保存到原文件' })).toBeDisabled()
   })
 
   it('读取失败、二进制或不支持的文件不会替换已有内容', async () => {
@@ -230,7 +282,7 @@ describe('MermaidRenderer', () => {
     expect(screen.getByLabelText('内容编辑器')).toHaveValue('# 手动编辑')
   })
 
-  it('允许再次加载相同文件，且不会清除同内容的解析错误', async () => {
+  it('重复加载同名文件为两个独立标签，均可渲染解析错误', async () => {
     render(<ToastProvider><MermaidRenderer /></ToastProvider>)
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
     mermaidRenderMock.mockRejectedValue(new Error('Parse error on line 1'))
@@ -240,8 +292,9 @@ describe('MermaidRenderer', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Parse error on line 1')
     fireEvent.change(fileInput, { target: { files: [file] } })
     await waitFor(() => expect(screen.getAllByText('已加载 错误.mermaid')).toHaveLength(2))
+    expect(screen.getAllByRole('tab', { name: '错误.mermaid' })).toHaveLength(2)
     expect(fileInput).toHaveValue('')
-    expect(screen.getByRole('alert')).toHaveTextContent('Parse error on line 1')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Parse error on line 1')
   })
 
   it('修改代码后会实时重新渲染', async () => {
@@ -595,13 +648,13 @@ describe('MermaidRenderer', () => {
     await screen.findByRole('img', { name: 'Mermaid 图表预览' })
 
     const fullscreenButton = screen.getByRole('button', { name: /全屏/ })
-    expect(fullscreenButton).toHaveTextContent('⛶ 全屏')
+    expect(fullscreenButton).toHaveAccessibleName('全屏查看')
 
     fireEvent.click(fullscreenButton)
 
     const previewContainer = screen.getByTestId('mermaid-preview')
     expect(previewContainer).toHaveClass('fullscreen-panel')
-    expect(fullscreenButton).toHaveTextContent('⤓ 退出全屏')
+    expect(fullscreenButton).toHaveAccessibleName('退出全屏')
 
     fireEvent.click(fullscreenButton)
     expect(previewContainer).not.toHaveClass('fullscreen-panel')

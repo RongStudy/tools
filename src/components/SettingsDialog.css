@@ -6,6 +6,7 @@
 .settings-dialog label.toggle-switch { display: inline-flex; min-height: 32px; }
 .settings-dialog .toggle-switch input { min-height: 0; }
 .settings-dialog input[type='number']:disabled { opacity: .5; }
+.settings-dialog input[aria-invalid='true'] { border-color: var(--color-danger); }
 .settings-theme-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .settings-theme-options .btn { flex: 1; }
 .settings-theme-options [aria-pressed='true'] { color: var(--color-primary-hover); background: var(--color-primary-soft); border-color: var(--color-primary-border); }

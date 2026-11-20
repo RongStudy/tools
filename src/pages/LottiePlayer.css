@@ -70,9 +70,6 @@
 }
 
 .lottie-workspace > .editor-panel { min-width: 0; }
-.lottie-workspace .panel-header { flex-wrap: wrap; gap: .5rem; }
-.lottie-workspace .panel-header > span { flex-shrink: 0; white-space: nowrap; }
-.lottie-workspace .panel-actions { margin-left: auto; }
 .lottie-editor { flex: 1; min-height: 0; }
 
 .lottie-preview-stage {

@@ -6,6 +6,27 @@
   justify-content: flex-end;
 }
 
+.tool-layout .mermaid-document-tabs {
+  flex-wrap: wrap;
+}
+
+.mermaid-tab-strip {
+  display: flex;
+  flex: 1 1 13rem;
+  min-width: 0;
+}
+
+.mermaid-file-actions {
+  display: flex;
+  align-items: center;
+  padding-inline: 8px;
+  margin-inline-start: auto;
+}
+
+@media (pointer: coarse) {
+  .mermaid-file-actions .btn-small { min-height: 44px; }
+}
+
 .mermaid-document-tabs + .mermaid-workspace > .mermaid-code-panel {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
@@ -55,17 +76,12 @@
   flex-shrink: 0;
 }
 
-.mermaid-code-panel .panel-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
 .mermaid-code-panel .mermaid-source-title {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+  flex: 1 1 4rem;
   min-width: 0;
   height: 32px;
 }
@@ -100,6 +116,13 @@
 }
 
 .mermaid-format-action-group.is-visible { visibility: visible; }
+
+.mermaid-fullscreen-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
 
 .mermaid-workspace {
   display: grid;
@@ -530,7 +553,9 @@
 }
 
 @media (max-width: 560px) {
-  .mermaid-code-panel .panel-header { grid-template-columns: minmax(0, 1fr); }
+  .mermaid-fullscreen-button { width: 32px; padding: 0; }
+  .mermaid-fullscreen-label { display: none; }
+
   .mermaid-workspace {
     min-height: 48rem;
     grid-template-rows: minmax(22rem, 1fr) minmax(22rem, 1fr);

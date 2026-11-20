@@ -16,12 +16,14 @@ import {
 import Editor from '@monaco-editor/react'
 import type { editor as MonacoEditorNamespace } from 'monaco-editor'
 import DocumentTab from '../components/DocumentTab'
+import LocalFileSave from '../components/LocalFileSave'
 import SplitPaneDivider from '../components/SplitPaneDivider'
 import {
   getSplitPaneGridStyle,
   usePersistentSplitRatio,
 } from '../hooks/useSplitPane'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useLocalFiles } from '../hooks/useLocalFiles'
 import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import { useToast } from '../components/toastContext'
 import ToolLayout from '../components/ToolLayout'
@@ -30,6 +32,7 @@ import { useAppTheme, type AppTheme } from '../themeContext'
 import { readExpiringStorage } from '../utils/expiringStorage'
 import { detectFormat, type ContentFormat } from '../utils/detectFormat'
 import { enhanceMermaidBlock } from '../utils/mermaidBlockViewer'
+import { getDroppedFileHandle, openLocalFile, readLocalFile, supportsFileWriteback, type LoadedTextFile, type OpenLocalFile } from '../utils/localFile'
 import {
   DEFAULT_MARKDOWN_CODE,
   getMermaidBlockSource,
@@ -47,7 +50,8 @@ const RENDER_DELAY_MS = 300
 const MIN_ZOOM = 50
 const MAX_ZOOM = 200
 const ZOOM_STEP = 25
-const SUPPORTED_TEXT_FILE = /\.(?:md|markdown|mmd|mermaid|txt)$/i
+const SUPPORTED_TEXT_EXTENSIONS = ['.md', '.markdown', '.mmd', '.mermaid', '.txt']
+const createDocumentId = () => `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
 type RenderMode = 'auto' | 'mermaid' | 'markdown'
 
@@ -206,6 +210,8 @@ const MermaidRenderer = () => {
   const [activeDocumentId, setActiveDocumentId] = useState(initialDraft.activeDocumentId)
   const activeDocument = documents.find(({ id }) => id === activeDocumentId) ?? documents[0]
   const { code, mode, markdownLayout, sourceName, zoom } = activeDocument
+  const localFiles = useLocalFiles()
+  const activeFile = localFiles.files[activeDocument.id]
   const editorPath = modelPath('mermaid', activeDocument.id, 'source')
   const registerMonaco = useMonacoModels(documents.map(({ id }) => modelPath('mermaid', id, 'source')))
   const tabListRef = useRef<HTMLDivElement>(null)
@@ -415,24 +421,31 @@ const MermaidRenderer = () => {
     setActiveDocumentId(id)
   }
 
+  const appendDocument = (name: string, file?: LoadedTextFile | OpenLocalFile) => {
+    const id = createDocumentId()
+    if (file && 'handle' in file) localFiles.bind(id, file)
+    setDocuments((current) => [...current, { ...EMPTY_DOCUMENT, id, name, code: file?.content ?? '', sourceName: file?.name ?? '' }])
+    focusActiveTabRef.current = true
+    selectDocument(id)
+  }
+
   const addDocument = () => {
     const highestNumber = documents.reduce((highest, { name }) => {
       const match = /^Mermaid (\d+)$/.exec(name)
       return match ? Math.max(highest, Number(match[1])) : highest
     }, 0)
-    const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    setDocuments((current) => [...current, { ...EMPTY_DOCUMENT, id, name: `Mermaid ${highestNumber + 1}` }])
-    focusActiveTabRef.current = true
-    selectDocument(id)
+    appendDocument(`Mermaid ${highestNumber + 1}`)
   }
 
   const closeDocument = (id: string) => {
     const index = documents.findIndex((item) => item.id === id)
-    const next = documents[index + 1] ?? documents[index - 1]
-    if (!next) return
+    if (index < 0) return
+    const fallback = documents.length === 1 ? { ...EMPTY_DOCUMENT, id: createDocumentId() } : null
+    const next = documents[index + 1] ?? documents[index - 1] ?? fallback
+    localFiles.remove(id)
     focusActiveTabRef.current = true
-    setDocuments((current) => current.filter((item) => item.id !== id))
-    if (id === activeDocumentId) selectDocument(next.id)
+    setDocuments((current) => fallback ? [fallback] : current.filter((item) => item.id !== id))
+    if (id === activeDocumentId && next) selectDocument(next.id)
   }
 
   const navigateTabs = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -455,7 +468,7 @@ const MermaidRenderer = () => {
   const changeCode = (value: string) => {
     fileReadSequenceRef.current += 1
     if (value !== code) renderSequenceRef.current += 1
-    updateDocument(activeDocumentId, { code: value, sourceName: '' })
+    updateDocument(activeDocumentId, { code: value })
   }
 
   const changeMode = (nextMode: RenderMode) => {
@@ -473,25 +486,60 @@ const MermaidRenderer = () => {
   const clearCode = () => {
     fileReadSequenceRef.current += 1
     renderSequenceRef.current += 1
-    updateDocument(activeDocumentId, { code: '', sourceName: '', zoom: 100 })
+    updateDocument(activeDocumentId, { code: '', zoom: 100 })
     clearPreview()
   }
 
-  const loadTextFile = async (file: File) => {
-    const sequence = ++fileReadSequenceRef.current
-    if (!SUPPORTED_TEXT_FILE.test(file.name)) {
+  const acceptsFile = (name: string) => {
+    if (!SUPPORTED_TEXT_EXTENSIONS.some((extension) => name.toLowerCase().endsWith(extension))) {
       showToast(t("请选择 Markdown、Mermaid 或文本文件"), 'error')
+      return false
+    }
+    return true
+  }
+
+  const loadDocument = (file: LoadedTextFile | OpenLocalFile) => {
+    if (file.content.includes('\0')) {
+      showToast(t("读取文件失败：{value0}", { value0: file.name }), 'error')
       return
     }
+    appendDocument(file.name, file)
+    showToast(t("已加载 {value0}", { value0: file.name }))
+  }
 
+  const chooseFile = async () => {
+    if (!supportsFileWriteback()) {
+      fileInputRef.current?.click()
+      return
+    }
+    const sequence = ++fileReadSequenceRef.current
     try {
+      const file = await openLocalFile({ types: [{ accept: { 'text/plain': SUPPORTED_TEXT_EXTENSIONS } }] })
+      if (sequence === fileReadSequenceRef.current && acceptsFile(file.name)) loadDocument(file)
+    } catch (error) {
+      if (sequence === fileReadSequenceRef.current) localFiles.reportLoadError(error)
+    }
+  }
+
+  const loadTextFile = async (file: File, item?: DataTransferItem) => {
+    const sequence = ++fileReadSequenceRef.current
+    if (!acceptsFile(file.name)) return
+    try {
+      if (item) {
+        const handle = await getDroppedFileHandle(item)
+        if (sequence !== fileReadSequenceRef.current) return
+        if (handle) {
+          const opened = await readLocalFile(handle).catch(() => null)
+          if (sequence !== fileReadSequenceRef.current) return
+          if (opened) {
+            if (acceptsFile(opened.name)) loadDocument(opened)
+            return
+          }
+        }
+      }
       const content = await file.text()
       if (sequence !== fileReadSequenceRef.current) return
-      if (content.includes('\0')) throw new Error(t("非文本文件"))
-      const source = content.replace(/^\uFEFF/, '')
-      if (source !== code || mode !== 'auto') renderSequenceRef.current += 1
-      updateDocument(activeDocumentId, { code: source, mode: 'auto', sourceName: file.name, zoom: 100 })
-      showToast(t("已加载 {value0}", { value0: file.name }))
+      loadDocument({ name: file.name, content: content.replace(/^\uFEFF/, '') })
     } catch {
       if (sequence === fileReadSequenceRef.current) showToast(t("读取文件失败：{value0}", { value0: file.name }), 'error')
     }
@@ -520,7 +568,7 @@ const MermaidRenderer = () => {
     event.preventDefault()
     setIsFileDragging(false)
     const file = event.dataTransfer.files[0]
-    if (file) void loadTextFile(file)
+    if (file) void loadTextFile(file, Array.from(event.dataTransfer.items ?? []).find(({ kind }) => kind === 'file'))
   }
 
   const startPreviewDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -662,22 +710,31 @@ const MermaidRenderer = () => {
     >
       {!isFullscreen && (
         <div className="mermaid-document-tabs document-tabs">
-          <div ref={tabListRef} className="document-tab-list" role="tablist" aria-label={t("Mermaid / Markdown 文档")} onKeyDown={navigateTabs}>
-            {documents.map(({ id, name }) => (
-              <DocumentTab
-                key={id}
-                prefix="mermaid-document"
-                name={name}
-                selected={id === activeDocumentId}
-                onSelect={() => selectDocument(id)}
-                onRename={(name) => updateDocument(id, { name })}
-                onClose={documents.length > 1 ? () => closeDocument(id) : undefined}
-              />
-            ))}
+          <div className="mermaid-tab-strip">
+            <div ref={tabListRef} className="document-tab-list" role="tablist" aria-label={t("Mermaid / Markdown 文档")} onKeyDown={navigateTabs}>
+              {documents.map(({ id, name, sourceName }) => (
+                <DocumentTab
+                  key={id}
+                  prefix="mermaid-document"
+                  name={name}
+                  selected={id === activeDocumentId}
+                  onSelect={() => selectDocument(id)}
+                  onRename={(name) => updateDocument(id, { name })}
+                  onClose={documents.length > 1 || sourceName ? () => closeDocument(id) : undefined}
+                />
+              ))}
+            </div>
+            <button type="button" className="btn-small document-tab-add" onClick={addDocument}>
+              {t("新建文档")}
+            </button>
           </div>
-          <button type="button" className="btn-small document-tab-add" onClick={addDocument}>
-            {t("新建文档")}
-          </button>
+          {activeFile && (
+            <div className="mermaid-file-actions">
+              <LocalFileSave file={activeFile} content={code} label={t("保存到原文件")}
+                saving={localFiles.savingFile === activeFile} disabled={localFiles.savingFile !== null}
+                onSave={() => localFiles.save(activeDocument.id, code)} />
+            </div>
+          )}
         </div>
       )}
       <div
@@ -705,8 +762,8 @@ const MermaidRenderer = () => {
                   aria-label={t("选择 Markdown 或 Mermaid 文件")}
                   onChange={onFileInputChange}
                 />
-                <button type="button" className="btn-small" onClick={() => fileInputRef.current?.click()}>
-                  {t("打开文件")}</button>
+                <button type="button" className="btn-small" onClick={() => void chooseFile()}>
+                  {t("加载文件")}</button>
                 <button type="button" className="btn-small" onClick={resetExample}>{t("示例")}</button>
                 <button type="button" className="btn-small" onClick={clearCode} disabled={!code}>{t('清空')}</button>
               </div>
@@ -816,11 +873,13 @@ const MermaidRenderer = () => {
               </div>
               <button
                 type="button"
-                className="btn-small btn-fullscreen"
+                className="btn-small btn-fullscreen mermaid-fullscreen-button"
                 onClick={() => setIsFullscreen((value) => !value)}
+                aria-label={isFullscreen ? t("退出全屏") : t("全屏查看")}
                 title={isFullscreen ? t("退出全屏") : t("全屏查看")}
               >
-                {isFullscreen ? t("⤓ 退出全屏") : t("⛶ 全屏")}
+                <span aria-hidden="true">{isFullscreen ? '⤓' : '⛶'}</span>
+                <span className="mermaid-fullscreen-label">{isFullscreen ? t("退出全屏") : t("全屏")}</span>
               </button>
             </div>
           </div>

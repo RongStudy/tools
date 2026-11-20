@@ -17,7 +17,7 @@ import { useAppTheme } from '../themeContext'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage } from '../utils/expiringStorage'
 import { formatCurl, isCurlCommand } from '../utils/curlFormatter'
-import { openWritableFile, supportsFileWriteback, type OpenLocalFile } from '../utils/localFile'
+import { openLocalFile, supportsFileWriteback, type OpenLocalFile } from '../utils/localFile'
 import { useLocalFiles } from '../hooks/useLocalFiles'
 import LocalFileSave from '../components/LocalFileSave'
 import './ScratchPad.css'
@@ -216,7 +216,6 @@ const ScratchPad = () => {
   const [paneBindings, setPaneBindings] = useState<Record<string, EditorLanguageBinding>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const tabListRef = useRef<HTMLDivElement>(null)
-  const [writeback, setWriteback] = useState(false)
   const localFiles = useLocalFiles()
   const pendingLoads = useRef(new Set<symbol>())
   useEffect(() => {
@@ -235,6 +234,7 @@ const ScratchPad = () => {
   const registerMonaco = useMonacoModels(documents.flatMap((document) => document.panes.map((pane) => modelPath('scratch', document.id, pane.id))))
   const selectedPaneIndex = Math.max(0, panes.findIndex((pane) => pane.id === selectedPaneIds[activeDocument.id]))
   const selectedPane = panes[selectedPaneIndex]
+  const selectedFile = localFiles.files[selectedPane.id]
   const { showToast } = useToast()
 
   const draft = useMemo(() => ({ activeDocumentId, documents, fontSize }), [activeDocumentId, documents, fontSize])
@@ -332,12 +332,15 @@ const ScratchPad = () => {
   }
 
   const chooseFile = async () => {
-    if (!writeback) { fileInputRef.current?.click(); return }
+    if (!supportsFileWriteback()) {
+      fileInputRef.current?.click()
+      return
+    }
     const request = Symbol()
     pendingLoads.current.add(request)
     try {
-      const opened = await openWritableFile()
-      if (pendingLoads.current.has(request)) addFileDocument(opened.name, opened.content, opened)
+      const opened = await openLocalFile()
+      if (pendingLoads.current.has(request)) addFileDocument(opened.name, opened.content, 'handle' in opened ? opened : undefined)
     } catch (error) {
       localFiles.reportLoadError(error)
     } finally { pendingLoads.current.delete(request) }
@@ -444,16 +447,11 @@ const ScratchPad = () => {
 
   const fileActions = (
     <div className="panel-actions scratch-file-actions">
-      <label className="toggle-switch" title={supportsFileWriteback() ? t("开启后加载文件可保存回原文件") : t("当前浏览器不支持保存到原文件")}>
-        <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
-        <span className="toggle-slider" />
-        <span className="toggle-label">{t("写回原文件")}</span>
-      </label>
       <button type="button" onClick={chooseFile} className="btn-small" title={t("加载本地文件")}>
         {t("加载文件")}</button>
-      {writeback && <LocalFileSave file={localFiles.files[selectedPane.id]} content={selectedPane.content} label={t("保存到原文件")}
-        saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[selectedPane.id]} disabled={localFiles.savingFile !== null}
-        onSave={() => localFiles.save(selectedPane.id, selectedPane.content)} />}
+      <LocalFileSave file={selectedFile} content={selectedPane.content} label={t("保存到原文件")}
+        saving={localFiles.savingFile === selectedFile} disabled={localFiles.savingFile !== null}
+        onSave={() => localFiles.save(selectedPane.id, selectedPane.content)} />
       <button
         type="button"
         onClick={saveSelectedPane}
@@ -519,7 +517,7 @@ const ScratchPad = () => {
               onPointerDownCapture={() => selectPane(pane.id)}
               onFocusCapture={() => selectPane(pane.id)}
             >
-              <div className="scratch-pane-header">
+              <div className="panel-header scratch-pane-header">
                 <span className="scratch-pane-label">{t("栏")}{index + 1}</span>
                 <select
                   value={pane.language}

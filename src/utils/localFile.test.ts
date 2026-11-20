@@ -1,18 +1,24 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { memoryLocalFile } from '../test/localFileMock'
-import { LocalFileError, localFileErrorMessage, openWritableFile, writeLocalFile } from './localFile'
+import { LocalFileError, localFileErrorMessage, openLocalFile, writeLocalFile } from './localFile'
 
 afterEach(() => vi.unstubAllGlobals())
 
 const open = async (disk: ReturnType<typeof memoryLocalFile>) => {
   vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
-  return openWritableFile()
+  return openLocalFile()
+}
+
+const openWritable = async (disk: ReturnType<typeof memoryLocalFile>) => {
+  const file = await open(disk)
+  if (!('handle' in file)) throw new Error('Expected a file with a writeback handle')
+  return file
 }
 
 describe('localFile', () => {
   it('保留 UTF-8 BOM、中文和换行，未修改时不打开写入流', async () => {
     const disk = memoryLocalFile('bom.txt', '\ufeff原文\r\n')
-    const opened = await open(disk)
+    const opened = await openWritable(disk)
     expect(opened.content).toBe('原文\r\n')
     await writeLocalFile(opened, opened.content)
     expect(disk.handle.createWritable).not.toHaveBeenCalled()
@@ -28,16 +34,17 @@ describe('localFile', () => {
     ['GBK', [0xd6, 0xd0]],
     ['UTF-16', [0xff, 0xfe, 0x61, 0x00]],
     ['二进制', [0x61, 0x00, 0x62]],
-  ])('拒绝 %s 的有损写回', async (_name, bytes) => {
+  ])('%s 允许加载但不提供写回句柄', async (_name, bytes) => {
     const disk = memoryLocalFile('unsupported.txt', new Uint8Array(bytes))
-    await expect(open(disk)).rejects.toMatchObject({ code: 'encoding' })
+    const loaded = await open(disk)
+    expect(loaded).toEqual({ name: 'unsupported.txt', content: new TextDecoder().decode(new Uint8Array(bytes)) })
     expect(disk.handle.createWritable).not.toHaveBeenCalled()
     expect([...disk.bytes]).toEqual(bytes)
   })
 
   it('按字节识别外部改动，包括 BOM 变化，并取消提交', async () => {
     const disk = memoryLocalFile('note.txt', '原文')
-    const opened = await open(disk)
+    const opened = await openWritable(disk)
     disk.setDisk('\ufeff原文')
     await expect(writeLocalFile(opened, '修改')).rejects.toMatchObject({ code: 'conflict' })
     expect(disk.abort).toHaveBeenCalledOnce()
@@ -48,7 +55,7 @@ describe('localFile', () => {
 
   it.each(['write', 'close'] as const)('%s 失败时保留磁盘和保存基线，允许重试', async (operation) => {
     const disk = memoryLocalFile('note.txt', '原文')
-    const opened = await open(disk)
+    const opened = await openWritable(disk)
     disk[operation].mockRejectedValueOnce(new Error('disk failure'))
     await expect(writeLocalFile(opened, '修改')).rejects.toThrow('disk failure')
     expect(disk.text).toBe('原文')

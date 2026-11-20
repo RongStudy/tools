@@ -79,11 +79,12 @@ function openOptions(name: string | RegExp) {
 }
 
 describe('CodeDiff', () => {
-  it('keeps clear, writeback and both language statuses visible', () => {
+  it('keeps clear and both language statuses visible on an empty document', () => {
     renderCodeDiff()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '清空' })).toBeVisible()
-    expect(screen.getByRole('checkbox', { name: '写回原文件' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: '保存原始文件' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '保存修改文件' })).not.toBeInTheDocument()
     expect(screen.getByRole('status', { name: '原始代码' })).toHaveTextContent('plaintext')
     expect(screen.getByRole('status', { name: '修改代码' })).toHaveTextContent('plaintext')
   })

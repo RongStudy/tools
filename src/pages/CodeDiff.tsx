@@ -17,7 +17,7 @@ import { modelPath, useMonacoModels } from '../hooks/useMonacoModels'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { writeTextToClipboard } from '../utils/clipboard'
 import { readExpiringStorage } from '../utils/expiringStorage'
-import { openWritableFile, supportsFileWriteback, type OpenLocalFile } from '../utils/localFile'
+import { openLocalFile, supportsFileWriteback, type OpenLocalFile } from '../utils/localFile'
 import { useLocalFiles } from '../hooks/useLocalFiles'
 import LocalFileSave from '../components/LocalFileSave'
 import type { MonacoDiffEditor } from '../types/monaco'
@@ -170,7 +170,6 @@ const CodeDiff = () => {
     modifiedCode: activeDocument.modifiedCode,
   }))
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [writeback, setWriteback] = useState(false)
   const localFiles = useLocalFiles()
   const selectedDocumentRef = useRef(activeDocumentId)
   const pendingLoads = useRef(new Map<string, symbol>())
@@ -238,14 +237,18 @@ const CodeDiff = () => {
     }
   }
 
-  const chooseWritableFile = async (type: 'original' | 'modified') => {
+  const chooseFile = async (type: 'original' | 'modified') => {
+    if (!supportsFileWriteback()) {
+      document.getElementById('code-diff-' + type + '-file')?.click()
+      return
+    }
     const documentId = activeDocumentId
     const key = `${documentId}/${type}`
     const request = Symbol()
     pendingLoads.current.set(key, request)
     try {
-      const opened = await openWritableFile()
-      applyLoadedFile(documentId, type, request, opened.name, opened.content, opened)
+      const opened = await openLocalFile()
+      applyLoadedFile(documentId, type, request, opened.name, opened.content, 'handle' in opened ? opened : undefined)
     } catch (error) {
       if (pendingLoads.current.get(key) === request) localFiles.reportLoadError(error)
     } finally {
@@ -430,6 +433,7 @@ const CodeDiff = () => {
         const label = isOriginal ? t('原始代码') : t('修改代码')
         const loadLabel = isOriginal ? t('加载原始文件') : t('加载修改文件')
         const key = activeDocumentId + '/' + side
+        const file = localFiles.files[key]
         return <div className="diff-side-tools" key={side}>
           <span className="diff-side-identity" role="status" aria-label={label}>
             <strong>{isOriginal ? t('原始') : t('修改')}</strong>
@@ -438,15 +442,12 @@ const CodeDiff = () => {
           </span>
           <div className="diff-side-actions">
             <input id={'code-diff-' + side + '-file'} type="file" hidden aria-label={loadLabel} onChange={(event) => handleFileSelect(event, side)} />
-            <button type="button" className="btn-small" aria-label={loadLabel} onClick={() => {
-              if (writeback) void chooseWritableFile(side)
-              else document.getElementById('code-diff-' + side + '-file')?.click()
-            }}>{t('加载文件')}</button>
+            <button type="button" className="btn-small" aria-label={loadLabel} onClick={() => void chooseFile(side)}>{t('加载文件')}</button>
             <button type="button" className="btn-small" aria-label={isOriginal ? t('复制原始') : t('复制修改')} onClick={() => copyCode(content, isOriginal ? t('原始') : t('修改后'))} disabled={!content}>{t('复制')}</button>
-            {writeback && <LocalFileSave file={localFiles.files[key]} content={content}
+            <LocalFileSave file={file} content={content}
               label={isOriginal ? t('保存原始文件') : t('保存修改文件')} disabled={localFiles.savingFile !== null}
-              saving={localFiles.savingFile !== null && localFiles.savingFile === localFiles.files[key]}
-              onSave={() => localFiles.save(key, content)} />}
+              saving={localFiles.savingFile === file}
+              onSave={() => localFiles.save(key, content)} />
             <EditorLanguageTools binding={languageBindings?.[side]} language={detected} path={modelPath('diff', activeDocument.id, side)} label={label} />
           </div>
         </div>
@@ -455,10 +456,6 @@ const CodeDiff = () => {
   )
 
   const renderWorkspaceActions = () => <div className="diff-workspace-actions">
-    <label className="toggle-switch" title={supportsFileWriteback() ? t('开启后加载文件可保存回原文件') : t('当前浏览器不支持保存到原文件')}>
-      <input type="checkbox" checked={writeback} disabled={!supportsFileWriteback()} onChange={(event) => setWriteback(event.target.checked)} />
-      <span className="toggle-slider" /><span className="toggle-label">{t('写回原文件')}</span>
-    </label>
     {(originalCode || modifiedCode) && <div className="diff-navigation">
       <button onClick={navigateToPreviousDiff} className="btn-small" aria-label={t('上一个差异')} title={t('上一个差异')}>↑</button>
       <span className="diff-count">{getDiffCount()} {t('处差异')}</span>

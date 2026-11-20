@@ -58,11 +58,11 @@
   max-width: 100%;
   margin-inline-start: auto;
   justify-content: flex-end;
-  padding: 0 8px 4px;
+  padding-inline: 8px;
 }
 
 @media (pointer: coarse) {
-  .scratch-tabs .scratch-file-actions :is(.btn-small, .toggle-switch) {
+  .scratch-tabs .scratch-file-actions .btn-small {
     min-height: 44px;
   }
 }
@@ -91,14 +91,7 @@
 }
 
 .scratch-pane-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
-  padding: 0.4rem 0.6rem;
-  background: var(--color-surface-muted);
-  border-bottom: 1px solid var(--color-border);
-  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .scratch-pane-label {

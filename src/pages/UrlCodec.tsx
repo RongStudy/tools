@@ -190,7 +190,7 @@ const UrlCodec = () => {
         style={getSplitPaneGridStyle(splitRatio)}
       >
         <section className="url-codec-panel">
-          <div className="url-codec-panel-header">
+          <div className="panel-header">
             <span>{t("输入")}</span>
             <button type="button" className="btn-small" onClick={() => void writeTextToClipboard(input)} disabled={!input}>
               {t("复制")}</button>
@@ -213,7 +213,7 @@ const UrlCodec = () => {
         />
 
         <section className="url-codec-panel">
-          <div className="url-codec-panel-header">
+          <div className="panel-header">
             <span>{t("输出")}</span>
             <div className="panel-actions">
               <button type="button" className="btn-small" onClick={swapOutputToInput} disabled={!output}>{t('结果转输入')}</button>

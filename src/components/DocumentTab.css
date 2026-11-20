@@ -24,7 +24,7 @@
 
 .tool-layout .document-tab-list {
   display: flex;
-  align-items: stretch;
+  align-items: flex-end;
   flex: 0 1 auto;
   gap: 0;
   width: auto;
@@ -40,6 +40,7 @@
   flex: 0 0 auto;
   min-width: 104px;
   max-width: 224px;
+  height: calc(var(--tool-tab-height) + 2px);
   border: 1px solid transparent;
   border-bottom-color: var(--color-border);
   border-radius: 6px 6px 0 0;
@@ -62,7 +63,7 @@
   align-items: center;
   flex: 1;
   min-width: 0;
-  min-height: 32px;
+  height: var(--tool-tab-height);
   padding: 0 6px 0 9px;
   border: 0;
   border-radius: 4px;
@@ -129,7 +130,7 @@
 }
 
 @media (pointer: coarse) {
-  .tool-layout .document-tab-button { min-height: 40px; }
+  .tool-layout .document-tabs { min-height: 48px; }
   .tool-layout .document-tab-close { width: 32px; height: 32px; flex-basis: 32px; }
-  .tool-layout .document-tab-add { min-height: 40px; }
+  .tool-layout .document-tab-add { min-height: var(--tool-tab-height); }
 }

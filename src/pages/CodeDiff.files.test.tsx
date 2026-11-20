@@ -29,7 +29,6 @@ beforeEach(() => localStorage.clear())
 afterEach(() => vi.unstubAllGlobals())
 
 function renderDiff() { return render(<ToastProvider><CodeDiff /></ToastProvider>) }
-function enableWriteback() { fireEvent.click(screen.getByRole('checkbox', { name: '写回原文件' })) }
 
 
 describe('CodeDiff 本地文件', () => {
@@ -39,7 +38,6 @@ describe('CodeDiff 本地文件', () => {
     vi.mocked(disk.handle.getFile).mockResolvedValueOnce({ name: 'slow.txt', arrayBuffer: () => read.promise } as File)
     vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
     renderDiff()
-    enableWriteback()
     fireEvent.click(screen.getByRole('button', { name: '加载原始文件' }))
     fireEvent.click(screen.getByRole('button', { name: '新建对比' }))
     await act(async () => { read.resolve(new TextEncoder().encode('属于对比1的文件').buffer); await read.promise })
@@ -57,7 +55,6 @@ describe('CodeDiff 本地文件', () => {
     vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
     renderDiff()
     fireEvent.click(screen.getByRole('button', { name: '新建对比' }))
-    enableWriteback()
     fireEvent.click(screen.getByRole('button', { name: '加载修改文件' }))
     fireEvent.click(screen.getByRole('button', { name: '关闭 对比 2' }))
     await act(async () => { read.resolve(new TextEncoder().encode('过期结果').buffer); await read.promise })
@@ -83,7 +80,6 @@ describe('CodeDiff 本地文件', () => {
     const modified = memoryLocalFile('b.txt', '修改内容')
     vi.stubGlobal('showOpenFilePicker', vi.fn().mockResolvedValueOnce([original.handle]).mockResolvedValueOnce([modified.handle]))
     renderDiff()
-    enableWriteback()
     fireEvent.click(screen.getByRole('button', { name: '加载原始文件' }))
     await screen.findByRole('button', { name: '保存原始文件' })
     fireEvent.click(screen.getByRole('button', { name: '加载修改文件' }))
@@ -105,7 +101,6 @@ describe('CodeDiff 本地文件', () => {
     disk.close.mockImplementationOnce(async () => { await commit.promise; disk.setDisk('已修改') })
     vi.stubGlobal('showOpenFilePicker', vi.fn().mockResolvedValueOnce([disk.handle]).mockResolvedValueOnce([other.handle]))
     renderDiff()
-    enableWriteback()
     fireEvent.click(screen.getByRole('button', { name: '加载原始文件' }))
     await screen.findByRole('button', { name: '保存原始文件' })
     fireEvent.click(screen.getByRole('button', { name: '加载修改文件' }))
@@ -124,7 +119,6 @@ describe('CodeDiff 本地文件', () => {
     const disk = memoryLocalFile('a.txt', '原始内容')
     vi.stubGlobal('showOpenFilePicker', vi.fn(async () => [disk.handle]))
     renderDiff()
-    enableWriteback()
     fireEvent.click(screen.getByRole('button', { name: '加载原始文件' }))
     await screen.findByRole('button', { name: '保存原始文件' })
     act(() => callbacks.current.onOriginalChange?.('待保存内容'))

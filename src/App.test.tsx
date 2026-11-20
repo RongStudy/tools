@@ -11,11 +11,12 @@ vi.mock('@platform', async () => {
 })
 vi.mock('./components/AppShell', async () => {
   const { Link } = await import('react-router-dom')
-  return { default: ({ children }: { children: ReactNode }) => <><Link to="/">首页</Link><Link to="/json">JSON</Link><Link to="/timestamp">时间</Link>{children}</> }
+  return { default: ({ children }: { children: ReactNode }) => <><Link to="/">首页</Link><Link to="/json">JSON</Link><Link to="/mermaid">Mermaid</Link><Link to="/timestamp">时间</Link>{children}</> }
 })
 vi.mock('./tools/registry', () => ({ tools: [
   { path: '/', component: () => <div>home page</div> },
   { path: '/json', component: () => <div>json page</div> },
+  { path: '/mermaid', component: () => <input aria-label="Mermaid draft" /> },
   { path: '/timestamp', component: () => <div>timestamp page</div> },
   { path: '/lottie', component: () => <div>lottie page</div> },
 ] }))
@@ -42,6 +43,21 @@ describe('route based Monaco initialization', () => {
     render(<App />)
     await screen.findByText('lottie page')
     expect(setupMonaco).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the Mermaid editor mounted and inactive while using other tools', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('link', { name: 'Mermaid' }))
+    const editor = await screen.findByRole('textbox', { name: 'Mermaid draft' })
+    fireEvent.change(editor, { target: { value: 'Unsaved document' } })
+
+    for (const tool of ['JSON', '时间', '首页']) {
+      fireEvent.click(screen.getByRole('link', { name: tool }))
+      expect(screen.queryByRole('textbox', { name: 'Mermaid draft' })).not.toBeInTheDocument()
+    }
+    fireEvent.click(screen.getByRole('link', { name: 'Mermaid' }))
+    expect(screen.getByRole('textbox', { name: 'Mermaid draft' })).toBe(editor)
+    expect(editor).toHaveValue('Unsaved document')
   })
 
   it('keeps editor pages gated after a loading failure and allows retry', async () => {

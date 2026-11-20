@@ -211,12 +211,14 @@ const LottiePlayer = () => {
       <div ref={gridRef} className="lottie-workspace" style={getSplitPaneGridStyle(splitRatio)}>
         <section className="editor-panel lottie-editor-panel">
           <div className="panel-header">
-            <span>{t("动画 JSON")}</span>
+            <span>JSON</span>
             <div className="panel-actions">
-              <button type="button" className="btn-small" onClick={format} disabled={!json}>{t("格式化")}</button>
               <button type="button" className="btn-small" onClick={() => void copy()} disabled={!json}>{t("复制")}</button>
-              <button type="button" className="btn-small" onClick={clear}>{t("清空")}</button>
               <button type="button" className="btn-small btn-primary" onClick={playJson} disabled={!json.trim()}>{t("播放 JSON")}</button>
+              <ToolOptions compact closeOnAction>
+                <button type="button" className="btn-small" onClick={format} disabled={!json}>{t("格式化")}</button>
+                <button type="button" className="btn-small" onClick={clear}>{t("清空")}</button>
+              </ToolOptions>
             </div>
           </div>
           <div className="lottie-editor">
@@ -234,7 +236,7 @@ const LottiePlayer = () => {
         <SplitPaneDivider containerRef={gridRef} ratio={splitRatio} onRatioChange={setSplitRatio} label={t("调整 JSON 与预览宽度")} />
         <section className="editor-panel lottie-preview-panel">
           <div className="panel-header">
-            <span>{t("动画预览")}</span>
+            <span>{t("预览")}</span>
             <div className="panel-actions">
               <button type="button" className="btn-small" disabled={!canControl} onClick={togglePlayback}>{status === 'playing' ? t("暂停") : t("播放")}</button>
               <button type="button" className="btn-small" disabled={!canControl} onClick={() => { playerRef.current?.goToAndPlay(0, true); setStatus('playing') }}>{t("重播")}</button>
